@@ -3,6 +3,11 @@ import { issueSignedToken, presignUrl } from '@vercel/blob'
 
 const PATHNAME = 'Debug.txt'
 
+function getOidcToken(req: VercelRequest): string | undefined {
+  const header = req.headers['x-vercel-oidc-token']
+  return Array.isArray(header) ? header[0] : header
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST')
@@ -14,6 +19,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const signedToken = await issueSignedToken({
       pathname: PATHNAME,
       operations: ['get'],
+      oidcToken: getOidcToken(req),
     })
 
     const { presignedUrl } = await presignUrl(signedToken, {
