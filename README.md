@@ -3,6 +3,8 @@ https://app2-4f5u.vercel.app/ (SPA)
 
 https://app2-pi-nine.vercel.app/version (API)
 
+https://app2-pi-nine.vercel.app/download (API, POST) - returns a download URL for `Debug.txt` from the connected Vercel Blob store. Requires the `BLOB_READ_WRITE_TOKEN` environment variable.
+
 ## Dev Tool
 
 https://claude.ai/code
