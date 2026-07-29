@@ -5,7 +5,8 @@ const PATHNAME = 'Debug.txt'
 
 function getOidcToken(req: VercelRequest): string | undefined {
   const header = req.headers['x-vercel-oidc-token']
-  return Array.isArray(header) ? header[0] : header
+  const headerToken = Array.isArray(header) ? header[0] : header
+  return headerToken || process.env.VERCEL_OIDC_TOKEN
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -29,7 +30,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     })
 
     res.status(200).json({ url: presignedUrl })
-  } catch {
-    res.status(502).json({ error: 'Failed to generate download token' })
+  } catch (error) {
+    res.status(502).json({
+      error: 'Failed to generate download token',
+      detail: error instanceof Error ? error.message : String(error),
+    })
   }
 }
