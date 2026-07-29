@@ -7,15 +7,18 @@ APP_VERSION = "1.22"
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/version":
-            body = json.dumps({"version": APP_VERSION}).encode()
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Content-Length", str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
+            self._send_json(200, {"version": APP_VERSION})
         else:
             self.send_response(404)
             self.end_headers()
+
+    def _send_json(self, status, payload):
+        body = json.dumps(payload).encode()
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
     def log_message(self, format, *args):
         pass
