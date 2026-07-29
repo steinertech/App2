@@ -1,7 +1,7 @@
 import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-APP_VERSION = "1.1"
+APP_VERSION = "1.22"
 
 
 class Handler(BaseHTTPRequestHandler):
