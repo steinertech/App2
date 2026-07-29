@@ -5,6 +5,13 @@ https://app2-pi-nine.vercel.app/version (API, Python)
 
 https://app2-4f5u.vercel.app/api/download (API, POST, Node.js serverless function) - issues a signed, short-lived download URL (with a `vercel-blob-delegation` token) for `Debug.txt` from the connected Vercel Blob store, using `@vercel/blob`'s `issueSignedToken` + `presignUrl`. Requires the `BLOB_READ_WRITE_TOKEN` environment variable.
 
+## Project layout
+
+- `frontend/` - the Vite + React SPA (`npm install && npm run dev` from inside this folder)
+- `backend/` - the server code: `server.py` (Python `/version` API) and `api/download.ts` (Node.js serverless function)
+
+Each folder has its own `package.json` and `vercel.json`. **The two Vercel projects deploying this repo need their "Root Directory" project setting updated to `frontend` and `backend` respectively** after this change, since the code they build has moved out of the repo root.
+
 ## Dev Tool
 
 https://claude.ai/code
