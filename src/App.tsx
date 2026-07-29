@@ -6,6 +6,17 @@ import './App.css'
 
 function App() {
   const [count, setCount] = useState(0)
+  const [serverVersion, setServerVersion] = useState('')
+
+  const handleServerVersionClick = async () => {
+    try {
+      const response = await fetch('https://app2-pi-nine.vercel.app/version')
+      const data = await response.json()
+      setServerVersion(data.version)
+    } catch {
+      setServerVersion('Error fetching version')
+    }
+  }
 
   return (
     <>
@@ -28,6 +39,16 @@ function App() {
         >
           Count is {count}
         </button>
+        <div>
+          <button
+            type="button"
+            className="counter"
+            onClick={handleServerVersionClick}
+          >
+            Server Version
+          </button>{' '}
+          <label>{serverVersion}</label>
+        </div>
       </section>
 
       <div className="ticks"></div>
