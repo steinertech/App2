@@ -4,8 +4,8 @@ import { issueSignedToken, presignUrl } from '@vercel/blob'
 const PATHNAME = 'Debug.txt'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST')
+  if (req.method !== 'PUT') {
+    res.setHeader('Allow', 'PUT')
     res.status(405).json({ error: 'Method not allowed' })
     return
   }
