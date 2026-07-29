@@ -1,5 +1,6 @@
 # Playground
 https://app2-4f5u.vercel.app/ (SPA)
+
 https://app2-pi-nine.vercel.app/version (API)
 
 # React + TypeScript + Vite
