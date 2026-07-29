@@ -3,7 +3,7 @@ https://app2-4f5u.vercel.app/ (SPA)
 
 https://app2-pi-nine.vercel.app/version (API, Python)
 
-https://app2-4f5u.vercel.app/api/download (API, PUT, Node.js serverless function) - issues a signed, short-lived download URL (with a `vercel-blob-delegation` token) for `Debug.txt` from the connected Vercel Blob store, using `@vercel/blob`'s `issueSignedToken` + `presignUrl`. Requires the `BLOB_READ_WRITE_TOKEN` environment variable.
+https://app2-4f5u.vercel.app/api/download (API, POST, Node.js serverless function) - issues a signed, short-lived download URL (with a `vercel-blob-delegation` token) for `Debug.txt` from the connected Vercel Blob store, using `@vercel/blob`'s `issueSignedToken` + `presignUrl`. Requires the `BLOB_READ_WRITE_TOKEN` environment variable.
 
 ## Dev Tool
 

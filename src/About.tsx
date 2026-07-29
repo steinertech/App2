@@ -5,7 +5,7 @@ function About() {
 
   const handleClick = async () => {
     try {
-      const response = await fetch('/api/download', { method: 'PUT' })
+      const response = await fetch('/api/download', { method: 'POST' })
       const data = await response.json()
       setDownloadUrl(data.url)
     } catch {
