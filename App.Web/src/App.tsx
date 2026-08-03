@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Nav from './Nav.tsx';
 
-export const apiUrl = 'https://app2-pi-nine.vercel.app/api/';
+export const apiUrl = 'https://app2-kappa-roan.vercel.app/api/';
 
 export default function App() {
   const [count, setCount] = useState<number>(0);
