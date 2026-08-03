@@ -11,7 +11,7 @@ export default function About() {
       const response = await fetch(`${apiUrl}version`);
       const data = await response.json();
       setVersion(data.version);
-      setOrigin(data.origin);
+      setOrigin(data.origin.replace(/^https?:\/\//, ''));
     } catch {
       setVersion('Error fetching version');
       setOrigin('');
