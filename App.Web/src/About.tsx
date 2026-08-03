@@ -2,18 +2,20 @@ import { useState } from 'react';
 import Nav from './Nav.tsx';
 import { apiUrl } from './App.tsx';
 
+const CLIENT_VERSION = '1.0';
+
 export default function About() {
-  const [version, setVersion] = useState('');
+  const [result, setResult] = useState('');
   const [origin, setOrigin] = useState('');
 
   const handleVersionClick = async () => {
     try {
       const response = await fetch(`${apiUrl}version`);
       const data = await response.json();
-      setVersion(data.version);
+      setResult(`VersionServer=${data.version}; VersionClient=${CLIENT_VERSION};`);
       setOrigin(data.origin);
     } catch {
-      setVersion('Error fetching version');
+      setResult('Error fetching version');
       setOrigin('');
     }
   };
@@ -31,7 +33,7 @@ export default function About() {
       }}>
         <h1>About</h1>
         <div>
-          <label>{version}</label>
+          <label>{result}</label>
           {origin && <label> ({origin})</label>}
         </div>
         <button
