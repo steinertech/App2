@@ -1,5 +1,7 @@
 import { useState } from 'react';
 
+export const apiUrl = 'https://app2-ng42wear3-my-9ef4.vercel.app/api/';
+
 export default function App() {
   const [count, setCount] = useState<number>(0);
 
