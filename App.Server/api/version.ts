@@ -1,6 +1,7 @@
 export default {
   fetch(request: Request): Response {
-    return new Response(JSON.stringify({ version: '1.12' }), {
+    const origin = request.headers.get('origin') ?? 'unknown';
+    return new Response(JSON.stringify({ version: '1.12', origin }), {
       headers: { 'content-type': 'application/json' },
     });
   },
