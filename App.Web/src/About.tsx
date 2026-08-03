@@ -10,8 +10,8 @@ export default function About() {
       const response = await fetch(`${apiUrl}version`);
       const data = await response.json();
       setVersion(data.version);
-    } catch {
-      setVersion('Error fetching version');
+    } catch (err) {
+      setVersion(`Error fetching version: ${err instanceof Error ? err.message : String(err)}`);
     }
   };
 
