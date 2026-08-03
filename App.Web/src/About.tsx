@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Nav from './Nav.tsx';
 import { apiUrl } from './App.tsx';
 
-const CLIENT_VERSION = '1.0';
+const VERSION_CLIENT = '1.13';
 
 export default function About() {
   const [result, setResult] = useState('');
@@ -12,7 +12,7 @@ export default function About() {
     try {
       const response = await fetch(`${apiUrl}version`);
       const data = await response.json();
-      setResult(`VersionServer=${data.version}; VersionClient=${CLIENT_VERSION};`);
+      setResult(`VersionServer=${data.version}; VersionClient=${VERSION_CLIENT};`);
       setOrigin(data.origin);
     } catch {
       setResult('Error fetching version');
