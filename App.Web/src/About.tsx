@@ -7,7 +7,7 @@ export default function About() {
 
   const handleVersionClick = async () => {
     try {
-      const response = await fetch(`${apiUrl}/version`);
+      const response = await fetch(`${apiUrl}version`);
       const data = await response.json();
       setVersion(data.version);
     } catch {
