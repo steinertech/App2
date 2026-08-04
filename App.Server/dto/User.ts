@@ -1,3 +1,4 @@
 export interface User {
-  email: string;
+  email: string | null;
+  shardKey: string | null;
 }
