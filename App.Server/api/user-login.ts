@@ -7,23 +7,30 @@ export default {
       return new Response(null, { status: 204, headers: corsHeaders(request) });
     }
 
-    const { email, password } = await request.json();
+    try {
+      const { email, password } = await request.json();
 
-    const sessionId = await userLogin(request, email, password);
+      const sessionId = await userLogin(request, email, password);
 
-    if (!sessionId) {
-      return new Response(JSON.stringify({ success: false }), {
-        status: 401,
+      if (!sessionId) {
+        return new Response(JSON.stringify({ success: false }), {
+          status: 401,
+          headers: { 'content-type': 'application/json', ...corsHeaders(request) },
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: {
+          'content-type': 'application/json',
+          'set-cookie': `sessionId=${sessionId}; HttpOnly; Path=/`,
+          ...corsHeaders(request),
+        },
+      });
+    } catch (error) {
+      return new Response(JSON.stringify({ success: false, error: String(error) }), {
+        status: 500,
         headers: { 'content-type': 'application/json', ...corsHeaders(request) },
       });
     }
-
-    return new Response(JSON.stringify({ success: true }), {
-      headers: {
-        'content-type': 'application/json',
-        'set-cookie': `sessionId=${sessionId}; HttpOnly; Path=/`,
-        ...corsHeaders(request),
-      },
-    });
   },
 };
