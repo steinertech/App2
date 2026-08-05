@@ -11,6 +11,7 @@ export default function Nav() {
       <Link to="/">Home</Link>
       <Link to="/about">About</Link>
       <Link to="/debug">Debug</Link>
+      <Link to="/user-register">User Register</Link>
     </nav>
   );
 }
