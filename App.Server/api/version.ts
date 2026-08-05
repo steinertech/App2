@@ -1,6 +1,4 @@
-import { domainName } from '../util';
-
-const VERSION_SERVER = '1.13';
+import { domainName, VERSION_SERVER } from '../util';
 
 export default {
   fetch(request: Request): Response {
