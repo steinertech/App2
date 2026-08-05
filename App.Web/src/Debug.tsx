@@ -5,6 +5,7 @@ import { apiUrl } from './App.tsx';
 export default function Debug() {
   const [email, setEmail] = useState('');
   const [result, setResult] = useState('');
+  const [downloadUrl, setDownloadUrl] = useState('');
 
   const handleDebugDbClick = async () => {
     try {
@@ -27,6 +28,16 @@ export default function Debug() {
       setResult(JSON.stringify(data, null, 2));
     } catch {
       setResult('Error fetching upload');
+    }
+  };
+
+  const handleDownloadClick = async () => {
+    try {
+      const response = await fetch(`${apiUrl}download`);
+      const data = await response.json();
+      setDownloadUrl(data.url);
+    } catch {
+      setResult('Error fetching download');
     }
   };
 
@@ -63,6 +74,17 @@ export default function Debug() {
         >
           Upload
         </button>
+        <button
+          onClick={handleDownloadClick}
+          style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer', marginTop: '8px' }}
+        >
+          Download
+        </button>
+        {downloadUrl && (
+          <a href={downloadUrl} target="_blank" rel="noreferrer" style={{ marginTop: '8px' }}>
+            {downloadUrl}
+          </a>
+        )}
         <label style={{ whiteSpace: 'pre-wrap', marginTop: '16px' }}>{result}</label>
       </div>
     </div>
