@@ -15,8 +15,9 @@ export default {
     await collection.insertOne({
       email,
       sectorKey: `Domain/${domainName(request)}/Global/`,
+      type: 'UserDto',
     });
-    const users = await collection.find({}).toArray();
+    const users = await collection.find({ type: 'UserDto' }).toArray();
 
     return new Response(JSON.stringify(users), {
       headers: { 'content-type': 'application/json' },
