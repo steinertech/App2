@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import App from './App.tsx';
 import About from './About.tsx';
 import Debug from './Debug.tsx';
+import UserRegister from './UserRegister.tsx';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -12,6 +13,7 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/" element={<App />} />
         <Route path="/about" element={<About />} />
         <Route path="/debug" element={<Debug />} />
+        <Route path="/user-register" element={<UserRegister />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>
