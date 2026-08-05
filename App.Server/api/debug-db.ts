@@ -1,11 +1,11 @@
 import client from '../util-db';
 import { UserDto } from '../dto/UserDto';
-import { domainName } from '../util';
+import { domainName, corsHeaders } from '../util';
 
 export default {
   async fetch(request: Request): Promise<Response> {
     if (request.method === 'OPTIONS') {
-      return new Response(null, { status: 204 });
+      return new Response(null, { status: 204, headers: corsHeaders(request) });
     }
 
     const collection = client.db().collection<UserDto>('myCollection');
@@ -20,7 +20,7 @@ export default {
     const users = await collection.find({ type: 'UserDto' }).toArray();
 
     return new Response(JSON.stringify(users), {
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json', ...corsHeaders(request) },
     });
   },
 };

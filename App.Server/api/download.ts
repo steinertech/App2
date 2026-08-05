@@ -1,10 +1,15 @@
 import { download } from '../util-blob';
+import { corsHeaders } from '../util';
 
 export default {
   async fetch(request: Request): Promise<Response> {
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { status: 204, headers: corsHeaders(request) });
+    }
+
     const url = await download();
     return new Response(JSON.stringify({ url }), {
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json', ...corsHeaders(request) },
     });
   },
 };
