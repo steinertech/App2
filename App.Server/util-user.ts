@@ -48,11 +48,9 @@ export async function userSession(request: Request) {
     ?.slice('sessionId='.length);
 
   if (!sessionId) {
-    return { sessionId } as SessionDto;
+    return null;
   }
 
   const sessionCollection = client.db().collection<SessionDto>('myCollection');
-  const session = await sessionCollection.findOne({ sessionId, isLogin: true, type: 'SessionDto' });
-
-  return session ?? ({ sessionId } as SessionDto);
+  return sessionCollection.findOne({ sessionId, isLogin: true, type: 'SessionDto' });
 }
