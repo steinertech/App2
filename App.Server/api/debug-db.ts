@@ -4,6 +4,10 @@ import { domainName } from '../util';
 
 export default {
   async fetch(request: Request): Promise<Response> {
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { status: 204 });
+    }
+
     const collection = client.db().collection<UserDto>('User');
 
     const { email } = await request.json();
