@@ -1,9 +1,9 @@
 import client from '../util-db';
-import { User } from '../dto/User';
+import { UserDto } from '../dto/UserDto';
 
 export default {
   async fetch(request: Request): Promise<Response> {
-    const collection = client.db().collection<User>('User');
+    const collection = client.db().collection<UserDto>('User');
 
     await collection.insertOne({ email: 'debug@debug.debug' });
     const users = await collection.find({}).toArray();
