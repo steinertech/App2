@@ -38,3 +38,19 @@ export async function userLogin(request: Request, email: string, password: strin
 
   return sessionId;
 }
+
+export async function userSession(request: Request) {
+  const cookieHeader = request.headers.get('cookie') ?? '';
+  const sessionId = cookieHeader
+    .split(';')
+    .map((cookie) => cookie.trim())
+    .find((cookie) => cookie.startsWith('sessionId='))
+    ?.slice('sessionId='.length);
+
+  if (!sessionId) {
+    return null;
+  }
+
+  const sessionCollection = client.db().collection<SessionDto>('myCollection');
+  return sessionCollection.findOne({ sessionId, isLogin: true, type: 'SessionDto' });
+}
