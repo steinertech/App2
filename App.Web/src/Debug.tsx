@@ -20,6 +20,16 @@ export default function Debug() {
     }
   };
 
+  const handleUploadClick = async () => {
+    try {
+      const response = await fetch(`${apiUrl}upload`);
+      const data = await response.json();
+      setResult(JSON.stringify(data, null, 2));
+    } catch {
+      setResult('Error fetching upload');
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
       <Nav />
@@ -46,6 +56,12 @@ export default function Debug() {
           style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer' }}
         >
           DebugDb
+        </button>
+        <button
+          onClick={handleUploadClick}
+          style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer', marginTop: '8px' }}
+        >
+          Upload
         </button>
         <label style={{ whiteSpace: 'pre-wrap', marginTop: '16px' }}>{result}</label>
       </div>
