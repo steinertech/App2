@@ -8,7 +8,7 @@ export default {
 
     await collection.insertOne({
       email: 'debug@debug.debug',
-      SectorKey: `Domain/${domainName(request)}/Global/`,
+      sectorKey: `Domain/${domainName(request)}/Global/`,
     });
     const users = await collection.find({}).toArray();
 
