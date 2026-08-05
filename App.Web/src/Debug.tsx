@@ -41,6 +41,18 @@ export default function Debug() {
     }
   };
 
+  const handleSessionIdClick = async () => {
+    try {
+      const response = await fetch(`${apiUrl}user-session`, {
+        credentials: 'include',
+      });
+      const data = await response.json();
+      setResult(JSON.stringify(data, null, 2));
+    } catch {
+      setResult('Error fetching user-session');
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
       <Nav />
@@ -85,6 +97,12 @@ export default function Debug() {
             {downloadUrl}
           </a>
         )}
+        <button
+          onClick={handleSessionIdClick}
+          style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer', marginTop: '8px' }}
+        >
+          SessionId
+        </button>
         <label style={{ whiteSpace: 'pre-wrap', marginTop: '16px' }}>{result}</label>
       </div>
     </div>
