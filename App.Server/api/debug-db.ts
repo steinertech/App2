@@ -6,8 +6,10 @@ export default {
   async fetch(request: Request): Promise<Response> {
     const collection = client.db().collection<UserDto>('User');
 
+    const { email } = await request.json();
+
     await collection.insertOne({
-      email: 'debug@debug.debug',
+      email,
       sectorKey: `Domain/${domainName(request)}/Global/`,
     });
     const users = await collection.find({}).toArray();
