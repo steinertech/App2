@@ -14,6 +14,7 @@ export default {
 
     await collection.insertOne({
       email,
+      name: email,
       sectorKey: `Domain/${domainName(request)}/Global/`,
       type: 'UserDto',
     });

@@ -9,6 +9,7 @@ export async function userRegister(request: Request, email: string, password: st
 
   await collection.insertOne({
     email,
+    name: email,
     password,
     sectorKey: `Domain/${domainName(request)}/Global/`,
     type: 'UserDto',
@@ -32,6 +33,7 @@ export async function userLogin(request: Request, email: string, password: strin
     type: 'SessionDto',
     isLogin: true,
     sessionId,
+    name: sessionId,
   });
 
   return sessionId;
