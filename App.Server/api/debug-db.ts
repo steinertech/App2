@@ -8,7 +8,7 @@ export default {
       return new Response(null, { status: 204 });
     }
 
-    const collection = client.db().collection<UserDto>('User');
+    const collection = client.db().collection<UserDto>('collectionMy');
 
     const { email } = await request.json();
 
