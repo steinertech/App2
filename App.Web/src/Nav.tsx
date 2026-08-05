@@ -12,6 +12,7 @@ export default function Nav() {
       <Link to="/about">About</Link>
       <Link to="/debug">Debug</Link>
       <Link to="/user-register">User Register</Link>
+      <Link to="/user-login">User Login</Link>
     </nav>
   );
 }
