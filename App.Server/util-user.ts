@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import client from './util-db';
 import { UserDto } from './dto/UserDto';
 import { SessionDto } from './dto/SessionDto';
@@ -23,7 +24,7 @@ export async function userLogin(request: Request, email: string, password: strin
   }
 
   const sessionCollection = client.db().collection<SessionDto>('myCollection');
-  const sessionId = crypto.randomUUID();
+  const sessionId = randomUUID();
 
   await sessionCollection.insertOne({
     email,
