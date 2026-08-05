@@ -1,11 +1,17 @@
 import client from '../util-db';
-import { User } from '../dto/User';
+import { UserDto } from '../dto/UserDto';
+import { domainName } from '../util';
 
 export default {
   async fetch(request: Request): Promise<Response> {
-    const collection = client.db().collection<User>('User');
+    const collection = client.db().collection<UserDto>('User');
 
-    await collection.insertOne({ email: 'debug@debug.debug' });
+    const { email } = await request.json();
+
+    await collection.insertOne({
+      email,
+      sectorKey: `Domain/${domainName(request)}/Global/`,
+    });
     const users = await collection.find({}).toArray();
 
     return new Response(JSON.stringify(users), {

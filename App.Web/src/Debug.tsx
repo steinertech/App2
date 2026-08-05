@@ -3,11 +3,16 @@ import Nav from './Nav.tsx';
 import { apiUrl } from './App.tsx';
 
 export default function Debug() {
+  const [email, setEmail] = useState('');
   const [result, setResult] = useState('');
 
   const handleDebugDbClick = async () => {
     try {
-      const response = await fetch(`${apiUrl}debug-db`);
+      const response = await fetch(`${apiUrl}debug-db`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
       const data = await response.json();
       setResult(JSON.stringify(data, null, 2));
     } catch {
@@ -27,6 +32,15 @@ export default function Debug() {
         fontFamily: 'sans-serif'
       }}>
         <h1>Debug</h1>
+        <label style={{ marginBottom: '8px' }}>
+          Email
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            style={{ marginLeft: '8px', padding: '6px', fontSize: '16px' }}
+          />
+        </label>
         <button
           onClick={handleDebugDbClick}
           style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer' }}
