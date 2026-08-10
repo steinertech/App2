@@ -23,7 +23,7 @@ export default function Debug() {
 
   const handleUploadClick = async () => {
     try {
-      const response = await fetch(`${apiUrl}upload`);
+      const response = await fetch(`${apiUrl}storage-upload`);
       const data = await response.json();
       setResult(JSON.stringify(data, null, 2));
     } catch {
@@ -33,7 +33,7 @@ export default function Debug() {
 
   const handleDownloadClick = async () => {
     try {
-      const response = await fetch(`${apiUrl}download`);
+      const response = await fetch(`${apiUrl}storage-download`);
       const data = await response.json();
       setDownloadUrl(data.url);
     } catch {

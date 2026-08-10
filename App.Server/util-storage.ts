@@ -1,7 +1,7 @@
 import { put, issueSignedToken, presignUrl } from '@vercel/blob';
 
 export async function storageUpload() {
-  const blob = await put('my/readme.txt', 'Hello World!', { access: 'private' });
+  const blob = await put('my/readme.txt', 'Hello World!', { access: 'private', allowOverwrite: true });
   return blob;
 }
 

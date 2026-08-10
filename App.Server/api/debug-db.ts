@@ -1,5 +1,5 @@
 import client from '../util-db';
-import { UserDto } from '../dto/UserDto';
+import { UserDto } from '../dto/user-dto';
 import { domainName, corsHeaders } from '../util';
 
 export default {
