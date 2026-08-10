@@ -21,7 +21,7 @@ export default {
     return new Response(JSON.stringify({ success: true }), {
       headers: {
         'content-type': 'application/json',
-        'set-cookie': `sessionId=${sessionId}; HttpOnly; Path=/; Secure; SameSite=Lax`,
+        'set-cookie': `sessionId=${sessionId}; HttpOnly; Path=/; Secure; SameSite=None`,
         ...corsHeaders(request),
       },
     });
