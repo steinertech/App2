@@ -11,8 +11,6 @@ export default function Debug() {
     try {
       const response = await fetch(`${apiUrl}debug-db`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ email }),
       });
       const data = await response.json();
       setResult(JSON.stringify(data, null, 2));
