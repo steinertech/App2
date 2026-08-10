@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Nav from './Nav.tsx';
 import { apiUrl } from './App.tsx';
 
-const VERSION_CLIENT = '1.13';
+const VERSION_CLIENT = '1.14';
 
 export default function About() {
   const [result, setResult] = useState('');
