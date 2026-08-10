@@ -24,14 +24,10 @@ export default function Debug() {
   const handleUploadClick = async () => {
     try {
       const response = await fetch(`${apiUrl}upload`);
-      if (!response.ok) {
-        setResult(`Error fetching upload: ${response.status} ${await response.text()}`);
-        return;
-      }
       const data = await response.json();
       setResult(JSON.stringify(data, null, 2));
-    } catch (error) {
-      setResult(`Error fetching upload: ${error}`);
+    } catch {
+      setResult('Error fetching upload');
     }
   };
 
