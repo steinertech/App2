@@ -1,4 +1,4 @@
-import { upload } from '../util-blob';
+import { storageUpload } from '../util-storage';
 import { corsHeaders } from '../util';
 
 export default {
@@ -7,7 +7,7 @@ export default {
       return new Response(null, { status: 204, headers: corsHeaders(request) });
     }
 
-    const blob = await upload();
+    const blob = await storageUpload();
     return new Response(JSON.stringify(blob), {
       headers: { 'content-type': 'application/json', ...corsHeaders(request) },
     });
