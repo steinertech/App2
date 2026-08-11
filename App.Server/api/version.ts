@@ -1,4 +1,4 @@
-import { domainName, VERSION_SERVER, corsHeaders } from '../util';
+import { VERSION_SERVER, corsHeaders } from '../util';
 
 export default {
   fetch(request: Request): Response {
@@ -6,8 +6,7 @@ export default {
       return new Response(null, { status: 204, headers: corsHeaders(request) });
     }
 
-    const origin = domainName(request);
-    return new Response(JSON.stringify({ version: VERSION_SERVER, origin }), {
+    return new Response(JSON.stringify({ version: VERSION_SERVER }), {
       headers: { 'content-type': 'application/json', ...corsHeaders(request) },
     });
   },
