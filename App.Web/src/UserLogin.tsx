@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { apiUrl } from './App.tsx';
+import { refreshUserSession } from './UserSession.tsx';
 
 export default function UserLogin() {
   const [email, setEmail] = useState('');
@@ -16,6 +17,9 @@ export default function UserLogin() {
       });
       const data = await response.json();
       setResult(JSON.stringify(data, null, 2));
+      if (response.ok) {
+        refreshUserSession();
+      }
     } catch {
       setResult('Error fetching user-login');
     }
