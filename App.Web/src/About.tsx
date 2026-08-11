@@ -6,14 +6,17 @@ const VERSION_CLIENT = '1.14';
 
 export default function About() {
   const [result, setResult] = useState('');
+  const [domainName, setDomainName] = useState('');
 
   const handleVersionClick = async () => {
     try {
       const response = await fetch(`${apiUrl}version`);
       const data = await response.json();
       setResult(`VersionServer=${data.version}; VersionClient=${VERSION_CLIENT};`);
+      setDomainName(data.domainName);
     } catch {
       setResult('Error fetching version');
+      setDomainName('');
     }
   };
 
@@ -31,6 +34,7 @@ export default function About() {
         <h1>About</h1>
         <div>
           <label>{result}</label>
+          {domainName && <label> ({domainName})</label>}
         </div>
         <button
           onClick={handleVersionClick}
