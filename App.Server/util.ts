@@ -1,3 +1,5 @@
+import { userSession } from './util-user';
+
 export const VERSION_SERVER = '1.14';
 
 export function domainName(request: Request): string {
@@ -8,7 +10,11 @@ export function domainName(request: Request): string {
   return 'unknown';
 }
 
-export function sectorKey(request: Request, isProject: boolean = true): string {
+export async function sectorKey(request: Request, isProject: boolean = true): Promise<string> {
+  if (isProject) {
+    const dto = await userSession(request);
+    if (!dto) throw new Error('User not logged in!');
+  }
   return 'Domain' + '/' + domainName(request) + '/' + (isProject ? 'Project' : 'Global') + '/';
 }
 
