@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import Nav from './Nav.tsx';
-import Grid, { GridColumn } from './Grid.tsx';
+import Grid, { type GridColumn } from './Grid.tsx';
 import { apiUrl } from './App.tsx';
 
 interface ProjectRow {
