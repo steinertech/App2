@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import Nav from './Nav.tsx';
 import { apiUrl } from './App.tsx';
 
 const VERSION_CLIENT = '1.14';
@@ -21,28 +20,25 @@ export default function About() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-      <Nav />
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flex: 1,
-        fontFamily: 'sans-serif'
-      }}>
-        <h1>About</h1>
-        <div>
-          <label>{result}</label>
-          {domainName && <label> ({domainName})</label>}
-        </div>
-        <button
-          onClick={handleVersionClick}
-          style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer' }}
-        >
-          Version
-        </button>
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flex: 1,
+      fontFamily: 'sans-serif'
+    }}>
+      <h1>About</h1>
+      <div>
+        <label>{result}</label>
+        {domainName && <label> ({domainName})</label>}
       </div>
+      <button
+        onClick={handleVersionClick}
+        style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer' }}
+      >
+        Version
+      </button>
     </div>
   );
 }
