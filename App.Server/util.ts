@@ -2,7 +2,10 @@ export const VERSION_SERVER = '1.14';
 
 export function domainName(request: Request): string {
   const originHeader = request.headers.get('origin');
-  return originHeader ? new URL(originHeader).hostname : 'unknown';
+  if (originHeader) return new URL(originHeader).hostname;
+  const refererHeader = request.headers.get('referer');
+  if (refererHeader) return new URL(refererHeader).hostname;
+  return 'unknown';
 }
 
 export function corsHeaders(request: Request): Record<string, string> {
