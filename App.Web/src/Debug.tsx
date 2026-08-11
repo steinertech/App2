@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import Nav from './Nav.tsx';
 import { apiUrl } from './App.tsx';
 
 export default function Debug() {
@@ -52,57 +51,54 @@ export default function Debug() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-      <Nav />
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flex: 1,
-        fontFamily: 'sans-serif'
-      }}>
-        <h1>Debug</h1>
-        <label style={{ marginBottom: '8px' }}>
-          Email
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={{ marginLeft: '8px', padding: '6px', fontSize: '16px' }}
-          />
-        </label>
-        <button
-          onClick={handleDebugDbClick}
-          style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer' }}
-        >
-          DebugDb
-        </button>
-        <button
-          onClick={handleUploadClick}
-          style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer', marginTop: '8px' }}
-        >
-          Upload
-        </button>
-        <button
-          onClick={handleDownloadClick}
-          style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer', marginTop: '8px' }}
-        >
-          Download
-        </button>
-        {downloadUrl && (
-          <a href={downloadUrl} target="_blank" rel="noreferrer" style={{ marginTop: '8px' }}>
-            {downloadUrl}
-          </a>
-        )}
-        <button
-          onClick={handleSessionIdClick}
-          style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer', marginTop: '8px' }}
-        >
-          SessionId
-        </button>
-        <label style={{ whiteSpace: 'pre-wrap', marginTop: '16px' }}>{result}</label>
-      </div>
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flex: 1,
+      fontFamily: 'sans-serif'
+    }}>
+      <h1>Debug</h1>
+      <label style={{ marginBottom: '8px' }}>
+        Email
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          style={{ marginLeft: '8px', padding: '6px', fontSize: '16px' }}
+        />
+      </label>
+      <button
+        onClick={handleDebugDbClick}
+        style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer' }}
+      >
+        DebugDb
+      </button>
+      <button
+        onClick={handleUploadClick}
+        style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer', marginTop: '8px' }}
+      >
+        Upload
+      </button>
+      <button
+        onClick={handleDownloadClick}
+        style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer', marginTop: '8px' }}
+      >
+        Download
+      </button>
+      {downloadUrl && (
+        <a href={downloadUrl} target="_blank" rel="noreferrer" style={{ marginTop: '8px' }}>
+          {downloadUrl}
+        </a>
+      )}
+      <button
+        onClick={handleSessionIdClick}
+        style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer', marginTop: '8px' }}
+      >
+        SessionId
+      </button>
+      <label style={{ whiteSpace: 'pre-wrap', marginTop: '16px' }}>{result}</label>
     </div>
   );
 }
