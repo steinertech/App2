@@ -54,3 +54,14 @@ export async function userSession(request: Request) {
   const sessionCollection = client.db().collection<SessionDto>('myCollection');
   return sessionCollection.findOne({ sessionId, isLogin: true, type: 'SessionDto' });
 }
+
+export async function userLogout(request: Request) {
+  const dto = await userSession(request);
+  if (dto) {
+    dto.isLogin = false;
+    const sessionCollection = client.db().collection<SessionDto>('myCollection');
+    await sessionCollection.updateOne({ _id: dto._id }, { $set: { isLogin: false } });
+  }
+
+  return dto;
+}
