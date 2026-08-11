@@ -9,7 +9,7 @@ export function domainName(request: Request): string {
 }
 
 export function sectorKey(request: Request, isProject: boolean = true): string {
-  return 'Domain' + '/' + domainName(request) + '/' + (isProject ? 'Project' : 'Global');
+  return 'Domain' + '/' + domainName(request) + '/' + (isProject ? 'Project' : 'Global') + '/';
 }
 
 export function corsHeaders(request: Request): Record<string, string> {
