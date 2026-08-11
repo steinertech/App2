@@ -1,3 +1,5 @@
+import { userSession } from './util-user';
+
 export const VERSION_SERVER = '1.14';
 
 export function domainName(request: Request): string {
@@ -6,6 +8,14 @@ export function domainName(request: Request): string {
   const refererHeader = request.headers.get('referer');
   if (refererHeader) return new URL(refererHeader).hostname;
   return 'unknown';
+}
+
+export async function sectorKey(request: Request, isProject: boolean = true): Promise<string> {
+  if (isProject) {
+    const dto = await userSession(request);
+    if (!dto) throw new Error('User not logged in!');
+  }
+  return 'Domain' + '/' + domainName(request) + '/' + (isProject ? 'Project' : 'Global') + '/';
 }
 
 export function corsHeaders(request: Request): Record<string, string> {
