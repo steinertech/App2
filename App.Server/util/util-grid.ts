@@ -1,15 +1,25 @@
 import { GridDto, GridRowDto } from '../dto/grid-dto';
 import { projects as fetchProjects } from './util-project';
+import { users } from './util-user';
 
 export async function gridLoad(request: Request, gridDto: GridDto): Promise<GridDto> {
   if (gridDto.gridName === 'project') {
     const projects = await fetchProjects(request);
-    const gridRows: GridRowDto[] = projects.map((project) => ({
+    const projectGridRows: GridRowDto[] = projects.map((project) => ({
       gridCells: [{ text: project.name }, { text: project.sectorKey }],
     }));
+
+    const userList = await users(request);
+    const userGridRows: GridRowDto[] = userList.map((user) => ({
+      gridCells: [{ text: user.email }, { text: user.sectorKey }],
+    }));
+
     return {
       ...gridDto,
-      gridAreas: { main: { text: 'Project Data', gridRows } },
+      gridAreas: {
+        main: { text: 'Project Data', gridRows: projectGridRows },
+        user: { text: 'User Data', gridRows: userGridRows },
+      },
     };
   }
 
