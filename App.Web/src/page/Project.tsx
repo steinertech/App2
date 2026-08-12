@@ -16,6 +16,7 @@ export default function Project() {
     }}>
       <h1>Project</h1>
       <Grid grid={grid} gridAreaName="main" />
+      <Grid grid={grid} gridAreaName="user" />
     </div>
   );
 }
