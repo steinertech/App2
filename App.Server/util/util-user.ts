@@ -2,7 +2,7 @@ import { randomUUID } from 'crypto';
 import client from './util-db';
 import { UserDto } from '../dto/user-dto';
 import { SessionDto } from '../dto/session-dto';
-import { domainName } from './util';
+import { domainName } from './util-main';
 
 export async function userRegister(request: Request, email: string, password: string) {
   const collection = client.db().collection<UserDto>('myCollection');

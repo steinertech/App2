@@ -1,5 +1,5 @@
 import { projectList } from '../util/util-project';
-import { corsHeaders } from '../util/util';
+import { corsHeaders } from '../util/util-main';
 
 export default {
   async fetch(request: Request): Promise<Response> {
