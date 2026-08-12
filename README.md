@@ -13,7 +13,17 @@ SPA Application
 - Domain/my.com/Global/ (User, Project)
 - Domain/my.com/Project/mystore1/ (File)
 
-Flag IsProject if true access with login only.
+Note: Flag IsProject if true, access with login only.
+
+# Tech Stack
+App.Server
+- TypeScript
+- Vercel Serverless Functions
+
+App.Web
+- TypeScript
+- React
+- Vite (Build)
 
 # Links
 - https://claude.ai/code (AI)
@@ -26,3 +36,4 @@ Flag IsProject if true access with login only.
 - Folder App.Server/util [Done]
 - Folder App.Web/src/page/ [Done]
 - SectorKey find all "Domain" [Done]
+- CORS util-main.ts corsHeaders
