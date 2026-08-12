@@ -3,10 +3,10 @@ import { Grid as GridModel, type GridDto } from './util/util-grid.ts';
 
 interface GridProps {
   grid: GridModel;
-  gridAreaIndex: number;
+  gridAreaName: string;
 }
 
-export default function Grid({ grid, gridAreaIndex }: GridProps) {
+export default function Grid({ grid, gridAreaName }: GridProps) {
   const [gridDto, setGridDto] = useState<GridDto>(grid.gridDto);
 
   useEffect(() => {
@@ -15,7 +15,7 @@ export default function Grid({ grid, gridAreaIndex }: GridProps) {
     })();
   }, [grid]);
 
-  const gridRows = gridDto.gridAreas?.[gridAreaIndex]?.gridRows ?? [];
+  const gridRows = gridDto.gridAreas?.[gridAreaName]?.gridRows ?? [];
 
   return (
     <table style={{ borderCollapse: 'collapse', fontFamily: 'sans-serif' }}>

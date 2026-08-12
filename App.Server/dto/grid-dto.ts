@@ -12,5 +12,5 @@ export interface GridAreaDto {
 
 export interface GridDto {
   gridName?: string;
-  gridAreas?: GridAreaDto[];
+  gridAreas?: { [gridAreaName: string]: GridAreaDto };
 }
