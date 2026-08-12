@@ -15,21 +15,25 @@ export default function Grid({ grid, gridAreaName }: GridProps) {
     })();
   }, [grid]);
 
-  const gridRows = gridDto.gridAreas?.[gridAreaName]?.gridRows ?? [];
+  const gridArea = gridDto.gridAreas?.[gridAreaName];
+  const gridRows = gridArea?.gridRows ?? [];
 
   return (
-    <table style={{ borderCollapse: 'collapse', fontFamily: 'sans-serif' }}>
-      <tbody>
-        {gridRows.map((gridRow, rowIndex) => (
-          <tr key={rowIndex}>
-            {(gridRow.gridCells ?? []).map((gridCell, cellIndex) => (
-              <td key={cellIndex} style={{ border: '1px solid #ccc', padding: '8px' }}>
-                {gridCell.text}
-              </td>
-            ))}
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <div>
+      <h1>{gridArea?.text}</h1>
+      <table style={{ borderCollapse: 'collapse', fontFamily: 'sans-serif' }}>
+        <tbody>
+          {gridRows.map((gridRow, rowIndex) => (
+            <tr key={rowIndex}>
+              {(gridRow.gridCells ?? []).map((gridCell, cellIndex) => (
+                <td key={cellIndex} style={{ border: '1px solid #ccc', padding: '8px' }}>
+                  {gridCell.text}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

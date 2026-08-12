@@ -7,6 +7,7 @@ export interface GridRowDto {
 }
 
 export interface GridAreaDto {
+  text?: string;
   gridRows?: GridRowDto[];
 }
 

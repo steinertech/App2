@@ -9,7 +9,7 @@ export async function gridLoad(request: Request, gridDto: GridDto): Promise<Grid
     }));
     return {
       ...gridDto,
-      gridAreas: { main: { gridRows } },
+      gridAreas: { main: { text: 'Project Data', gridRows } },
     };
   }
 
@@ -18,6 +18,7 @@ export async function gridLoad(request: Request, gridDto: GridDto): Promise<Grid
       ...gridDto,
       gridAreas: {
         main: {
+          text: 'Hello World Data',
           gridRows: [
             { gridCells: [{ text: '1' }, { text: 'Hello' }] },
             { gridCells: [{ text: '2' }, { text: 'World' }] },
