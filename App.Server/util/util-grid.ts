@@ -1,9 +1,9 @@
 import { GridDto, GridRowDto } from '../dto/grid-dto';
-import { projectList } from './util-project';
+import { projects as fetchProjects } from './util-project';
 
 export async function gridLoad(request: Request, gridDto: GridDto): Promise<GridDto> {
   if (gridDto.gridName === 'project') {
-    const projects = await projectList(request);
+    const projects = await fetchProjects(request);
     const gridRows: GridRowDto[] = projects.map((project) => ({
       gridCells: [{ text: project.name }, { text: project.sectorKey }],
     }));
