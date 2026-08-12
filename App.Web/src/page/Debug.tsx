@@ -50,6 +50,20 @@ export default function Debug() {
     }
   };
 
+  const handleGridClick = async () => {
+    try {
+      const response = await fetch(`${apiUrl}grid`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ gridName: 'Project' }),
+      });
+      const data = await response.json();
+      setResult(JSON.stringify(data, null, 2));
+    } catch {
+      setResult('Error fetching grid');
+    }
+  };
+
   return (
     <div style={{
       display: 'flex',
@@ -97,6 +111,12 @@ export default function Debug() {
         style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer', marginTop: '8px' }}
       >
         SessionId
+      </button>
+      <button
+        onClick={handleGridClick}
+        style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer', marginTop: '8px' }}
+      >
+        Grid
       </button>
       <label style={{ whiteSpace: 'pre-wrap', marginTop: '16px' }}>{result}</label>
     </div>
