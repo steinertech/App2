@@ -1,20 +1,11 @@
-import { useEffect, useState } from 'react';
-import { Grid as GridModel, type GridDto } from './util/util-grid.ts';
+import type { GridDto } from './util/util-grid.ts';
 
 interface GridProps {
-  grid: GridModel;
+  gridDto: GridDto;
   gridAreaName: string;
 }
 
-export default function Grid({ grid, gridAreaName }: GridProps) {
-  const [gridDto, setGridDto] = useState<GridDto>(grid.gridDto);
-
-  useEffect(() => {
-    (async () => {
-      setGridDto(await grid.load());
-    })();
-  }, [grid]);
-
+export default function Grid({ gridDto, gridAreaName }: GridProps) {
   const gridArea = gridDto.gridAreas?.[gridAreaName];
   const gridRows = gridArea?.gridRows ?? [];
 
