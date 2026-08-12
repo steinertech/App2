@@ -1,13 +1,20 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { apiUrl } from './App.tsx';
 import Grid from '../Grid.tsx';
-import { Grid as GridModel } from '../util/util-grid.ts';
+import { Grid as GridModel, type GridDto } from '../util/util-grid.ts';
 
 export default function Debug() {
   const [email, setEmail] = useState('');
   const [result, setResult] = useState('');
   const [downloadUrl, setDownloadUrl] = useState('');
   const [grid] = useState(() => new GridModel('project'));
+  const [gridDto, setGridDto] = useState<GridDto>(grid.gridDto);
+
+  useEffect(() => {
+    (async () => {
+      setGridDto(await grid.load());
+    })();
+  }, [grid]);
 
   const handleDebugDbClick = async () => {
     try {
@@ -123,7 +130,7 @@ export default function Debug() {
       </button>
       <label style={{ whiteSpace: 'pre-wrap', marginTop: '16px' }}>{result}</label>
       <div style={{ marginTop: '16px' }}>
-        <Grid grid={grid} gridAreaName="main" />
+        <Grid gridDto={gridDto} gridAreaName="main" />
       </div>
     </div>
   );
