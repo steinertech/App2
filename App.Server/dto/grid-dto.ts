@@ -7,7 +7,6 @@ export interface GridStateDto {
 }
 
 export interface GridDto {
-  name?: string;
   gridRows?: GridCellDto[];
   gridState?: GridStateDto;
 }
