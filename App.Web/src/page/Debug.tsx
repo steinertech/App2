@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { apiUrl } from './App.tsx';
+import Grid2 from '../Grid2.tsx';
+import { Grid } from '../util/util-grid.ts';
 
 export default function Debug() {
   const [email, setEmail] = useState('');
   const [result, setResult] = useState('');
   const [downloadUrl, setDownloadUrl] = useState('');
+  const [grid] = useState(() => new Grid('project'));
 
   const handleDebugDbClick = async () => {
     try {
@@ -119,6 +122,9 @@ export default function Debug() {
         Grid
       </button>
       <label style={{ whiteSpace: 'pre-wrap', marginTop: '16px' }}>{result}</label>
+      <div style={{ marginTop: '16px' }}>
+        <Grid2 grid={grid} gridAreaIndex={0} />
+      </div>
     </div>
   );
 }

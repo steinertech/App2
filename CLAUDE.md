@@ -50,7 +50,7 @@ Shared logic lives in `App.Server/util/` (not directly in `api/`):
 - `util-project.ts` — project queries
 - `util-storage.ts` — blob upload/download via `@vercel/blob`
 
-DTOs (in `App.Server/dto/`) are plain interfaces, not classes.
+DTOs (in `App.Server/dto/`) are plain interfaces, not classes. `App.Web` and `App.Server` share the same git repo, so DTOs that don't carry Node-only fields (no `ObjectId`) are imported directly by `App.Web` via a relative path (`import type { GridDto } from '../../../App.Server/dto/grid-dto.ts'`) instead of being duplicated. DTOs carrying `ObjectId` (`ProjectDto`, `SessionDto`, `UserDto`) aren't import-compatible as-is — `ObjectId` isn't installed in `App.Web` and serializes to a plain string over JSON anyway — so those still need a client-side derived/subset type (see `Project.tsx`'s `ProjectRow`).
 
 ### Single-collection MongoDB pattern
 All DTOs (`UserDto`, `SessionDto`, `ProjectDto`, ...) are stored in one MongoDB collection (`'myCollection'`), disambiguated by a `type` field (e.g. `type: 'UserDto'`) and scoped by a `sectorKey` field. Adding a new entity means adding a new DTO interface plus a `type` discriminator, not a new collection.
