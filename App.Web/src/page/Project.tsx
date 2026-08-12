@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import Grid, { type GridColumn } from './Grid.tsx';
+import Grid, { type GridColumn } from '../Grid.tsx';
 import { apiUrl } from './App.tsx';
 
 interface ProjectRow {

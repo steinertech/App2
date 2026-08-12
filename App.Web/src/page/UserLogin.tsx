@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { apiUrl } from './App.tsx';
-import { refreshUserSession } from './UserSession.tsx';
+import { refreshUserSession } from '../UserSession.tsx';
 
 export default function UserLogin() {
   const [email, setEmail] = useState('');

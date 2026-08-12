@@ -2,13 +2,13 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Layout from './Layout.tsx';
-import App from './App.tsx';
-import About from './About.tsx';
-import Debug from './Debug.tsx';
-import UserRegister from './UserRegister.tsx';
-import UserLogin from './UserLogin.tsx';
-import UserLogout from './UserLogout.tsx';
-import Project from './Project.tsx';
+import App from './page/App.tsx';
+import About from './page/About.tsx';
+import Debug from './page/Debug.tsx';
+import UserRegister from './page/UserRegister.tsx';
+import UserLogin from './page/UserLogin.tsx';
+import UserLogout from './page/UserLogout.tsx';
+import Project from './page/Project.tsx';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
