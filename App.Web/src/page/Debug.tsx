@@ -123,7 +123,7 @@ export default function Debug() {
       </button>
       <label style={{ whiteSpace: 'pre-wrap', marginTop: '16px' }}>{result}</label>
       <div style={{ marginTop: '16px' }}>
-        <Grid2 grid={grid} areaIndex={0} />
+        <Grid2 grid={grid} gridAreaIndex={0} />
       </div>
     </div>
   );
