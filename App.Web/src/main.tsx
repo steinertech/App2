@@ -8,6 +8,7 @@ import Debug from './page/Debug.tsx';
 import UserRegister from './page/UserRegister.tsx';
 import UserLogin from './page/UserLogin.tsx';
 import UserLogout from './page/UserLogout.tsx';
+import Project from './page/Project.tsx';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -20,6 +21,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/user-register" element={<UserRegister />} />
           <Route path="/user-login" element={<UserLogin />} />
           <Route path="/user-logout" element={<UserLogout />} />
+          <Route path="/project" element={<Project />} />
         </Route>
       </Routes>
     </BrowserRouter>
