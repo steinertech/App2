@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { apiUrl } from './App.tsx';
+import { apiUrl } from './page/App.tsx';
 
 const REFRESH_EVENT = 'user-session-refresh';
 
