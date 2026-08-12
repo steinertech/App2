@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { apiUrl } from './App.tsx';
-
-const VERSION_CLIENT = '1.14';
+import { VERSION_CLIENT } from '../util/util-main.ts';
 
 export default function About() {
   const [result, setResult] = useState('');
