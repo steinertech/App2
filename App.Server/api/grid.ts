@@ -9,7 +9,7 @@ export default {
 
     const gridDto = await request.json();
 
-    const grid = gridLoad(request, gridDto);
+    const grid = await gridLoad(request, gridDto);
 
     return new Response(JSON.stringify(grid), {
       headers: { 'content-type': 'application/json', ...corsHeaders(request) },
