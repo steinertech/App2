@@ -7,6 +7,6 @@ export interface GridRowDto {
 }
 
 export interface GridDto {
-  name?: string;
+  gridName?: string;
   gridRows?: GridRowDto[];
 }
