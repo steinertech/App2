@@ -13,7 +13,7 @@ SPA Application
 - Domain/my.com/Global/ (User, Project)
 - Domain/my.com/Project/mystore1/ (File)
 
-Flag IsProject
+Flag IsProject if true access with login only.
 
 # Links
 - https://claude.ai/code (AI)
@@ -25,4 +25,4 @@ Flag IsProject
 # TODO
 - Folder App.Server/util [Done]
 - Folder App.Web/src/page/ [Done]
-- SectorKey find all "Domain"
+- SectorKey find all "Domain" [Done]
