@@ -1,4 +1,4 @@
-import { VERSION_SERVER, corsHeaders } from '../util';
+import { VERSION_SERVER, corsHeaders } from '../util/util';
 
 export default {
   fetch(request: Request): Response {
