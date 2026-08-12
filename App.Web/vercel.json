@@ -1,4 +1,9 @@
 {
+  "git": {
+    "deploymentEnabled": {
+      "main": true
+    }
+  },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "https://app2-kappa-roan.vercel.app/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
