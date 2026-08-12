@@ -3,7 +3,7 @@ export interface GridCellDto {
 }
 
 export interface GridRowDto {
-  cells?: GridCellDto[];
+  gridCells?: GridCellDto[];
 }
 
 export interface GridDto {

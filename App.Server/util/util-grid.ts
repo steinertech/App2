@@ -4,8 +4,8 @@ export function gridLoad(request: Request, gridDto: GridDto): GridDto {
   return {
     ...gridDto,
     gridRows: [
-      { cells: [{ text: '1' }, { text: 'Hello' }] },
-      { cells: [{ text: '2' }, { text: 'World' }] },
+      { gridCells: [{ text: '1' }, { text: 'Hello' }] },
+      { gridCells: [{ text: '2' }, { text: 'World' }] },
     ],
   };
 }
