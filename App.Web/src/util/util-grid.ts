@@ -1,21 +1,7 @@
 import { apiUrl } from '../page/App.tsx';
+import type { GridDto } from '../../../App.Server/dto/grid-dto.ts';
 
-export interface GridCellDto {
-  text?: string;
-}
-
-export interface GridRowDto {
-  gridCells?: GridCellDto[];
-}
-
-export interface GridAreaDto {
-  gridRows?: GridRowDto[];
-}
-
-export interface GridDto {
-  gridName?: string;
-  gridAreas?: GridAreaDto[];
-}
+export type { GridDto };
 
 export class Grid {
   gridName: string;
