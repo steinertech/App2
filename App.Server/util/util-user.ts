@@ -2,7 +2,7 @@ import { randomUUID } from 'crypto';
 import client from './util-db';
 import { UserDto } from '../dto/user-dto';
 import { SessionDto } from '../dto/session-dto';
-import { domainName } from './util-main';
+import { sectorKey } from './util-main';
 
 export async function userRegister(request: Request, email: string, password: string) {
   const collection = client.db().collection<UserDto>('myCollection');
@@ -11,7 +11,7 @@ export async function userRegister(request: Request, email: string, password: st
     email,
     name: email,
     password,
-    sectorKey: `Domain/${domainName(request)}/Global/`,
+    sectorKey: await sectorKey(request, false),
     type: 'UserDto',
   });
 }
@@ -29,7 +29,7 @@ export async function userLogin(request: Request, email: string, password: strin
 
   await sessionCollection.insertOne({
     email,
-    sectorKey: `Domain/${domainName(request)}/Global/`,
+    sectorKey: await sectorKey(request, false),
     type: 'SessionDto',
     isLogin: true,
     sessionId,
