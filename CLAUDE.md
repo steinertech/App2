@@ -65,6 +65,6 @@ Always build sector keys through `sectorKey(...)` rather than constructing the `
 Login (`api/user-login.ts` → `userLogin`) sets an httpOnly `sessionId` cookie. `userSession(request)` (in `util-user.ts`) reads that cookie and looks up the matching `SessionDto` with `isLogin: true`. `userLogout` flips `isLogin` to `false` rather than deleting the session document.
 
 ### App.Web routing and page structure
-`App.Web/src/main.tsx` defines all routes with `react-router-dom`'s `<Routes>`/`<Route>`, wrapped in a shared `<Layout>` (`Nav` + `UserSession` bar + `<Outlet>`). Any component mounted at a route `path` lives in `App.Web/src/page/`; shared/non-routed components (`Layout.tsx`, `Nav.tsx`, `Grid2.tsx`, `UserSession.tsx`) stay directly in `App.Web/src/`. `apiUrl` (the `/api/` prefix used for all backend calls) is exported from `src/page/App.tsx`.
+`App.Web/src/main.tsx` defines all routes with `react-router-dom`'s `<Routes>`/`<Route>`, wrapped in a shared `<Layout>` (`Nav` + `UserSession` bar + `<Outlet>`). Any component mounted at a route `path` lives in `App.Web/src/page/`; shared/non-routed components (`Layout.tsx`, `Nav.tsx`, `Grid.tsx`, `UserSession.tsx`) stay directly in `App.Web/src/`. `apiUrl` (the `/api/` prefix used for all backend calls) is exported from `src/page/App.tsx`.
 
 `UserSession.tsx` polls `/api/user-session` on mount and exposes `refreshUserSession()`, which dispatches a window event other components (e.g. after login/logout) use to force it to re-fetch.

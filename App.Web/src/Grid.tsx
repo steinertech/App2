@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Grid, type GridDto } from './util/util-grid.ts';
+import { Grid as GridModel, type GridDto } from './util/util-grid.ts';
 
-interface Grid2Props {
-  grid: Grid;
+interface GridProps {
+  grid: GridModel;
   gridAreaIndex: number;
 }
 
-export default function Grid2({ grid, gridAreaIndex }: Grid2Props) {
+export default function Grid({ grid, gridAreaIndex }: GridProps) {
   const [gridDto, setGridDto] = useState<GridDto>(grid.gridDto);
 
   useEffect(() => {
