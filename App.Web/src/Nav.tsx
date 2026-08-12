@@ -15,6 +15,7 @@ export default function Nav() {
       <Link to="/user-login">User Login</Link>
       <Link to="/user-logout">User Logout</Link>
       <Link to="/project">Project</Link>
+      <Link to="/storage">Storage</Link>
     </nav>
   );
 }

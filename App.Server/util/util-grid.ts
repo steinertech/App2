@@ -1,6 +1,7 @@
 import { GridDto, GridRowDto } from '../dto/grid-dto';
 import { projects as fetchProjects } from './util-project';
 import { users } from './util-user';
+import { storageFiles } from './util-storage';
 
 export async function gridLoad(request: Request, gridDto: GridDto): Promise<GridDto> {
   if (gridDto.gridName === 'project') {
@@ -20,6 +21,18 @@ export async function gridLoad(request: Request, gridDto: GridDto): Promise<Grid
         main: { text: 'Project Data', gridRows: projectGridRows },
         user: { text: 'User Data', gridRows: userGridRows },
       },
+    };
+  }
+
+  if (gridDto.gridName === 'storage') {
+    const files = await storageFiles(request);
+    const gridRows: GridRowDto[] = files.map((file) => ({
+      gridCells: [{ text: file.fileNameOnly }, { text: file.isFolder ? 'Folder' : 'File' }],
+    }));
+
+    return {
+      ...gridDto,
+      gridAreas: { main: { text: 'Storage Data', gridRows } },
     };
   }
 
