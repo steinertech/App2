@@ -1,5 +1,5 @@
-import { userRegister } from '../util-user';
-import { corsHeaders } from '../util';
+import { userRegister } from '../util/util-user';
+import { corsHeaders } from '../util/util-main';
 
 export default {
   async fetch(request: Request): Promise<Response> {
