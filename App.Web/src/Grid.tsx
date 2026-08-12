@@ -1,34 +1,30 @@
-export interface GridColumn<T> {
-  key: keyof T;
-  label: string;
+import { useEffect, useState } from 'react';
+import { Grid as GridModel, type GridDto } from './util/util-grid.ts';
+
+interface GridProps {
+  grid: GridModel;
+  gridAreaIndex: number;
 }
 
-interface GridProps<T> {
-  columns: GridColumn<T>[];
-  rows: T[];
-}
+export default function Grid({ grid, gridAreaIndex }: GridProps) {
+  const [gridDto, setGridDto] = useState<GridDto>(grid.gridDto);
 
-export default function Grid<T extends object>({ columns, rows }: GridProps<T>) {
+  useEffect(() => {
+    (async () => {
+      setGridDto(await grid.load());
+    })();
+  }, [grid]);
+
+  const gridRows = gridDto.gridAreas?.[gridAreaIndex]?.gridRows ?? [];
+
   return (
     <table style={{ borderCollapse: 'collapse', fontFamily: 'sans-serif' }}>
-      <thead>
-        <tr>
-          {columns.map((column) => (
-            <th
-              key={String(column.key)}
-              style={{ border: '1px solid #ccc', padding: '8px', textAlign: 'left' }}
-            >
-              {column.label}
-            </th>
-          ))}
-        </tr>
-      </thead>
       <tbody>
-        {rows.map((row, index) => (
-          <tr key={index}>
-            {columns.map((column) => (
-              <td key={String(column.key)} style={{ border: '1px solid #ccc', padding: '8px' }}>
-                {String(row[column.key] ?? '')}
+        {gridRows.map((gridRow, rowIndex) => (
+          <tr key={rowIndex}>
+            {(gridRow.gridCells ?? []).map((gridCell, cellIndex) => (
+              <td key={cellIndex} style={{ border: '1px solid #ccc', padding: '8px' }}>
+                {gridCell.text}
               </td>
             ))}
           </tr>
