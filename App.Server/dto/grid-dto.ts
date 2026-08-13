@@ -1,23 +1,16 @@
-export enum GridCellEnum {
-  None = 0,
-  Text = 1,
-  Header = 2,
-  Custom = 3,
-}
-
-export enum GridCustomEnum {
-  None = 0,
-  Button = 1,
-}
-
 export interface GridCustomDto {
-  gridCustomEnum?: GridCustomEnum;
+  // GridCustomEnum value (see grid-cell-enum.ts). Typed as number, not
+  // GridCustomEnum, because App.Web imports this file directly, App.Server
+  // has no build step and isn't an ES module, and tsc can't validate a real
+  // enum's runtime export syntax coming from a non-ES-module file.
+  gridCustomEnum?: number;
   text?: string;
   name?: string;
 }
 
 export interface GridCellDto {
-  gridCellEnum?: GridCellEnum;
+  // GridCellEnum value (see grid-cell-enum.ts). See gridCustomEnum above.
+  gridCellEnum?: number;
   gridCustoms?: GridCustomDto[];
   text?: string;
 }

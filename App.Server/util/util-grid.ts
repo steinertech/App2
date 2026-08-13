@@ -1,4 +1,5 @@
-import { GridCellEnum, GridDto, GridRowDto } from '../dto/grid-dto';
+import { GridDto, GridRowDto } from '../dto/grid-dto';
+import { GridCellEnum } from '../dto/grid-cell-enum';
 import { projects as fetchProjects } from './util-project';
 import { users } from './util-user';
 import { storageFiles } from './util-storage';
