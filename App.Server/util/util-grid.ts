@@ -27,7 +27,11 @@ export async function gridLoad(request: Request, gridDto: GridDto): Promise<Grid
   if (gridDto.gridName === 'storage') {
     const files = await storageFiles(request);
     const gridRows: GridRowDto[] = files.map((file) => ({
-      gridCells: [{ text: file.fileNameOnly }, { text: file.isFolder ? 'Folder' : 'File' }],
+      gridCells: [
+        { text: file.fileName },
+        { text: file.fileNameOnly },
+        { text: file.isFolder ? 'true' : 'false' },
+      ],
     }));
 
     return {
