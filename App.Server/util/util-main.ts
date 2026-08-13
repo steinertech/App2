@@ -1,4 +1,4 @@
-import { userSession } from './util-user';
+import { userSession } from './util-user.ts';
 
 export const VERSION_SERVER = '1.15';
 

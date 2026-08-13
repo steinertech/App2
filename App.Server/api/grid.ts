@@ -1,5 +1,5 @@
-import { gridLoad } from '../util/util-grid';
-import { corsHeaders } from '../util/util-main';
+import { gridLoad } from '../util/util-grid.ts';
+import { corsHeaders } from '../util/util-main.ts';
 
 export default {
   async fetch(request: Request): Promise<Response> {

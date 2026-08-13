@@ -1,8 +1,8 @@
 import { randomUUID } from 'crypto';
-import client from './util-db';
-import { UserDto } from '../dto/user-dto';
-import { SessionDto } from '../dto/session-dto';
-import { sectorKey } from './util-main';
+import client from './util-db.ts';
+import { UserDto } from '../dto/user-dto.ts';
+import { SessionDto } from '../dto/session-dto.ts';
+import { sectorKey } from './util-main.ts';
 
 export async function userRegister(request: Request, email: string, password: string) {
   const collection = client.db().collection<UserDto>('myCollection');

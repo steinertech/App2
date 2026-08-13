@@ -1,5 +1,5 @@
-import { userSession } from '../util/util-user';
-import { corsHeaders } from '../util/util-main';
+import { userSession } from '../util/util-user.ts';
+import { corsHeaders } from '../util/util-main.ts';
 
 export default {
   async fetch(request: Request): Promise<Response> {

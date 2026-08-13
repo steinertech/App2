@@ -1,8 +1,7 @@
-import { GridDto, GridRowDto } from '../dto/grid-dto';
-import { GridCellEnum } from '../dto/grid-cell-enum';
-import { projects as fetchProjects } from './util-project';
-import { users } from './util-user';
-import { storageFiles } from './util-storage';
+import { GridCellEnum, GridDto, GridRowDto } from '../dto/grid-dto.ts';
+import { projects as fetchProjects } from './util-project.ts';
+import { users } from './util-user.ts';
+import { storageFiles } from './util-storage.ts';
 
 export async function gridLoad(request: Request, gridDto: GridDto): Promise<GridDto> {
   if (gridDto.gridName === 'project') {

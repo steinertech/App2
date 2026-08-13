@@ -35,7 +35,7 @@ There is no test suite or linter configured in this repository.
 - `App.Web/vercel.json` rewrites `/api/*` to the deployed `App.Server` URL, and everything else to `/index.html` (SPA fallback).
 - `App.Server/vercel.json` rewrites `/` to `/api`.
 
-Vite only builds `App.Web`; `App.Server` has no build step.
+Vite only builds `App.Web`; `App.Server` has no build step. `App.Server/package.json` declares `"type": "module"`, and every relative import in `App.Server` uses an explicit `.ts` extension (e.g. `from '../util/util-main.ts'`) — Vercel runs these files as-is with Node's own ESM resolver, which (unlike CommonJS) never guesses file extensions, so an extensionless relative import fails at runtime with `ERR_MODULE_NOT_FOUND`. Any new file added under `App.Server` must follow this convention.
 
 ### App.Server endpoint pattern
 Every file in `App.Server/api/` is a standalone Vercel function exporting `{ fetch(request: Request) }`, mapped by filename to `/api/<filename>` (e.g. `api/user-login.ts` → `/api/user-login`). Each handler:
@@ -49,9 +49,7 @@ Shared logic lives in `App.Server/util/` (not directly in `api/`):
 - `util-user.ts` — user register/login/session/logout
 - `util-storage.ts` — blob upload/download via `@vercel/blob`
 
-DTOs (in `App.Server/dto/`) are plain interfaces, not classes. `App.Web` and `App.Server` share the same git repo, so DTOs that don't carry Node-only fields (no `ObjectId`) are imported directly by `App.Web` via a relative path (`import type { GridDto } from '../../../App.Server/dto/grid-dto.ts'`) instead of being duplicated. DTOs carrying `ObjectId` (`ProjectDto`, `SessionDto`, `UserDto`) aren't import-compatible as-is — `ObjectId` isn't installed in `App.Web` and serializes to a plain string over JSON anyway — so those still need a client-side derived/subset type.
-
-**Never add a real (value) export — `enum`, `class`, `function`, non-`const` `export const` — to a file under `App.Server/dto/` that `App.Web` imports from.** `App.Server` has no build step and its `package.json` has no `"type": "module"` (adding one breaks every extensionless relative import at runtime — Node's ESM resolver doesn't guess extensions the way CommonJS does). `App.Web`'s `tsc` therefore treats any `App.Server/dto/*.ts` file it imports from as CommonJS; under its `verbatimModuleSyntax`, a real export anywhere in that file — even one nothing actually imports — fails the whole file with TS1287/TS1295. DTO interfaces stay type-only and reference enum fields as `number`, not the enum type; the actual `enum` declarations live in a sibling file `App.Web` never imports (e.g. `App.Server/dto/grid-cell-enum.ts` for `GridCellEnum`/`GridCustomEnum`), and `App.Web` mirrors any named values it needs locally.
+DTOs (in `App.Server/dto/`) are plain interfaces, not classes. `App.Web` and `App.Server` share the same git repo, so DTOs that don't carry Node-only fields (no `ObjectId`) are imported directly by `App.Web` via a relative path (`import type { GridDto } from '../../../App.Server/dto/grid-dto.ts'`) instead of being duplicated. DTOs carrying `ObjectId` (`ProjectDto`, `SessionDto`, `UserDto`) aren't import-compatible as-is — `ObjectId` isn't installed in `App.Web` and serializes to a plain string over JSON anyway — so those still need a client-side derived/subset type. Because `App.Server` is an ES module (see above), `App.Web` can also import real (value) exports from `App.Server/dto/*.ts` — e.g. `import { GridCellEnum } from '../../../App.Server/dto/grid-dto.ts'` — not just types.
 
 ### Single-collection MongoDB pattern
 All DTOs (`UserDto`, `SessionDto`, `ProjectDto`, ...) are stored in one MongoDB collection (`'myCollection'`), disambiguated by a `type` field (e.g. `type: 'UserDto'`) and scoped by a `sectorKey` field. Adding a new entity means adding a new DTO interface plus a `type` discriminator, not a new collection.

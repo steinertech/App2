@@ -1,12 +1,6 @@
 import type { CSSProperties } from 'react';
 import type { GridDto } from './util/util-grid.ts';
-import type { GridCellDto } from '../../App.Server/dto/grid-dto.ts';
-
-// Mirrors GridCellEnum.Header from App.Server/dto/grid-cell-enum.ts. Not
-// imported directly: that file has real (value) enum exports, App.Server
-// has no build step and isn't an ES module, so App.Web's tsc can't
-// validate it.
-const GRID_CELL_HEADER = 2;
+import { GridCellEnum, type GridCellDto } from '../../App.Server/dto/grid-dto.ts';
 
 interface GridProps {
   gridDto: GridDto;
@@ -15,7 +9,7 @@ interface GridProps {
 
 function gridCellStyle(gridCell: GridCellDto): CSSProperties {
   const style: CSSProperties = { border: '1px solid #ccc', padding: '8px' };
-  if (gridCell.gridCellEnum === GRID_CELL_HEADER) {
+  if (gridCell.gridCellEnum === GridCellEnum.Header) {
     style.color = '#fff';
     style.fontWeight = 'bold';
     style.backgroundColor = '#add8e6';
