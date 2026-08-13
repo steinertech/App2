@@ -1,4 +1,5 @@
 {
+  "type": "module",
   "dependencies": {
     "@vercel/blob": "^2.6.1",
     "@vercel/functions": "^3.7.7",
