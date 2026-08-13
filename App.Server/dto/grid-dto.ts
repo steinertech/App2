@@ -5,12 +5,20 @@ export enum GridCellEnum {
   Custom = 3,
 }
 
-export enum GridCellCustomEnum {
+export enum GridCustomEnum {
   None = 0,
   Button = 1,
 }
 
+export interface GridCustomDto {
+  gridCustomEnum?: GridCustomEnum;
+  text?: string;
+  name?: string;
+}
+
 export interface GridCellDto {
+  gridCellEnum?: GridCellEnum;
+  gridCustoms?: GridCustomDto[];
   text?: string;
 }
 
