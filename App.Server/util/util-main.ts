@@ -1,6 +1,6 @@
 import { userSession } from './util-user';
 
-export const VERSION_SERVER = '1.14';
+export const VERSION_SERVER = '1.15';
 
 export function domainName(request: Request): string {
   const originHeader = request.headers.get('origin');
