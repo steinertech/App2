@@ -3,8 +3,12 @@ import { projects as fetchProjects } from './util-project.js';
 import { users } from './util-user.js';
 import { storageFiles } from './util-storage.js';
 import { StorageFileDto } from '../dto/web/storage-file-dto.js';
+import { ProjectDto } from '../dto/server/project-dto.js';
+import { UserDto } from '../dto/server/user-dto.js';
 
 const STORAGE_FILE_COLUMNS: (keyof StorageFileDto)[] = ['fileName', 'fileNameOnly', 'isFolder'];
+const PROJECT_COLUMNS = ['name', 'sectorKey'] as const satisfies (keyof ProjectDto)[];
+const USER_COLUMNS = ['email', 'sectorKey'] as const satisfies (keyof UserDto)[];
 
 async function gridLoadStorage(request: Request): Promise<GridRowDto[]> {
   const files = await storageFiles(request);
@@ -23,26 +27,26 @@ async function gridLoadStorage(request: Request): Promise<GridRowDto[]> {
 export async function gridLoad(request: Request, gridDto: GridDto): Promise<GridDto> {
   if (gridDto.gridName === 'project') {
     const projects = await fetchProjects(request);
+    const projectHeaderRow: GridRowDto = {
+      gridCells: PROJECT_COLUMNS.map((column): GridCellDto => ({ gridCellEnum: GridCellEnum.Header, text: column })),
+    };
     const projectGridRows: GridRowDto[] = projects.map((project) => ({
-      gridCells: [
-        { gridCellEnum: GridCellEnum.Text, text: project.name },
-        { gridCellEnum: GridCellEnum.Text, text: project.sectorKey },
-      ],
+      gridCells: PROJECT_COLUMNS.map((column): GridCellDto => ({ gridCellEnum: GridCellEnum.Text, text: project[column] })),
     }));
 
     const userList = await users(request);
+    const userHeaderRow: GridRowDto = {
+      gridCells: USER_COLUMNS.map((column): GridCellDto => ({ gridCellEnum: GridCellEnum.Header, text: column })),
+    };
     const userGridRows: GridRowDto[] = userList.map((user) => ({
-      gridCells: [
-        { gridCellEnum: GridCellEnum.Text, text: user.email },
-        { gridCellEnum: GridCellEnum.Text, text: user.sectorKey },
-      ],
+      gridCells: USER_COLUMNS.map((column): GridCellDto => ({ gridCellEnum: GridCellEnum.Text, text: user[column] })),
     }));
 
     return {
       ...gridDto,
       gridAreas: {
-        main: { text: 'Project Data', gridRows: projectGridRows },
-        user: { text: 'User Data', gridRows: userGridRows },
+        main: { text: 'Project Data', gridRows: [projectHeaderRow, ...projectGridRows] },
+        user: { text: 'User Data', gridRows: [userHeaderRow, ...userGridRows] },
       },
     };
   }
