@@ -6,7 +6,7 @@ export interface UserDto {
   name?: string;
   password?: string;
   projectNames?: string[];
-  projectNameSelected?: string;
+  projectNameDefault?: string;
   sectorKey?: string;
   type?: string;
 }
