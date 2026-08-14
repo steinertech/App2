@@ -1,6 +1,6 @@
 import { put, issueSignedToken, presignUrl, list } from '@vercel/blob';
-import { sectorKey } from './util-main';
-import { StorageFileDto } from '../dto/storage-file-dto';
+import { sectorKey } from './util-main.js';
+import { StorageFileDto } from '../dto/storage-file-dto.js';
 
 export async function storageUpload() {
   const blob = await put('my/readme.txt', 'Hello World!', { access: 'private', allowOverwrite: true });

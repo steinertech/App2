@@ -26,6 +26,8 @@ npm install
 ```
 There is no build/dev/test/lint script for `App.Server` — files under `api/` are deployed directly by Vercel as serverless functions. Requires a `MONGODB_URI` environment variable at runtime (see `util/util-db.ts`).
 
+`App.Server/package.json` has `"type": "module"`, and Node's ESM resolver (unlike CommonJS) doesn't guess file extensions, so **every relative import in `App.Server` must include an explicit `.js` extension** (e.g. `import { corsHeaders } from '../util/util-main.js';`), even though the source files are `.ts`. Omitting the extension breaks at runtime with `ERR_MODULE_NOT_FOUND` since there is no build step to catch it beforehand.
+
 There is no test suite or linter configured in this repository.
 
 ## Architecture

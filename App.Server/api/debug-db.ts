@@ -1,6 +1,6 @@
-import client from '../util/util-db';
-import { UserDto } from '../dto/user-dto';
-import { corsHeaders } from '../util/util-main';
+import client from '../util/util-db.js';
+import { UserDto } from '../dto/user-dto.js';
+import { corsHeaders } from '../util/util-main.js';
 
 export default {
   async fetch(request: Request): Promise<Response> {
