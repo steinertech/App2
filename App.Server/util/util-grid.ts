@@ -1,7 +1,24 @@
-import { GridDto, GridRowDto } from '../dto/web/grid-dto.js';
+import { GridCellDto, GridCellEnum, GridDto, GridRowDto } from '../dto/web/grid-dto.js';
 import { projects as fetchProjects } from './util-project.js';
 import { users } from './util-user.js';
 import { storageFiles } from './util-storage.js';
+import { StorageFileDto } from '../dto/web/storage-file-dto.js';
+
+const STORAGE_FILE_COLUMNS: (keyof StorageFileDto)[] = ['fileName', 'fileNameOnly', 'isFolder'];
+
+async function gridLoadStorage(request: Request): Promise<GridRowDto[]> {
+  const files = await storageFiles(request);
+
+  const headerRow: GridRowDto = {
+    gridCells: STORAGE_FILE_COLUMNS.map((column): GridCellDto => ({ gridCellEnum: GridCellEnum.Header, text: column })),
+  };
+
+  const fileRows: GridRowDto[] = files.map((file) => ({
+    gridCells: STORAGE_FILE_COLUMNS.map((column): GridCellDto => ({ gridCellEnum: GridCellEnum.Text, text: String(file[column]) })),
+  }));
+
+  return [headerRow, ...fileRows];
+}
 
 export async function gridLoad(request: Request, gridDto: GridDto): Promise<GridDto> {
   if (gridDto.gridName === 'project') {
@@ -25,10 +42,7 @@ export async function gridLoad(request: Request, gridDto: GridDto): Promise<Grid
   }
 
   if (gridDto.gridName === 'storage') {
-    const files = await storageFiles(request);
-    const gridRows: GridRowDto[] = files.map((file) => ({
-      gridCells: [{ text: file.fileNameOnly }, { text: file.isFolder ? 'Folder' : 'File' }],
-    }));
+    const gridRows = await gridLoadStorage(request);
 
     return {
       ...gridDto,
