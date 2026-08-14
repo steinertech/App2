@@ -1,5 +1,5 @@
 import client from './util-db.js';
-import { ProjectDto } from '../dto/project-dto.js';
+import { ProjectDto } from '../dto/server/project-dto.js';
 import { sectorKey } from './util-main.js';
 
 export async function projects(request: Request): Promise<ProjectDto[]> {

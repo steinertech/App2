@@ -1,5 +1,5 @@
 import client from '../util/util-db.js';
-import { UserDto } from '../dto/user-dto.js';
+import { UserDto } from '../dto/server/user-dto.js';
 import { corsHeaders } from '../util/util-main.js';
 
 export default {

@@ -1,4 +1,4 @@
-import { GridDto, GridRowDto } from '../dto/grid-dto.js';
+import { GridDto, GridRowDto } from '../dto/web/grid-dto.js';
 import { projects as fetchProjects } from './util-project.js';
 import { users } from './util-user.js';
 import { storageFiles } from './util-storage.js';
