@@ -1,4 +1,4 @@
-import { GridCellDto, GridCellEnum, GridDto, GridRowDto } from '../dto/web/grid-dto.js';
+import { GridCellDto, GridCellEnum, GridCustomDto, GridCustomEnum, GridDto, GridRowDto } from '../dto/web/grid-dto.js';
 import { projectsLoad } from './util-project.js';
 import { usersLoad } from './util-user.js';
 import { storageFiles } from './util-storage.js';
@@ -28,10 +28,19 @@ export async function gridLoad(request: Request, gridDto: GridDto): Promise<Grid
   if (gridDto.gridName === 'project') {
     const projects = await projectsLoad(request);
     const projectHeaderRow: GridRowDto = {
-      gridCells: PROJECT_COLUMNS.map((column): GridCellDto => ({ gridCellEnum: GridCellEnum.Header, text: column })),
+      gridCells: [
+        ...PROJECT_COLUMNS.map((column): GridCellDto => ({ gridCellEnum: GridCellEnum.Header, text: column })),
+        { gridCellEnum: GridCellEnum.Header, text: 'Command' },
+      ],
     };
     const projectGridRows: GridRowDto[] = projects.map((project) => ({
-      gridCells: PROJECT_COLUMNS.map((column): GridCellDto => ({ gridCellEnum: GridCellEnum.Text, text: project[column] })),
+      gridCells: [
+        ...PROJECT_COLUMNS.map((column): GridCellDto => ({ gridCellEnum: GridCellEnum.Text, text: project[column] })),
+        {
+          gridCellEnum: GridCellEnum.Custom,
+          gridCustoms: [{ text: 'Switch', gridCustomEnum: GridCustomEnum.Button } satisfies GridCustomDto],
+        },
+      ],
     }));
 
     const users = await usersLoad(request);
