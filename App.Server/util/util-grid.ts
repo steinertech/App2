@@ -1,6 +1,6 @@
 import { GridCellDto, GridCellEnum, GridDto, GridRowDto } from '../dto/web/grid-dto.js';
-import { projects as fetchProjects } from './util-project.js';
-import { users } from './util-user.js';
+import { projectsLoad } from './util-project.js';
+import { usersLoad } from './util-user.js';
 import { storageFiles } from './util-storage.js';
 import { StorageFileDto } from '../dto/web/storage-file-dto.js';
 import { ProjectDto } from '../dto/server/project-dto.js';
@@ -26,7 +26,7 @@ async function gridLoadStorage(request: Request): Promise<GridRowDto[]> {
 
 export async function gridLoad(request: Request, gridDto: GridDto): Promise<GridDto> {
   if (gridDto.gridName === 'project') {
-    const projects = await fetchProjects(request);
+    const projects = await projectsLoad(request);
     const projectHeaderRow: GridRowDto = {
       gridCells: PROJECT_COLUMNS.map((column): GridCellDto => ({ gridCellEnum: GridCellEnum.Header, text: column })),
     };
@@ -34,11 +34,11 @@ export async function gridLoad(request: Request, gridDto: GridDto): Promise<Grid
       gridCells: PROJECT_COLUMNS.map((column): GridCellDto => ({ gridCellEnum: GridCellEnum.Text, text: project[column] })),
     }));
 
-    const userList = await users(request);
+    const users = await usersLoad(request);
     const userHeaderRow: GridRowDto = {
       gridCells: USER_COLUMNS.map((column): GridCellDto => ({ gridCellEnum: GridCellEnum.Header, text: column })),
     };
-    const userGridRows: GridRowDto[] = userList.map((user) => ({
+    const userGridRows: GridRowDto[] = users.map((user) => ({
       gridCells: USER_COLUMNS.map((column): GridCellDto => ({ gridCellEnum: GridCellEnum.Text, text: user[column] })),
     }));
 
