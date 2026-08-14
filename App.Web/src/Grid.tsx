@@ -1,8 +1,27 @@
+import type { CSSProperties } from 'react';
 import type { GridDto } from './util/util-grid.ts';
+import { GridCellEnum, type GridCellDto } from '../../App.Server/dto/web/grid-dto.ts';
 
 interface GridProps {
   gridDto: GridDto;
   gridAreaName: string;
+}
+
+function gridCellStyle(gridCell: GridCellDto): CSSProperties {
+  const style: CSSProperties = { border: '1px solid #ccc', padding: '8px' };
+  if (gridCell.gridCellEnum === GridCellEnum.Header) {
+    style.fontWeight = 'bold';
+    style.color = '#fff';
+    style.backgroundColor = '#add8e6';
+  }
+  return style;
+}
+
+function gridCellContent(gridCell: GridCellDto): string | undefined {
+  if (gridCell.gridCellEnum === GridCellEnum.Custom) {
+    return 'CustomCell';
+  }
+  return gridCell.text;
 }
 
 export default function Grid({ gridDto, gridAreaName }: GridProps) {
@@ -17,8 +36,8 @@ export default function Grid({ gridDto, gridAreaName }: GridProps) {
           {gridRows.map((gridRow, rowIndex) => (
             <tr key={rowIndex}>
               {(gridRow.gridCells ?? []).map((gridCell, cellIndex) => (
-                <td key={cellIndex} style={{ border: '1px solid #ccc', padding: '8px' }}>
-                  {gridCell.text}
+                <td key={cellIndex} style={gridCellStyle(gridCell)}>
+                  {gridCellContent(gridCell)}
                 </td>
               ))}
             </tr>
