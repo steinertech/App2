@@ -34,11 +34,11 @@ export async function gridLoad(request: Request, gridDto: GridDto): Promise<Grid
       gridCells: PROJECT_COLUMNS.map((column): GridCellDto => ({ gridCellEnum: GridCellEnum.Text, text: project[column] })),
     }));
 
-    const userList = await usersLoad(request);
+    const users = await usersLoad(request);
     const userHeaderRow: GridRowDto = {
       gridCells: USER_COLUMNS.map((column): GridCellDto => ({ gridCellEnum: GridCellEnum.Header, text: column })),
     };
-    const userGridRows: GridRowDto[] = userList.map((user) => ({
+    const userGridRows: GridRowDto[] = users.map((user) => ({
       gridCells: USER_COLUMNS.map((column): GridCellDto => ({ gridCellEnum: GridCellEnum.Text, text: user[column] })),
     }));
 
