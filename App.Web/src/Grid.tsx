@@ -1,6 +1,6 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import type { GridDto } from './util/util-grid.ts';
-import { GridCellEnum, type GridCellDto } from '../../App.Server/dto/web/grid-dto.ts';
+import { GridCellEnum, GridCustomEnum, type GridCellDto, type GridCustomDto } from '../../App.Server/dto/web/grid-dto.ts';
 
 interface GridProps {
   gridDto: GridDto;
@@ -17,9 +17,20 @@ function gridCellStyle(gridCell: GridCellDto): CSSProperties {
   return style;
 }
 
-function gridCellContent(gridCell: GridCellDto): string | undefined {
+function gridCustomContent(gridCustom: GridCustomDto, key: number): ReactNode {
+  if (gridCustom.gridCustomEnum === GridCustomEnum.Button) {
+    return (
+      <button key={key} type="button">
+        {gridCustom.text}
+      </button>
+    );
+  }
+  return null;
+}
+
+function gridCellContent(gridCell: GridCellDto): ReactNode {
   if (gridCell.gridCellEnum === GridCellEnum.Custom) {
-    return 'CustomCell';
+    return (gridCell.gridCustoms ?? []).map((gridCustom, index) => gridCustomContent(gridCustom, index));
   }
   return gridCell.text;
 }
