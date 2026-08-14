@@ -24,12 +24,18 @@ export async function gridLoad(request: Request, gridDto: GridDto): Promise<Grid
   if (gridDto.gridName === 'project') {
     const projects = await fetchProjects(request);
     const projectGridRows: GridRowDto[] = projects.map((project) => ({
-      gridCells: [{ text: project.name }, { text: project.sectorKey }],
+      gridCells: [
+        { gridCellEnum: GridCellEnum.Text, text: project.name },
+        { gridCellEnum: GridCellEnum.Text, text: project.sectorKey },
+      ],
     }));
 
     const userList = await users(request);
     const userGridRows: GridRowDto[] = userList.map((user) => ({
-      gridCells: [{ text: user.email }, { text: user.sectorKey }],
+      gridCells: [
+        { gridCellEnum: GridCellEnum.Text, text: user.email },
+        { gridCellEnum: GridCellEnum.Text, text: user.sectorKey },
+      ],
     }));
 
     return {
