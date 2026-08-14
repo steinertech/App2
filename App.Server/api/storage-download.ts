@@ -1,5 +1,5 @@
-import { storageDownload } from '../util/util-storage';
-import { corsHeaders } from '../util/util-main';
+import { storageDownload } from '../util/util-storage.js';
+import { corsHeaders } from '../util/util-main.js';
 
 export default {
   async fetch(request: Request): Promise<Response> {

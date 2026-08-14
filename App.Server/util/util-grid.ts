@@ -1,7 +1,7 @@
-import { GridDto, GridRowDto } from '../dto/grid-dto';
-import { projects as fetchProjects } from './util-project';
-import { users } from './util-user';
-import { storageFiles } from './util-storage';
+import { GridDto, GridRowDto } from '../dto/grid-dto.js';
+import { projects as fetchProjects } from './util-project.js';
+import { users } from './util-user.js';
+import { storageFiles } from './util-storage.js';
 
 export async function gridLoad(request: Request, gridDto: GridDto): Promise<GridDto> {
   if (gridDto.gridName === 'project') {
