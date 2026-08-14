@@ -55,7 +55,7 @@ export async function userSession(request: Request) {
   return sessionCollection.findOne({ sessionId, isLogin: true, type: 'SessionDto' });
 }
 
-export async function users(request: Request): Promise<UserDto[]> {
+export async function usersLoad(request: Request): Promise<UserDto[]> {
   const key = await sectorKey(request, false);
   const collection = client.db().collection<UserDto>('myCollection');
   return collection.find({ sectorKey: key, type: 'UserDto' }).toArray();
