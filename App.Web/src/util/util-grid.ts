@@ -1,5 +1,5 @@
 import { apiUrl } from '../page/App.tsx';
-import type { GridDto } from '../../../App.Server/dto/grid-dto.ts';
+import type { GridDto } from '../../../App.Server/dto/web/grid-dto.ts';
 
 export type { GridDto };
 

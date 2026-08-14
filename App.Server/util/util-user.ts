@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import client from './util-db.js';
-import { UserDto } from '../dto/user-dto.js';
-import { SessionDto } from '../dto/session-dto.js';
+import { UserDto } from '../dto/server/user-dto.js';
+import { SessionDto } from '../dto/server/session-dto.js';
 import { sectorKey } from './util-main.js';
 
 export async function userRegister(request: Request, email: string, password: string) {
