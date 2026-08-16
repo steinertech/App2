@@ -26,9 +26,13 @@ export interface GridRowDto {
   gridCells?: GridCellDto[];
 }
 
+export interface GridStateDto {
+}
+
 export interface GridAreaDto {
   text?: string;
   gridRows?: GridRowDto[];
+  gridState?: GridStateDto;
 }
 
 export interface GridDto {
