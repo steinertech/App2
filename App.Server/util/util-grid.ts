@@ -10,10 +10,6 @@ const STORAGE_FILE_COLUMNS: (keyof StorageFileDto)[] = ['fileName', 'fileNameOnl
 const PROJECT_COLUMNS = ['name', 'sectorKey'] as const satisfies (keyof ProjectDto)[];
 const USER_COLUMNS = ['email', 'sectorKey'] as const satisfies (keyof UserDto)[];
 
-function projectRowKeys(projects: ProjectDto[]): string[] {
-  return projects.map((project) => project.name ?? '');
-}
-
 async function gridLoadProject(request: Request, gridAreaDto: GridAreaDto): Promise<GridAreaDto> {
   const projects = await projectsLoad(request);
 
@@ -34,7 +30,7 @@ async function gridLoadProject(request: Request, gridAreaDto: GridAreaDto): Prom
     ],
   }));
 
-  const rowKeys = projectRowKeys(projects);
+  const rowKeys = projects.map((project) => project.name ?? '');
 
   return { ...gridAreaDto, text: 'Project Data', gridRows: [headerRow, ...gridRows], rowKeys };
 }
@@ -49,8 +45,7 @@ async function gridLoadProjectCommand(request: Request, gridAreaDto: GridAreaDto
     return;
   }
 
-  const projects = await projectsLoad(request);
-  const projectName = projectRowKeys(projects)[rowIndex];
+  const projectName = gridAreaDto.rowKeys?.[rowIndex];
   if (projectName === undefined) {
     return;
   }
