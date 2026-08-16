@@ -11,8 +11,8 @@ function gridCellStyle(gridCell: GridCellDto, rowSelected: boolean): CSSProperti
   const style: CSSProperties = { border: '1px solid #ccc', padding: '8px' };
   if (gridCell.gridCellEnum === GridCellEnum.Header) {
     style.fontWeight = 'bold';
-    style.color = '#fff';
-    style.backgroundColor = '#add8e6';
+    style.color = '#000';
+    style.backgroundColor = '#e0e0e0';
   }
   if (rowSelected) {
     style.backgroundColor = 'Highlight';
