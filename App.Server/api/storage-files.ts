@@ -7,7 +7,7 @@ export default {
       return new Response(null, { status: 204, headers: corsHeaders(request) });
     }
 
-    const grid = await gridLoad(request, { gridName: 'storage' });
+    const grid = await gridLoad(request, { gridAreas: [{ gridName: 'storage' }] });
 
     return new Response(JSON.stringify(grid), {
       headers: { 'content-type': 'application/json', ...corsHeaders(request) },
