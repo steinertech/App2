@@ -27,6 +27,7 @@ export interface GridRowDto {
 }
 
 export interface GridStateDto {
+  rowIndexSelected?: number;
 }
 
 export interface GridAreaDto {

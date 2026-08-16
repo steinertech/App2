@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react';
+import { useState, type CSSProperties, type ReactNode } from 'react';
 import type { GridDto } from './util/util-grid.ts';
 import { GridCellEnum, GridCustomEnum, type GridCellDto, type GridCustomDto } from '../../App.Server/dto/web/grid-dto.ts';
 
@@ -7,12 +7,16 @@ interface GridProps {
   gridAreaName: string;
 }
 
-function gridCellStyle(gridCell: GridCellDto): CSSProperties {
+function gridCellStyle(gridCell: GridCellDto, rowSelected: boolean): CSSProperties {
   const style: CSSProperties = { border: '1px solid #ccc', padding: '8px' };
   if (gridCell.gridCellEnum === GridCellEnum.Header) {
     style.fontWeight = 'bold';
     style.color = '#fff';
     style.backgroundColor = '#add8e6';
+  }
+  if (rowSelected) {
+    style.backgroundColor = 'Highlight';
+    style.color = 'HighlightText';
   }
   return style;
 }
@@ -38,6 +42,7 @@ function gridCellContent(gridCell: GridCellDto): ReactNode {
 export default function Grid({ gridDto, gridAreaName }: GridProps) {
   const gridArea = gridDto.gridAreas?.[gridAreaName];
   const gridRows = gridArea?.gridRows ?? [];
+  const [rowIndexSelected, setRowIndexSelected] = useState(gridArea?.gridState?.rowIndexSelected);
 
   return (
     <div>
@@ -45,9 +50,9 @@ export default function Grid({ gridDto, gridAreaName }: GridProps) {
       <table style={{ borderCollapse: 'collapse', fontFamily: 'sans-serif' }}>
         <tbody>
           {gridRows.map((gridRow, rowIndex) => (
-            <tr key={rowIndex}>
+            <tr key={rowIndex} onClick={() => setRowIndexSelected(rowIndex)}>
               {(gridRow.gridCells ?? []).map((gridCell, cellIndex) => (
-                <td key={cellIndex} style={gridCellStyle(gridCell)}>
+                <td key={cellIndex} style={gridCellStyle(gridCell, rowIndex === rowIndexSelected)}>
                   {gridCellContent(gridCell)}
                 </td>
               ))}
