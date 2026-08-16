@@ -65,7 +65,7 @@ export default function Debug() {
       const response = await fetch(`${apiUrl}grid`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ gridAreas: [{ gridName: 'project' }] }),
+        body: JSON.stringify({ areas: [{ gridName: 'project' }] }),
       });
       const data = await response.json();
       setResult(JSON.stringify(data, null, 2));

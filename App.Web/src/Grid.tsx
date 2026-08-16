@@ -18,7 +18,7 @@ interface GridProps {
 
 function gridCellStyle(gridCell: GridCellDto, rowSelected: boolean): CSSProperties {
   const style: CSSProperties = { border: '1px solid #ccc', padding: '8px' };
-  if (gridCell.gridCellEnum === GridCellEnum.Header) {
+  if (gridCell.cellEnum === GridCellEnum.Header) {
     style.fontWeight = 'bold';
     style.color = '#000';
     style.backgroundColor = '#e0e0e0';
@@ -34,7 +34,7 @@ function gridCellStyle(gridCell: GridCellDto, rowSelected: boolean): CSSProperti
 }
 
 function gridCustomContent(gridCustom: GridCustomDto, key: number, onCustomClick: (gridCustom: GridCustomDto) => void): ReactNode {
-  if (gridCustom.gridCustomEnum === GridCustomEnum.Button) {
+  if (gridCustom.customEnum === GridCustomEnum.Button) {
     return (
       <button key={key} type="button" onClick={() => onCustomClick(gridCustom)}>
         {gridCustom.text}
@@ -45,8 +45,8 @@ function gridCustomContent(gridCustom: GridCustomDto, key: number, onCustomClick
 }
 
 function gridCellContent(gridCell: GridCellDto, onCustomClick: (gridCustom: GridCustomDto) => void): ReactNode {
-  if (gridCell.gridCellEnum === GridCellEnum.Custom) {
-    return (gridCell.gridCustoms ?? []).map((gridCustom, index) => gridCustomContent(gridCustom, index, onCustomClick));
+  if (gridCell.cellEnum === GridCellEnum.Custom) {
+    return (gridCell.customs ?? []).map((gridCustom, index) => gridCustomContent(gridCustom, index, onCustomClick));
   }
   return gridCell.text;
 }
@@ -55,12 +55,12 @@ export default function Grid({ gridDto: gridDtoProp, gridName }: GridProps) {
   const [gridDto, setGridDto] = useState(gridDtoProp);
   useEffect(() => setGridDto(gridDtoProp), [gridDtoProp]);
 
-  const gridArea = gridDto.gridAreas?.find((area) => area.gridName === gridName);
-  const gridRows = gridArea?.gridRows ?? [];
-  const [rowIndexSelected, setRowIndexSelected] = useState(gridArea?.gridState?.rowIndexSelected);
+  const gridArea = gridDto.areas?.find((area) => area.gridName === gridName);
+  const gridRows = gridArea?.rows ?? [];
+  const [rowIndexSelected, setRowIndexSelected] = useState(gridArea?.state?.rowIndexSelected);
 
   const handleCustomClick = async (gridCell: GridCellDto, gridCustom: GridCustomDto) => {
-    const gridCommand: GridCommandDto = { gridCommandEnum: GridCommandEnum.CustomButtonClick };
+    const gridCommand: GridCommandDto = { commandEnum: GridCommandEnum.CustomButtonClick };
     if (gridCustom.rowIndex !== undefined) {
       gridCommand.rowIndex = gridCustom.rowIndex;
     }
@@ -71,11 +71,11 @@ export default function Grid({ gridDto: gridDtoProp, gridName }: GridProps) {
       gridCommand.customName = gridCustom.name;
     }
 
-    const area: GridAreaDto = { gridName, gridCommand };
+    const area: GridAreaDto = { gridName, command: gridCommand };
     if (gridArea?.rowKeys !== undefined) {
       area.rowKeys = gridArea.rowKeys;
     }
-    const body: GridDto = { gridAreas: [area] };
+    const body: GridDto = { areas: [area] };
 
     const response = await fetch(`${apiUrl}grid`, {
       method: 'POST',
@@ -92,7 +92,7 @@ export default function Grid({ gridDto: gridDtoProp, gridName }: GridProps) {
         <tbody>
           {gridRows.map((gridRow, rowIndex) => (
             <tr key={rowIndex}>
-              {(gridRow.gridCells ?? []).map((gridCell, cellIndex) => (
+              {(gridRow.cells ?? []).map((gridCell, cellIndex) => (
                 <td
                   key={cellIndex}
                   style={gridCellStyle(gridCell, gridCell.rowIndex !== undefined && gridCell.rowIndex === rowIndexSelected)}
