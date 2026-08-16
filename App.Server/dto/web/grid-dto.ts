@@ -10,10 +10,23 @@ export enum GridCustomEnum {
   Button = 1,
 }
 
+export enum GridCommandEnum {
+  None = 0,
+  CustomButtonClick = 1,
+}
+
 export interface GridCustomDto {
   gridCustomEnum?: GridCustomEnum;
   text?: string;
   name?: string;
+  rowIndex?: number;
+}
+
+export interface GridCommandDto {
+  gridCommandEnum?: GridCommandEnum;
+  columnName?: string;
+  rowIndex?: number;
+  customName?: string;
 }
 
 export interface GridCellDto {
@@ -36,6 +49,7 @@ export interface GridAreaDto {
   text?: string;
   gridRows?: GridRowDto[];
   gridState?: GridStateDto;
+  gridCommand?: GridCommandDto;
 }
 
 export interface GridDto {

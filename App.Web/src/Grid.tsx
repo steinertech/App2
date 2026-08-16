@@ -1,6 +1,14 @@
-import { useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import { apiUrl } from './page/App.tsx';
 import type { GridDto } from './util/util-grid.ts';
-import { GridCellEnum, GridCustomEnum, type GridCellDto, type GridCustomDto } from '../../App.Server/dto/web/grid-dto.ts';
+import {
+  GridCellEnum,
+  GridCommandEnum,
+  GridCustomEnum,
+  type GridCellDto,
+  type GridCommandDto,
+  type GridCustomDto,
+} from '../../App.Server/dto/web/grid-dto.ts';
 
 interface GridProps {
   gridDto: GridDto;
@@ -24,10 +32,10 @@ function gridCellStyle(gridCell: GridCellDto, rowSelected: boolean): CSSProperti
   return style;
 }
 
-function gridCustomContent(gridCustom: GridCustomDto, key: number): ReactNode {
+function gridCustomContent(gridCustom: GridCustomDto, key: number, onCustomClick: (gridCustom: GridCustomDto) => void): ReactNode {
   if (gridCustom.gridCustomEnum === GridCustomEnum.Button) {
     return (
-      <button key={key} type="button">
+      <button key={key} type="button" onClick={() => onCustomClick(gridCustom)}>
         {gridCustom.text}
       </button>
     );
@@ -35,17 +43,45 @@ function gridCustomContent(gridCustom: GridCustomDto, key: number): ReactNode {
   return null;
 }
 
-function gridCellContent(gridCell: GridCellDto): ReactNode {
+function gridCellContent(gridCell: GridCellDto, onCustomClick: (gridCustom: GridCustomDto) => void): ReactNode {
   if (gridCell.gridCellEnum === GridCellEnum.Custom) {
-    return (gridCell.gridCustoms ?? []).map((gridCustom, index) => gridCustomContent(gridCustom, index));
+    return (gridCell.gridCustoms ?? []).map((gridCustom, index) => gridCustomContent(gridCustom, index, onCustomClick));
   }
   return gridCell.text;
 }
 
-export default function Grid({ gridDto, gridAreaName }: GridProps) {
+export default function Grid({ gridDto: gridDtoProp, gridAreaName }: GridProps) {
+  const [gridDto, setGridDto] = useState(gridDtoProp);
+  useEffect(() => setGridDto(gridDtoProp), [gridDtoProp]);
+
   const gridArea = gridDto.gridAreas?.[gridAreaName];
   const gridRows = gridArea?.gridRows ?? [];
   const [rowIndexSelected, setRowIndexSelected] = useState(gridArea?.gridState?.rowIndexSelected);
+
+  const handleCustomClick = async (gridCell: GridCellDto, gridCustom: GridCustomDto) => {
+    const gridCommand: GridCommandDto = { gridCommandEnum: GridCommandEnum.CustomButtonClick };
+    if (gridCustom.rowIndex !== undefined) {
+      gridCommand.rowIndex = gridCustom.rowIndex;
+    }
+    if (gridCell.columnName !== undefined) {
+      gridCommand.columnName = gridCell.columnName;
+    }
+    if (gridCustom.name !== undefined) {
+      gridCommand.customName = gridCustom.name;
+    }
+
+    const body: GridDto = { gridAreas: { [gridAreaName]: { gridCommand } } };
+    if (gridDto.gridName !== undefined) {
+      body.gridName = gridDto.gridName;
+    }
+
+    const response = await fetch(`${apiUrl}grid`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    setGridDto(await response.json());
+  };
 
   return (
     <div>
@@ -64,7 +100,7 @@ export default function Grid({ gridDto, gridAreaName }: GridProps) {
                     }
                   }}
                 >
-                  {gridCellContent(gridCell)}
+                  {gridCellContent(gridCell, (gridCustom) => handleCustomClick(gridCell, gridCustom))}
                 </td>
               ))}
             </tr>
