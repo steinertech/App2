@@ -71,3 +71,14 @@ export async function userLogout(request: Request) {
 
   return dto;
 }
+
+export async function userProject(request: Request, projectName: string) {
+  const dto = await userSession(request);
+  if (dto) {
+    dto.projectName = projectName;
+    const sessionCollection = client.db().collection<SessionDto>('myCollection');
+    await sessionCollection.updateOne({ _id: dto._id }, { $set: { projectName } });
+  }
+
+  return dto;
+}

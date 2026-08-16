@@ -1,6 +1,6 @@
-import { GridAreaDto, GridCellDto, GridCellEnum, GridCustomDto, GridCustomEnum, GridDto, GridRowDto } from '../dto/web/grid-dto.js';
+import { GridAreaDto, GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridRowDto } from '../dto/web/grid-dto.js';
 import { projectsLoad } from './util-project.js';
-import { usersLoad } from './util-user.js';
+import { usersLoad, userProject } from './util-user.js';
 import { storageFiles } from './util-storage.js';
 import { StorageFileDto } from '../dto/web/storage-file-dto.js';
 import { ProjectDto } from '../dto/server/project-dto.js';
@@ -30,7 +30,27 @@ async function gridLoadProject(request: Request, gridAreaDto: GridAreaDto): Prom
     ],
   }));
 
-  return { ...gridAreaDto, text: 'Project Data', gridRows: [headerRow, ...gridRows] };
+  const rowKeys = projects.map((project) => project.name ?? '');
+
+  return { ...gridAreaDto, text: 'Project Data', gridRows: [headerRow, ...gridRows], rowKeys };
+}
+
+async function gridLoadProjectCommand(request: Request, gridAreaDto: GridAreaDto): Promise<void> {
+  if (gridAreaDto.gridCommand?.gridCommandEnum !== GridCommandEnum.CustomButtonClick) {
+    return;
+  }
+
+  const rowIndex = gridAreaDto.gridCommand.rowIndex;
+  if (rowIndex === undefined) {
+    return;
+  }
+
+  const projectName = gridAreaDto.rowKeys?.[rowIndex];
+  if (projectName === undefined) {
+    return;
+  }
+
+  await userProject(request, projectName);
 }
 
 async function gridLoadUser(request: Request, gridAreaDto: GridAreaDto): Promise<GridAreaDto> {
@@ -71,6 +91,12 @@ async function gridLoadHelloWorld(request: Request, gridAreaDto: GridAreaDto): P
 }
 
 export async function gridLoad(request: Request, gridDto: GridDto): Promise<GridDto> {
+  for (const gridAreaDto of gridDto.gridAreas ?? []) {
+    if (gridAreaDto.gridName === 'project') {
+      await gridLoadProjectCommand(request, gridAreaDto);
+    }
+  }
+
   const gridAreas = await Promise.all(
     (gridDto.gridAreas ?? []).map((gridAreaDto): Promise<GridAreaDto> => {
       if (gridAreaDto.gridName === 'project') {

@@ -5,6 +5,7 @@ import {
   GridCellEnum,
   GridCommandEnum,
   GridCustomEnum,
+  type GridAreaDto,
   type GridCellDto,
   type GridCommandDto,
   type GridCustomDto,
@@ -70,7 +71,11 @@ export default function Grid({ gridDto: gridDtoProp, gridName }: GridProps) {
       gridCommand.customName = gridCustom.name;
     }
 
-    const body: GridDto = { gridAreas: [{ gridName, gridCommand }] };
+    const area: GridAreaDto = { gridName, gridCommand };
+    if (gridArea?.rowKeys !== undefined) {
+      area.rowKeys = gridArea.rowKeys;
+    }
+    const body: GridDto = { gridAreas: [area] };
 
     const response = await fetch(`${apiUrl}grid`, {
       method: 'POST',
