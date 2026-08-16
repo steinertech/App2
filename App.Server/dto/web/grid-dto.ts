@@ -50,9 +50,9 @@ export interface GridAreaDto {
   gridRows?: GridRowDto[];
   gridState?: GridStateDto;
   gridCommand?: GridCommandDto;
+  gridName?: string;
 }
 
 export interface GridDto {
-  gridName?: string;
-  gridAreas?: { [gridAreaName: string]: GridAreaDto };
+  gridAreas?: GridAreaDto[];
 }

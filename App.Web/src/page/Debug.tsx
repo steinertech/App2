@@ -7,7 +7,7 @@ export default function Debug() {
   const [email, setEmail] = useState('');
   const [result, setResult] = useState('');
   const [downloadUrl, setDownloadUrl] = useState('');
-  const [grid] = useState(() => new GridModel('project'));
+  const [grid] = useState(() => new GridModel(['project']));
   const [gridDto, setGridDto] = useState<GridDto>(grid.gridDto);
 
   useEffect(() => {
@@ -65,7 +65,7 @@ export default function Debug() {
       const response = await fetch(`${apiUrl}grid`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ gridName: 'project' }),
+        body: JSON.stringify({ gridAreas: [{ gridName: 'project' }] }),
       });
       const data = await response.json();
       setResult(JSON.stringify(data, null, 2));
@@ -130,7 +130,7 @@ export default function Debug() {
       </button>
       <label style={{ whiteSpace: 'pre-wrap', marginTop: '16px' }}>{result}</label>
       <div style={{ marginTop: '16px' }}>
-        <Grid gridDto={gridDto} gridAreaName="main" />
+        <Grid gridDto={gridDto} gridName="project" />
       </div>
     </div>
   );

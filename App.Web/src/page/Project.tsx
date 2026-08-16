@@ -3,7 +3,7 @@ import Grid from '../Grid.tsx';
 import { Grid as GridModel, type GridDto } from '../util/util-grid.ts';
 
 export default function Project() {
-  const [grid] = useState(() => new GridModel('project'));
+  const [grid] = useState(() => new GridModel(['project', 'user']));
   const [gridDto, setGridDto] = useState<GridDto>(grid.gridDto);
 
   useEffect(() => {
@@ -22,8 +22,8 @@ export default function Project() {
       fontFamily: 'sans-serif'
     }}>
       <h1>Project</h1>
-      <Grid gridDto={gridDto} gridAreaName="main" />
-      <Grid gridDto={gridDto} gridAreaName="user" />
+      <Grid gridDto={gridDto} gridName="project" />
+      <Grid gridDto={gridDto} gridName="user" />
     </div>
   );
 }
