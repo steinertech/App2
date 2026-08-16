@@ -16,29 +16,29 @@ export enum GridCommandEnum {
 }
 
 export interface GridCustomDto {
-  gridCustomEnum?: GridCustomEnum;
+  customEnum?: GridCustomEnum;
   text?: string;
   name?: string;
   rowIndex?: number;
 }
 
 export interface GridCommandDto {
-  gridCommandEnum?: GridCommandEnum;
+  commandEnum?: GridCommandEnum;
   columnName?: string;
   rowIndex?: number;
   customName?: string;
 }
 
 export interface GridCellDto {
-  gridCellEnum?: GridCellEnum;
-  gridCustoms?: GridCustomDto[];
+  cellEnum?: GridCellEnum;
+  customs?: GridCustomDto[];
   text?: string;
   rowIndex?: number;
   columnName?: string;
 }
 
 export interface GridRowDto {
-  gridCells?: GridCellDto[];
+  cells?: GridCellDto[];
 }
 
 export interface GridStateDto {
@@ -47,13 +47,13 @@ export interface GridStateDto {
 
 export interface GridAreaDto {
   text?: string;
-  gridRows?: GridRowDto[];
-  gridState?: GridStateDto;
-  gridCommand?: GridCommandDto;
+  rows?: GridRowDto[];
+  state?: GridStateDto;
+  command?: GridCommandDto;
   gridName?: string;
   rowKeys?: string[];
 }
 
 export interface GridDto {
-  gridAreas?: GridAreaDto[];
+  areas?: GridAreaDto[];
 }

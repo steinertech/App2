@@ -16,7 +16,7 @@ export class Grid {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        gridAreas: this.gridNames.map((gridName): GridAreaDto => ({ gridName })),
+        areas: this.gridNames.map((gridName): GridAreaDto => ({ gridName })),
       } satisfies GridDto),
     });
     this.gridDto = await response.json();
