@@ -21,6 +21,7 @@ export interface GridCellDto {
   gridCustoms?: GridCustomDto[];
   text?: string;
   rowIndex?: number;
+  columnName?: string;
 }
 
 export interface GridRowDto {
