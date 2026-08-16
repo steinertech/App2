@@ -4,5 +4,9 @@
     "@vercel/blob": "^2.6.1",
     "@vercel/functions": "^3.7.7",
     "mongodb": "^7.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
   }
 }

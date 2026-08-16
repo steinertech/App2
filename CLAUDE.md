@@ -24,7 +24,7 @@ npm run preview   # preview the production build
 cd App.Server
 npm install
 ```
-There is no build/dev/test/lint script for `App.Server` — files under `api/` are deployed directly by Vercel as serverless functions. Requires a `MONGODB_URI` environment variable at runtime (see `util/util-db.ts`).
+There is no build/dev/test/lint script for `App.Server` — files under `api/` are deployed directly by Vercel as serverless functions. Requires a `MONGODB_URI` environment variable at runtime (see `util/util-db.ts`). A `tsconfig.json` (with `@types/node`) is present purely for editor/type-checking support — run `npx tsc --noEmit` to typecheck the package; it is not part of the deploy or any npm script.
 
 `App.Server/package.json` has `"type": "module"`, and Node's ESM resolver (unlike CommonJS) doesn't guess file extensions, so **every relative import in `App.Server` must include an explicit `.js` extension** (e.g. `import { corsHeaders } from '../util/util-main.js';`), even though the source files are `.ts`. Omitting the extension breaks at runtime with `ERR_MODULE_NOT_FOUND` since there is no build step to catch it beforehand.
 
