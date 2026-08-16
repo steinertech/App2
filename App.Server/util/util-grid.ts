@@ -14,11 +14,11 @@ async function gridLoadStorage(request: Request): Promise<GridRowDto[]> {
   const files = await storageFiles(request);
 
   const headerRow: GridRowDto = {
-    gridCells: STORAGE_FILE_COLUMNS.map((column): GridCellDto => ({ gridCellEnum: GridCellEnum.Header, text: column })),
+    gridCells: STORAGE_FILE_COLUMNS.map((column): GridCellDto => ({ gridCellEnum: GridCellEnum.Header, text: column, columnName: column })),
   };
 
   const fileRows: GridRowDto[] = files.map((file, rowIndex) => ({
-    gridCells: STORAGE_FILE_COLUMNS.map((column): GridCellDto => ({ gridCellEnum: GridCellEnum.Text, text: String(file[column]), rowIndex })),
+    gridCells: STORAGE_FILE_COLUMNS.map((column): GridCellDto => ({ gridCellEnum: GridCellEnum.Text, text: String(file[column]), rowIndex, columnName: column })),
   }));
 
   return [headerRow, ...fileRows];
@@ -29,13 +29,13 @@ export async function gridLoad(request: Request, gridDto: GridDto): Promise<Grid
     const projects = await projectsLoad(request);
     const projectHeaderRow: GridRowDto = {
       gridCells: [
-        ...PROJECT_COLUMNS.map((column): GridCellDto => ({ gridCellEnum: GridCellEnum.Header, text: column })),
+        ...PROJECT_COLUMNS.map((column): GridCellDto => ({ gridCellEnum: GridCellEnum.Header, text: column, columnName: column })),
         { gridCellEnum: GridCellEnum.Header, text: 'Command' },
       ],
     };
     const projectGridRows: GridRowDto[] = projects.map((project, rowIndex) => ({
       gridCells: [
-        ...PROJECT_COLUMNS.map((column): GridCellDto => ({ gridCellEnum: GridCellEnum.Text, text: project[column], rowIndex })),
+        ...PROJECT_COLUMNS.map((column): GridCellDto => ({ gridCellEnum: GridCellEnum.Text, text: project[column], rowIndex, columnName: column })),
         {
           gridCellEnum: GridCellEnum.Custom,
           gridCustoms: [{ text: 'Switch', gridCustomEnum: GridCustomEnum.Button } satisfies GridCustomDto],
@@ -46,10 +46,10 @@ export async function gridLoad(request: Request, gridDto: GridDto): Promise<Grid
 
     const users = await usersLoad(request);
     const userHeaderRow: GridRowDto = {
-      gridCells: USER_COLUMNS.map((column): GridCellDto => ({ gridCellEnum: GridCellEnum.Header, text: column })),
+      gridCells: USER_COLUMNS.map((column): GridCellDto => ({ gridCellEnum: GridCellEnum.Header, text: column, columnName: column })),
     };
     const userGridRows: GridRowDto[] = users.map((user, rowIndex) => ({
-      gridCells: USER_COLUMNS.map((column): GridCellDto => ({ gridCellEnum: GridCellEnum.Text, text: user[column], rowIndex })),
+      gridCells: USER_COLUMNS.map((column): GridCellDto => ({ gridCellEnum: GridCellEnum.Text, text: user[column], rowIndex, columnName: column })),
     }));
 
     return {
