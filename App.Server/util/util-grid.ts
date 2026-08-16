@@ -38,7 +38,7 @@ export async function gridLoad(request: Request, gridDto: GridDto): Promise<Grid
         ...PROJECT_COLUMNS.map((column): GridCellDto => ({ gridCellEnum: GridCellEnum.Text, text: project[column], rowIndex, columnName: column })),
         {
           gridCellEnum: GridCellEnum.Custom,
-          gridCustoms: [{ text: 'Switch', gridCustomEnum: GridCustomEnum.Button } satisfies GridCustomDto],
+          gridCustoms: [{ text: 'Switch', name: 'Switch', gridCustomEnum: GridCustomEnum.Button, rowIndex } satisfies GridCustomDto],
           rowIndex,
         },
       ],
