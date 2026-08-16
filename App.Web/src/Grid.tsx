@@ -18,6 +18,9 @@ function gridCellStyle(gridCell: GridCellDto, rowSelected: boolean): CSSProperti
     style.backgroundColor = 'Highlight';
     style.color = 'HighlightText';
   }
+  if (gridCell.rowIndex !== undefined) {
+    style.cursor = 'pointer';
+  }
   return style;
 }
 
@@ -50,9 +53,17 @@ export default function Grid({ gridDto, gridAreaName }: GridProps) {
       <table style={{ borderCollapse: 'collapse', fontFamily: 'sans-serif' }}>
         <tbody>
           {gridRows.map((gridRow, rowIndex) => (
-            <tr key={rowIndex} onClick={() => setRowIndexSelected(rowIndex)}>
+            <tr key={rowIndex}>
               {(gridRow.gridCells ?? []).map((gridCell, cellIndex) => (
-                <td key={cellIndex} style={gridCellStyle(gridCell, rowIndex === rowIndexSelected)}>
+                <td
+                  key={cellIndex}
+                  style={gridCellStyle(gridCell, gridCell.rowIndex !== undefined && gridCell.rowIndex === rowIndexSelected)}
+                  onClick={() => {
+                    if (gridCell.rowIndex !== undefined) {
+                      setRowIndexSelected(gridCell.rowIndex);
+                    }
+                  }}
+                >
                   {gridCellContent(gridCell)}
                 </td>
               ))}

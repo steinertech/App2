@@ -20,6 +20,7 @@ export interface GridCellDto {
   gridCellEnum?: GridCellEnum;
   gridCustoms?: GridCustomDto[];
   text?: string;
+  rowIndex?: number;
 }
 
 export interface GridRowDto {
