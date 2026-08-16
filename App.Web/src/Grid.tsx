@@ -12,7 +12,7 @@ import {
 
 interface GridProps {
   gridDto: GridDto;
-  gridAreaName: string;
+  gridName: string;
 }
 
 function gridCellStyle(gridCell: GridCellDto, rowSelected: boolean): CSSProperties {
@@ -50,11 +50,11 @@ function gridCellContent(gridCell: GridCellDto, onCustomClick: (gridCustom: Grid
   return gridCell.text;
 }
 
-export default function Grid({ gridDto: gridDtoProp, gridAreaName }: GridProps) {
+export default function Grid({ gridDto: gridDtoProp, gridName }: GridProps) {
   const [gridDto, setGridDto] = useState(gridDtoProp);
   useEffect(() => setGridDto(gridDtoProp), [gridDtoProp]);
 
-  const gridArea = gridDto.gridAreas?.[gridAreaName];
+  const gridArea = gridDto.gridAreas?.find((area) => area.gridName === gridName);
   const gridRows = gridArea?.gridRows ?? [];
   const [rowIndexSelected, setRowIndexSelected] = useState(gridArea?.gridState?.rowIndexSelected);
 
@@ -70,10 +70,7 @@ export default function Grid({ gridDto: gridDtoProp, gridAreaName }: GridProps) 
       gridCommand.customName = gridCustom.name;
     }
 
-    const body: GridDto = { gridAreas: { [gridAreaName]: { gridCommand } } };
-    if (gridDto.gridName !== undefined) {
-      body.gridName = gridDto.gridName;
-    }
+    const body: GridDto = { gridAreas: [{ gridName, gridCommand }] };
 
     const response = await fetch(`${apiUrl}grid`, {
       method: 'POST',
