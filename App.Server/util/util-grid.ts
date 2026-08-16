@@ -30,7 +30,9 @@ async function gridLoadProject(request: Request, gridAreaDto: GridAreaDto): Prom
     ],
   }));
 
-  return { ...gridAreaDto, text: 'Project Data', gridRows: [headerRow, ...gridRows] };
+  const rowKeys = projects.map((project) => project.name ?? '');
+
+  return { ...gridAreaDto, text: 'Project Data', gridRows: [headerRow, ...gridRows], rowKeys };
 }
 
 async function gridLoadUser(request: Request, gridAreaDto: GridAreaDto): Promise<GridAreaDto> {
