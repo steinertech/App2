@@ -1,6 +1,7 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { apiUrl } from './page/App.tsx';
 import type { GridDto } from './util/util-grid.ts';
+import { buttonPrimaryClassName, textInputClassName } from './style.ts';
 import {
   GridCellEnum,
   GridCommandEnum,
@@ -16,30 +17,23 @@ interface GridProps {
   gridName: string;
 }
 
-function gridCellStyle(gridCell: GridCellDto, rowSelected: boolean): CSSProperties {
-  const style: CSSProperties = { border: '1px solid #ccc', padding: '8px' };
-  if (gridCell.cellEnum === GridCellEnum.Header) {
-    style.fontWeight = 'bold';
-    style.color = '#000';
-    style.backgroundColor = '#e0e0e0';
-  }
+function gridCellClassName(gridCell: GridCellDto, rowSelected: boolean): string {
+  const classes = ['border', 'border-gray-300', 'p-2'];
   if (rowSelected) {
-    style.backgroundColor = 'Highlight';
-    style.color = 'HighlightText';
+    classes.push('bg-blue-600', 'text-white');
+  } else if (gridCell.cellEnum === GridCellEnum.Header) {
+    classes.push('bg-gray-200', 'font-bold');
   }
-  if (gridCell.rowIndex !== undefined) {
-    style.cursor = 'pointer';
+  if (gridCell.rowIndex !== undefined || (gridCell.cellEnum === GridCellEnum.Header && gridCell.columnName !== undefined)) {
+    classes.push('cursor-pointer');
   }
-  if (gridCell.cellEnum === GridCellEnum.Header && gridCell.columnName !== undefined) {
-    style.cursor = 'pointer';
-  }
-  return style;
+  return classes.join(' ');
 }
 
 function gridCustomContent(gridCustom: GridCustomDto, key: number, onCustomClick: (gridCustom: GridCustomDto) => void): ReactNode {
   if (gridCustom.customEnum === GridCustomEnum.Button) {
     return (
-      <button key={key} type="button" onClick={() => onCustomClick(gridCustom)}>
+      <button key={key} type="button" onClick={() => onCustomClick(gridCustom)} className={buttonPrimaryClassName}>
         {gridCustom.text}
       </button>
     );
@@ -55,7 +49,14 @@ function gridCellContent(gridCell: GridCellDto, onCustomClick: (gridCustom: Grid
     return 'Empty';
   }
   if (gridCell.cellEnum === GridCellEnum.Find || gridCell.cellEnum === GridCellEnum.Text) {
-    return <input type="text" placeholder={gridCell.placeHolder} defaultValue={gridCell.text} />;
+    return (
+      <input
+        type="text"
+        placeholder={gridCell.placeHolder}
+        defaultValue={gridCell.text}
+        className={textInputClassName}
+      />
+    );
   }
   if (gridCell.cellEnum === GridCellEnum.Header) {
     const arrow = gridCell.isSortAsc === true ? ' ↑' : gridCell.isSortAsc === false ? ' ↓' : '';
@@ -124,14 +125,14 @@ export default function Grid({ gridDto: gridDtoProp, gridName }: GridProps) {
   return (
     <div>
       <h1>{gridArea?.text}</h1>
-      <table style={{ borderCollapse: 'collapse', fontFamily: 'sans-serif' }}>
+      <table className="border-collapse">
         <tbody>
           {gridRows.map((gridRow, rowIndex) => (
             <tr key={rowIndex}>
               {(gridRow.cells ?? []).map((gridCell, cellIndex) => (
                 <td
                   key={cellIndex}
-                  style={gridCellStyle(gridCell, gridCell.rowIndex !== undefined && gridCell.rowIndex === rowIndexSelected)}
+                  className={gridCellClassName(gridCell, gridCell.rowIndex !== undefined && gridCell.rowIndex === rowIndexSelected)}
                   onClick={() => {
                     if (gridCell.cellEnum === GridCellEnum.Header) {
                       void handleHeaderClick(gridCell);

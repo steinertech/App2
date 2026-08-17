@@ -22,14 +22,7 @@ export default function UserLogout() {
   }, []);
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      flex: 1,
-      fontFamily: 'sans-serif'
-    }}>
+    <div className="flex flex-1 flex-col items-center justify-center">
       <h1>User Logout</h1>
       <label>{result}</label>
     </div>

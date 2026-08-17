@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { apiUrl } from './App.tsx';
 import { VERSION_CLIENT } from '../util/util-main.ts';
+import { buttonPrimaryClassName } from '../style.ts';
 
 export default function About() {
   const [result, setResult] = useState('');
@@ -19,23 +20,13 @@ export default function About() {
   };
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      flex: 1,
-      fontFamily: 'sans-serif'
-    }}>
+    <div className="flex flex-1 flex-col items-center justify-center">
       <h1>About</h1>
       <div>
         <label>{result}</label>
         {domainName && <label> ({domainName})</label>}
       </div>
-      <button
-        onClick={handleVersionClick}
-        style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer' }}
-      >
+      <button onClick={handleVersionClick} className={buttonPrimaryClassName}>
         Version
       </button>
     </div>

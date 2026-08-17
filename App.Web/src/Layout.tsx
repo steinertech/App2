@@ -4,7 +4,7 @@ import UserSession from './UserSession.tsx';
 
 export default function Layout() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+    <div className="flex h-screen flex-col">
       <Nav />
       <UserSession />
       <Outlet />

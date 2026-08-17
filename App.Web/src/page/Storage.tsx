@@ -13,14 +13,7 @@ export default function Storage() {
   }, [grid]);
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      flex: 1,
-      fontFamily: 'sans-serif'
-    }}>
+    <div className="flex flex-1 flex-col items-center justify-center">
       <h1>Storage</h1>
       <Grid gridDto={gridDto} gridName="storage" />
     </div>
