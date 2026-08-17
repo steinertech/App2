@@ -6,7 +6,7 @@ export default {
       return new Response(null, { status: 204, headers: corsHeaders(request) });
     }
 
-    return new Response(JSON.stringify({ version: VERSION_SERVER, domainName: domainName(request) }), {
+    return new Response(JSON.stringify({ version: VERSION_SERVER, domainName: domainName(request), helloWorld: 'Hello World' }), {
       headers: { 'content-type': 'application/json', ...corsHeaders(request) },
     });
   },

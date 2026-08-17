@@ -11,7 +11,7 @@ export default function About() {
     try {
       const response = await fetch(`${apiUrl}version`);
       const data = await response.json();
-      setResult(`VersionServer=${data.version}; VersionClient=${VERSION_CLIENT};`);
+      setResult(`VersionServer=${data.version}; VersionClient=${VERSION_CLIENT}; HelloWorld=${data.helloWorld};`);
       setDomainName(data.domainName);
     } catch {
       setResult('Error fetching version');
