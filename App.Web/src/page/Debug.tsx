@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { apiUrl } from './App.tsx';
 import Grid from '../Grid.tsx';
 import { Grid as GridModel, type GridDto } from '../util/util-grid.ts';
+import { buttonPrimaryClassName, textInputClassName } from '../style.ts';
 
 export default function Debug() {
   const [email, setEmail] = useState('');
@@ -75,61 +76,39 @@ export default function Debug() {
   };
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      flex: 1,
-      fontFamily: 'sans-serif'
-    }}>
+    <div className="flex flex-1 flex-col items-center justify-center">
       <h1>Debug</h1>
-      <label style={{ marginBottom: '8px' }}>
+      <label className="mb-2">
         Email
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          style={{ marginLeft: '8px', padding: '6px', fontSize: '16px' }}
+          className={`${textInputClassName} ml-2`}
         />
       </label>
-      <button
-        onClick={handleDebugDbClick}
-        style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer' }}
-      >
+      <button onClick={handleDebugDbClick} className={buttonPrimaryClassName}>
         DebugDb
       </button>
-      <button
-        onClick={handleUploadClick}
-        style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer', marginTop: '8px' }}
-      >
+      <button onClick={handleUploadClick} className={`${buttonPrimaryClassName} mt-2`}>
         Upload
       </button>
-      <button
-        onClick={handleDownloadClick}
-        style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer', marginTop: '8px' }}
-      >
+      <button onClick={handleDownloadClick} className={`${buttonPrimaryClassName} mt-2`}>
         Download
       </button>
       {downloadUrl && (
-        <a href={downloadUrl} target="_blank" rel="noreferrer" style={{ marginTop: '8px' }}>
+        <a href={downloadUrl} target="_blank" rel="noreferrer" className="mt-2">
           {downloadUrl}
         </a>
       )}
-      <button
-        onClick={handleSessionIdClick}
-        style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer', marginTop: '8px' }}
-      >
+      <button onClick={handleSessionIdClick} className={`${buttonPrimaryClassName} mt-2`}>
         SessionId
       </button>
-      <button
-        onClick={handleGridClick}
-        style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer', marginTop: '8px' }}
-      >
+      <button onClick={handleGridClick} className={`${buttonPrimaryClassName} mt-2`}>
         Grid
       </button>
-      <label style={{ whiteSpace: 'pre-wrap', marginTop: '16px' }}>{result}</label>
-      <div style={{ marginTop: '16px' }}>
+      <label className="mt-4 whitespace-pre-wrap">{result}</label>
+      <div className="mt-4">
         <Grid gridDto={gridDto} gridName="project" />
       </div>
     </div>

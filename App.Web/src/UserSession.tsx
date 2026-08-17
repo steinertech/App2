@@ -30,11 +30,7 @@ export default function UserSession() {
   }, []);
 
   return (
-    <div style={{
-      backgroundColor: 'lightblue',
-      padding: '8px 16px',
-      fontFamily: 'sans-serif'
-    }}>
+    <div className="bg-sky-200 px-4 py-2">
       {`Email=${email}; Project=${projectName};`}
     </div>
   );

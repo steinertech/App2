@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { apiUrl } from './App.tsx';
+import { buttonPrimaryClassName, textInputClassName } from '../style.ts';
 
 export default function UserRegister() {
   const [email, setEmail] = useState('');
@@ -21,40 +22,30 @@ export default function UserRegister() {
   };
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      flex: 1,
-      fontFamily: 'sans-serif'
-    }}>
+    <div className="flex flex-1 flex-col items-center justify-center">
       <h1>User Register</h1>
-      <label style={{ marginBottom: '8px' }}>
+      <label className="mb-2">
         Email
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          style={{ marginLeft: '8px', padding: '6px', fontSize: '16px' }}
+          className={`${textInputClassName} ml-2`}
         />
       </label>
-      <label style={{ marginBottom: '8px' }}>
+      <label className="mb-2">
         Password
         <input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          style={{ marginLeft: '8px', padding: '6px', fontSize: '16px' }}
+          className={`${textInputClassName} ml-2`}
         />
       </label>
-      <button
-        onClick={handleRegisterClick}
-        style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer' }}
-      >
+      <button onClick={handleRegisterClick} className={buttonPrimaryClassName}>
         Register
       </button>
-      <label style={{ whiteSpace: 'pre-wrap', marginTop: '16px' }}>{result}</label>
+      <label className="mt-4 whitespace-pre-wrap">{result}</label>
     </div>
   );
 }
