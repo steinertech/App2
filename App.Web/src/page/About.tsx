@@ -1,17 +1,21 @@
 import { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { apiUrl } from './App.tsx';
 import { VERSION_CLIENT } from '../util/util-main.ts';
 import { buttonPrimaryClassName } from '../style.ts';
+import { languageFromPathname } from '../util/util-i18n.ts';
 
 export default function About() {
+  const location = useLocation();
+  const language = languageFromPathname(location.pathname);
   const [result, setResult] = useState('');
   const [domainName, setDomainName] = useState('');
 
   const handleVersionClick = async () => {
     try {
-      const response = await fetch(`${apiUrl}version`);
+      const response = await fetch(`${apiUrl}version`, { headers: { 'Accept-Language': language } });
       const data = await response.json();
-      setResult(`VersionServer=${data.version}; VersionClient=${VERSION_CLIENT};`);
+      setResult(`VersionServer=${data.version}; VersionClient=${VERSION_CLIENT}; HelloWorld=${data.helloWorld};`);
       setDomainName(data.domainName);
     } catch {
       setResult('Error fetching version');
@@ -21,7 +25,7 @@ export default function About() {
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center">
-      <h1>About</h1>
+      <h1>{language === 'de' ? 'Über' : 'About'}</h1>
       <div>
         <label>{result}</label>
         {domainName && <label> ({domainName})</label>}
