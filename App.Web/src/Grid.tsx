@@ -30,6 +30,9 @@ function gridCellStyle(gridCell: GridCellDto, rowSelected: boolean): CSSProperti
   if (gridCell.rowIndex !== undefined) {
     style.cursor = 'pointer';
   }
+  if (gridCell.cellEnum === GridCellEnum.Header && gridCell.columnName !== undefined) {
+    style.cursor = 'pointer';
+  }
   return style;
 }
 
@@ -53,6 +56,10 @@ function gridCellContent(gridCell: GridCellDto, onCustomClick: (gridCustom: Grid
   }
   if (gridCell.cellEnum === GridCellEnum.Find || gridCell.cellEnum === GridCellEnum.Text) {
     return <input type="text" placeholder={gridCell.placeHolder} defaultValue={gridCell.text} />;
+  }
+  if (gridCell.cellEnum === GridCellEnum.Header) {
+    const arrow = gridCell.isSortAsc === true ? ' ↑' : gridCell.isSortAsc === false ? ' ↓' : '';
+    return `${gridCell.text ?? ''}${arrow}`;
   }
   return gridCell.text;
 }
@@ -91,6 +98,29 @@ export default function Grid({ gridDto: gridDtoProp, gridName }: GridProps) {
     setGridDto(await response.json());
   };
 
+  const handleHeaderClick = async (gridCell: GridCellDto) => {
+    if (gridCell.columnName === undefined) {
+      return;
+    }
+    const gridCommand: GridCommandDto = { commandEnum: GridCommandEnum.SortClick, columnName: gridCell.columnName };
+
+    const area: GridAreaDto = { gridName, command: gridCommand };
+    if (gridArea?.rowKeys !== undefined) {
+      area.rowKeys = gridArea.rowKeys;
+    }
+    if (gridArea?.state !== undefined) {
+      area.state = gridArea.state;
+    }
+    const body: GridDto = { areas: [area] };
+
+    const response = await fetch(`${apiUrl}grid`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    setGridDto(await response.json());
+  };
+
   return (
     <div>
       <h1>{gridArea?.text}</h1>
@@ -103,7 +133,9 @@ export default function Grid({ gridDto: gridDtoProp, gridName }: GridProps) {
                   key={cellIndex}
                   style={gridCellStyle(gridCell, gridCell.rowIndex !== undefined && gridCell.rowIndex === rowIndexSelected)}
                   onClick={() => {
-                    if (gridCell.rowIndex !== undefined) {
+                    if (gridCell.cellEnum === GridCellEnum.Header) {
+                      void handleHeaderClick(gridCell);
+                    } else if (gridCell.rowIndex !== undefined) {
                       setRowIndexSelected(gridCell.rowIndex);
                     }
                   }}

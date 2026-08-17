@@ -15,6 +15,7 @@ export enum GridCustomEnum {
 export enum GridCommandEnum {
   None = 0,
   CustomButtonClick = 1,
+  SortClick = 2,
 }
 
 export interface GridCustomDto {
@@ -38,14 +39,21 @@ export interface GridCellDto {
   rowIndex?: number;
   columnName?: string;
   placeHolder?: string;
+  isSortAsc?: boolean;
 }
 
 export interface GridRowDto {
   cells?: GridCellDto[];
 }
 
+export interface GridStateSortDto {
+  isSortAsc?: boolean;
+  columnName?: string;
+}
+
 export interface GridStateDto {
   rowIndexSelected?: number;
+  sort?: GridStateSortDto;
 }
 
 export interface GridAreaDto {
