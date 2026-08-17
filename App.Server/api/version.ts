@@ -1,5 +1,5 @@
 import { VERSION_SERVER, corsHeaders, domainName } from '../util/util-main.js';
-import { languageFromRequest, translateHelloWorld } from '../util/util-i18n.js';
+import { languageFromRequest, translateText } from '../util/util-i18n.js';
 
 export default {
   fetch(request: Request): Response {
@@ -10,7 +10,7 @@ export default {
     const language = languageFromRequest(request);
 
     return new Response(
-      JSON.stringify({ version: VERSION_SERVER, domainName: domainName(request), helloWorld: translateHelloWorld(language) }),
+      JSON.stringify({ version: VERSION_SERVER, domainName: domainName(request), text: translateText(language) }),
       { headers: { 'content-type': 'application/json', ...corsHeaders(request) } },
     );
   },
