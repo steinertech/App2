@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { apiUrl } from './App.tsx';
 import { refreshUserSession } from '../UserSession.tsx';
+import { container } from '../style.ts';
 
 export default function UserLogout() {
   const [result, setResult] = useState('');
@@ -22,7 +23,7 @@ export default function UserLogout() {
   }, []);
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center">
+    <div className={container}>
       <h1>User Logout</h1>
       <label>{result}</label>
     </div>

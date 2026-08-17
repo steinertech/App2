@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import Grid from '../Grid.tsx';
 import { Grid as GridModel, type GridDto } from '../util/util-grid.ts';
+import { container } from '../style.ts';
 
 export default function Storage() {
   const [grid] = useState(() => new GridModel(['storage']));
@@ -13,7 +14,7 @@ export default function Storage() {
   }, [grid]);
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center">
+    <div className={container}>
       <h1>Storage</h1>
       <Grid gridDto={gridDto} gridName="storage" />
     </div>

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { apiUrl } from './App.tsx';
 import Grid from '../Grid.tsx';
 import { Grid as GridModel, type GridDto } from '../util/util-grid.ts';
-import { buttonPrimaryClassName, textInputClassName } from '../style.ts';
+import { buttonPrimaryClassName, container, textInputClassName } from '../style.ts';
 
 export default function Debug() {
   const [email, setEmail] = useState('');
@@ -76,7 +76,7 @@ export default function Debug() {
   };
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center">
+    <div className={container}>
       <h1>Debug</h1>
       <label className="mb-2">
         Email

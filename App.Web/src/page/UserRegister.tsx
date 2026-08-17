@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { apiUrl } from './App.tsx';
-import { buttonPrimaryClassName, textInputClassName } from '../style.ts';
+import { buttonPrimaryClassName, container, textInputClassName } from '../style.ts';
 
 export default function UserRegister() {
   const [email, setEmail] = useState('');
@@ -22,7 +22,7 @@ export default function UserRegister() {
   };
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center">
+    <div className={container}>
       <h1>User Register</h1>
       <label className="mb-2">
         Email
