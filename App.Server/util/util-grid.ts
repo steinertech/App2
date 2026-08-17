@@ -43,7 +43,7 @@ async function gridLoadProject(request: Request, gridAreaDto: GridAreaDto): Prom
   const rowKeys = projects.map((project) => project.name ?? '');
   const findRow = gridFindRow([...PROJECT_COLUMNS, undefined]);
 
-  return { ...gridAreaDto, text: 'Project Data', rows: [findRow, headerRow, ...rows], rowKeys };
+  return { ...gridAreaDto, text: 'Project Data', rows: [headerRow, findRow, ...rows], rowKeys };
 }
 
 async function gridLoadProjectCommand(request: Request, gridAreaDto: GridAreaDto): Promise<void> {
@@ -75,7 +75,7 @@ async function gridLoadUser(request: Request, gridAreaDto: GridAreaDto): Promise
   }));
   const findRow = gridFindRow([...USER_COLUMNS]);
 
-  return { ...gridAreaDto, text: 'User Data', rows: [findRow, headerRow, ...rows] };
+  return { ...gridAreaDto, text: 'User Data', rows: [headerRow, findRow, ...rows] };
 }
 
 async function gridLoadStorage(request: Request, gridAreaDto: GridAreaDto): Promise<GridAreaDto> {
@@ -89,7 +89,7 @@ async function gridLoadStorage(request: Request, gridAreaDto: GridAreaDto): Prom
   }));
   const findRow = gridFindRow([...STORAGE_FILE_COLUMNS]);
 
-  return { ...gridAreaDto, text: 'Storage Data', rows: [findRow, headerRow, ...fileRows] };
+  return { ...gridAreaDto, text: 'Storage Data', rows: [headerRow, findRow, ...fileRows] };
 }
 
 async function gridLoadHelloWorld(request: Request, gridAreaDto: GridAreaDto): Promise<GridAreaDto> {
@@ -111,26 +111,6 @@ async function gridLoadHelloWorld(request: Request, gridAreaDto: GridAreaDto): P
   };
 }
 
-function gridMoveHeadersToTop(rows: GridRowDto[]): GridRowDto[] {
-  const headerCells: GridCellDto[] = [];
-  const remainingRows: GridRowDto[] = [];
-
-  for (const row of rows) {
-    const cells = row.cells ?? [];
-    const nonHeaderCells = cells.filter((cell) => cell.cellEnum !== GridCellEnum.Header);
-    headerCells.push(...cells.filter((cell) => cell.cellEnum === GridCellEnum.Header));
-    if (nonHeaderCells.length > 0) {
-      remainingRows.push({ ...row, cells: nonHeaderCells });
-    }
-  }
-
-  if (headerCells.length === 0) {
-    return rows;
-  }
-
-  return [{ cells: headerCells }, ...remainingRows];
-}
-
 export async function gridLoad(request: Request, gridDto: GridDto): Promise<GridDto> {
   for (const gridAreaDto of gridDto.areas ?? []) {
     if (gridAreaDto.gridName === 'project') {
@@ -139,20 +119,20 @@ export async function gridLoad(request: Request, gridDto: GridDto): Promise<Grid
   }
 
   const areas = await Promise.all(
-    (gridDto.areas ?? []).map(async (gridAreaDto): Promise<GridAreaDto> => {
-      let gridArea: GridAreaDto;
+    (gridDto.areas ?? []).map((gridAreaDto): Promise<GridAreaDto> => {
       if (gridAreaDto.gridName === 'project') {
-        gridArea = await gridLoadProject(request, gridAreaDto);
-      } else if (gridAreaDto.gridName === 'user') {
-        gridArea = await gridLoadUser(request, gridAreaDto);
-      } else if (gridAreaDto.gridName === 'storage') {
-        gridArea = await gridLoadStorage(request, gridAreaDto);
-      } else if (gridAreaDto.gridName === 'helloWorld') {
-        gridArea = await gridLoadHelloWorld(request, gridAreaDto);
-      } else {
-        throw new Error(`Unknown gridName: ${gridAreaDto.gridName}`);
+        return gridLoadProject(request, gridAreaDto);
       }
-      return { ...gridArea, rows: gridMoveHeadersToTop(gridArea.rows ?? []) };
+      if (gridAreaDto.gridName === 'user') {
+        return gridLoadUser(request, gridAreaDto);
+      }
+      if (gridAreaDto.gridName === 'storage') {
+        return gridLoadStorage(request, gridAreaDto);
+      }
+      if (gridAreaDto.gridName === 'helloWorld') {
+        return gridLoadHelloWorld(request, gridAreaDto);
+      }
+      throw new Error(`Unknown gridName: ${gridAreaDto.gridName}`);
     }),
   );
 
