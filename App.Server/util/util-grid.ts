@@ -10,6 +10,16 @@ const STORAGE_FILE_COLUMNS: (keyof StorageFileDto)[] = ['fileName', 'fileNameOnl
 const PROJECT_COLUMNS = ['name', 'sectorKey'] as const satisfies (keyof ProjectDto)[];
 const USER_COLUMNS = ['email', 'sectorKey'] as const satisfies (keyof UserDto)[];
 
+function gridFindRow(columnNames: (string | undefined)[]): GridRowDto {
+  return {
+    cells: columnNames.map((columnName): GridCellDto =>
+      columnName !== undefined
+        ? { cellEnum: GridCellEnum.Find, columnName, placeHolder: `Find ${columnName}` }
+        : { cellEnum: GridCellEnum.Empty },
+    ),
+  };
+}
+
 async function gridLoadProject(request: Request, gridAreaDto: GridAreaDto): Promise<GridAreaDto> {
   const projects = await projectsLoad(request);
 
@@ -31,8 +41,9 @@ async function gridLoadProject(request: Request, gridAreaDto: GridAreaDto): Prom
   }));
 
   const rowKeys = projects.map((project) => project.name ?? '');
+  const findRow = gridFindRow([...PROJECT_COLUMNS, undefined]);
 
-  return { ...gridAreaDto, text: 'Project Data', rows: [headerRow, ...rows], rowKeys };
+  return { ...gridAreaDto, text: 'Project Data', rows: [findRow, headerRow, ...rows], rowKeys };
 }
 
 async function gridLoadProjectCommand(request: Request, gridAreaDto: GridAreaDto): Promise<void> {
@@ -62,8 +73,9 @@ async function gridLoadUser(request: Request, gridAreaDto: GridAreaDto): Promise
   const rows: GridRowDto[] = users.map((user, rowIndex) => ({
     cells: USER_COLUMNS.map((column): GridCellDto => ({ cellEnum: GridCellEnum.Text, text: user[column], rowIndex, columnName: column })),
   }));
+  const findRow = gridFindRow([...USER_COLUMNS]);
 
-  return { ...gridAreaDto, text: 'User Data', rows: [headerRow, ...rows] };
+  return { ...gridAreaDto, text: 'User Data', rows: [findRow, headerRow, ...rows] };
 }
 
 async function gridLoadStorage(request: Request, gridAreaDto: GridAreaDto): Promise<GridAreaDto> {
@@ -75,15 +87,24 @@ async function gridLoadStorage(request: Request, gridAreaDto: GridAreaDto): Prom
   const fileRows: GridRowDto[] = files.map((file, rowIndex) => ({
     cells: STORAGE_FILE_COLUMNS.map((column): GridCellDto => ({ cellEnum: GridCellEnum.Text, text: String(file[column]), rowIndex, columnName: column })),
   }));
+  const findRow = gridFindRow([...STORAGE_FILE_COLUMNS]);
 
-  return { ...gridAreaDto, text: 'Storage Data', rows: [headerRow, ...fileRows] };
+  return { ...gridAreaDto, text: 'Storage Data', rows: [findRow, headerRow, ...fileRows] };
 }
 
 async function gridLoadHelloWorld(request: Request, gridAreaDto: GridAreaDto): Promise<GridAreaDto> {
+  const findRow: GridRowDto = {
+    cells: [
+      { cellEnum: GridCellEnum.Find, placeHolder: 'Find' },
+      { cellEnum: GridCellEnum.Find, placeHolder: 'Find' },
+    ],
+  };
+
   return {
     ...gridAreaDto,
     text: 'Hello World Data',
     rows: [
+      findRow,
       { cells: [{ text: '1', rowIndex: 0 }, { text: 'Hello', rowIndex: 0 }] },
       { cells: [{ text: '2', rowIndex: 1 }, { text: 'World', rowIndex: 1 }] },
     ],
