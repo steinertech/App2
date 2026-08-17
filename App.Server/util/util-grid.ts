@@ -14,7 +14,7 @@ function gridFindRow(columnNames: (string | undefined)[]): GridRowDto {
   return {
     cells: columnNames.map((columnName): GridCellDto =>
       columnName !== undefined
-        ? { cellEnum: GridCellEnum.Find, columnName, placeHolder: `Find ${columnName}` }
+        ? { cellEnum: GridCellEnum.Find, columnName, placeHolder: 'Search' }
         : { cellEnum: GridCellEnum.Empty },
     ),
   };
@@ -117,8 +117,8 @@ async function gridLoadStorage(request: Request, gridAreaDto: GridAreaDto): Prom
 async function gridLoadHelloWorld(request: Request, gridAreaDto: GridAreaDto): Promise<GridAreaDto> {
   const findRow: GridRowDto = {
     cells: [
-      { cellEnum: GridCellEnum.Find, placeHolder: 'Find' },
-      { cellEnum: GridCellEnum.Find, placeHolder: 'Find' },
+      { cellEnum: GridCellEnum.Find, placeHolder: 'Search' },
+      { cellEnum: GridCellEnum.Find, placeHolder: 'Search' },
     ],
   };
 

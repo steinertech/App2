@@ -17,6 +17,19 @@ interface GridProps {
   gridName: string;
 }
 
+function gridCellClassName(gridCell: GridCellDto, rowSelected: boolean): string {
+  if (gridCell.cellEnum === GridCellEnum.Header) {
+    return 'font-bold text-white bg-blue-600';
+  }
+  if (gridCell.cellEnum === GridCellEnum.Find) {
+    return 'bg-blue-50';
+  }
+  if (rowSelected) {
+    return 'bg-blue-100';
+  }
+  return '';
+}
+
 function gridCustomContent(gridCustom: GridCustomDto, key: number, onCustomClick: (gridCustom: GridCustomDto) => void): ReactNode {
   if (gridCustom.customEnum === GridCustomEnum.Button) {
     return (
@@ -36,7 +49,7 @@ function gridCellContent(gridCell: GridCellDto, onCustomClick: (gridCustom: Grid
     return 'Empty';
   }
   if (gridCell.cellEnum === GridCellEnum.Find || gridCell.cellEnum === GridCellEnum.Text) {
-    return <input type="text" placeholder={gridCell.placeHolder} defaultValue={gridCell.text} />;
+    return <input type="text" placeholder={gridCell.placeHolder} defaultValue={gridCell.text} className="w-full" />;
   }
   if (gridCell.cellEnum === GridCellEnum.Header) {
     const arrow = gridCell.isSortAsc === true ? ' ↑' : gridCell.isSortAsc === false ? ' ↓' : '';
@@ -51,6 +64,7 @@ export default function Grid({ gridDto: gridDtoProp, gridName }: GridProps) {
 
   const gridArea = gridDto.areas?.find((area) => area.gridName === gridName);
   const gridRows = gridArea?.rows ?? [];
+  const [rowIndexSelected, setRowIndexSelected] = useState(gridArea?.state?.rowIndexSelected);
 
   const handleCustomClick = async (gridCell: GridCellDto, gridCustom: GridCustomDto) => {
     const gridCommand: GridCommandDto = { commandEnum: GridCommandEnum.CustomButtonClick };
@@ -103,7 +117,7 @@ export default function Grid({ gridDto: gridDtoProp, gridName }: GridProps) {
 
   return (
     <div>
-      <h1>{gridArea?.text}</h1>
+      <h1 className="text-4xl font-bold">{gridArea?.text}</h1>
       <table className="w-full">
         <tbody>
           {gridRows.map((gridRow, rowIndex) => (
@@ -111,9 +125,12 @@ export default function Grid({ gridDto: gridDtoProp, gridName }: GridProps) {
               {(gridRow.cells ?? []).map((gridCell, cellIndex) => (
                 <td
                   key={cellIndex}
+                  className={gridCellClassName(gridCell, gridCell.rowIndex !== undefined && gridCell.rowIndex === rowIndexSelected)}
                   onClick={() => {
                     if (gridCell.cellEnum === GridCellEnum.Header) {
                       void handleHeaderClick(gridCell);
+                    } else if (gridCell.rowIndex !== undefined) {
+                      setRowIndexSelected(gridCell.rowIndex);
                     }
                   }}
                 >
