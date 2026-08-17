@@ -5,11 +5,11 @@ export function languageFromRequest(request: Request): Language {
   return acceptLanguage.toLowerCase().startsWith('de') ? 'de' : 'en';
 }
 
-const helloWorldTranslations: Record<Language, string> = {
+const textTranslations: Record<Language, string> = {
   en: 'Hello World',
   de: 'Hallo Welt',
 };
 
-export function translateHelloWorld(language: Language): string {
-  return helloWorldTranslations[language];
+export function translateText(language: Language): string {
+  return textTranslations[language];
 }
