@@ -1,4 +1,4 @@
-import { GridAreaDto, GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridRowDto } from '../dto/web/grid-dto.js';
+import { GridAreaDto, GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridRowDto, GridStateSortDto } from '../dto/web/grid-dto.js';
 import { projectsLoad } from './util-project.js';
 import { usersLoad, userProject } from './util-user.js';
 import { storageFiles } from './util-storage.js';
@@ -20,12 +20,34 @@ function gridFindRow(columnNames: (string | undefined)[]): GridRowDto {
   };
 }
 
+function gridHeaderCell(column: string, sort?: GridStateSortDto): GridCellDto {
+  const cell: GridCellDto = { cellEnum: GridCellEnum.Header, text: column, columnName: column };
+  if (sort?.columnName === column) {
+    cell.isSortAsc = sort.isSortAsc;
+  }
+  return cell;
+}
+
+function gridCommandSortClick(gridAreaDto: GridAreaDto): void {
+  if (gridAreaDto.command?.commandEnum !== GridCommandEnum.SortClick) {
+    return;
+  }
+
+  const columnName = gridAreaDto.command.columnName;
+  if (columnName === undefined) {
+    return;
+  }
+
+  const isSortAsc = !(gridAreaDto.state?.sort?.isSortAsc ?? false);
+  gridAreaDto.state = { ...gridAreaDto.state, sort: { columnName, isSortAsc } };
+}
+
 async function gridLoadProject(request: Request, gridAreaDto: GridAreaDto): Promise<GridAreaDto> {
   const projects = await projectsLoad(request);
 
   const headerRow: GridRowDto = {
     cells: [
-      ...PROJECT_COLUMNS.map((column): GridCellDto => ({ cellEnum: GridCellEnum.Header, text: column, columnName: column })),
+      ...PROJECT_COLUMNS.map((column) => gridHeaderCell(column, gridAreaDto.state?.sort)),
       { cellEnum: GridCellEnum.Header, text: 'Command' },
     ],
   };
@@ -68,7 +90,7 @@ async function gridLoadUser(request: Request, gridAreaDto: GridAreaDto): Promise
   const users = await usersLoad(request);
 
   const headerRow: GridRowDto = {
-    cells: USER_COLUMNS.map((column): GridCellDto => ({ cellEnum: GridCellEnum.Header, text: column, columnName: column })),
+    cells: USER_COLUMNS.map((column) => gridHeaderCell(column, gridAreaDto.state?.sort)),
   };
   const rows: GridRowDto[] = users.map((user, rowIndex) => ({
     cells: USER_COLUMNS.map((column): GridCellDto => ({ cellEnum: GridCellEnum.Text, text: user[column], rowIndex, columnName: column })),
@@ -82,7 +104,7 @@ async function gridLoadStorage(request: Request, gridAreaDto: GridAreaDto): Prom
   const files = await storageFiles(request);
 
   const headerRow: GridRowDto = {
-    cells: STORAGE_FILE_COLUMNS.map((column): GridCellDto => ({ cellEnum: GridCellEnum.Header, text: column, columnName: column })),
+    cells: STORAGE_FILE_COLUMNS.map((column) => gridHeaderCell(column, gridAreaDto.state?.sort)),
   };
   const fileRows: GridRowDto[] = files.map((file, rowIndex) => ({
     cells: STORAGE_FILE_COLUMNS.map((column): GridCellDto => ({ cellEnum: GridCellEnum.Text, text: String(file[column]), rowIndex, columnName: column })),
@@ -113,6 +135,7 @@ async function gridLoadHelloWorld(request: Request, gridAreaDto: GridAreaDto): P
 
 export async function gridLoad(request: Request, gridDto: GridDto): Promise<GridDto> {
   for (const gridAreaDto of gridDto.areas ?? []) {
+    gridCommandSortClick(gridAreaDto);
     if (gridAreaDto.gridName === 'project') {
       await gridLoadProjectCommand(request, gridAreaDto);
     }
