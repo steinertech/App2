@@ -111,6 +111,26 @@ async function gridLoadHelloWorld(request: Request, gridAreaDto: GridAreaDto): P
   };
 }
 
+function gridMoveHeadersToTop(rows: GridRowDto[]): GridRowDto[] {
+  const headerCells: GridCellDto[] = [];
+  const remainingRows: GridRowDto[] = [];
+
+  for (const row of rows) {
+    const cells = row.cells ?? [];
+    const nonHeaderCells = cells.filter((cell) => cell.cellEnum !== GridCellEnum.Header);
+    headerCells.push(...cells.filter((cell) => cell.cellEnum === GridCellEnum.Header));
+    if (nonHeaderCells.length > 0) {
+      remainingRows.push({ ...row, cells: nonHeaderCells });
+    }
+  }
+
+  if (headerCells.length === 0) {
+    return rows;
+  }
+
+  return [{ cells: headerCells }, ...remainingRows];
+}
+
 export async function gridLoad(request: Request, gridDto: GridDto): Promise<GridDto> {
   for (const gridAreaDto of gridDto.areas ?? []) {
     if (gridAreaDto.gridName === 'project') {
@@ -119,20 +139,20 @@ export async function gridLoad(request: Request, gridDto: GridDto): Promise<Grid
   }
 
   const areas = await Promise.all(
-    (gridDto.areas ?? []).map((gridAreaDto): Promise<GridAreaDto> => {
+    (gridDto.areas ?? []).map(async (gridAreaDto): Promise<GridAreaDto> => {
+      let gridArea: GridAreaDto;
       if (gridAreaDto.gridName === 'project') {
-        return gridLoadProject(request, gridAreaDto);
+        gridArea = await gridLoadProject(request, gridAreaDto);
+      } else if (gridAreaDto.gridName === 'user') {
+        gridArea = await gridLoadUser(request, gridAreaDto);
+      } else if (gridAreaDto.gridName === 'storage') {
+        gridArea = await gridLoadStorage(request, gridAreaDto);
+      } else if (gridAreaDto.gridName === 'helloWorld') {
+        gridArea = await gridLoadHelloWorld(request, gridAreaDto);
+      } else {
+        throw new Error(`Unknown gridName: ${gridAreaDto.gridName}`);
       }
-      if (gridAreaDto.gridName === 'user') {
-        return gridLoadUser(request, gridAreaDto);
-      }
-      if (gridAreaDto.gridName === 'storage') {
-        return gridLoadStorage(request, gridAreaDto);
-      }
-      if (gridAreaDto.gridName === 'helloWorld') {
-        return gridLoadHelloWorld(request, gridAreaDto);
-      }
-      throw new Error(`Unknown gridName: ${gridAreaDto.gridName}`);
+      return { ...gridArea, rows: gridMoveHeadersToTop(gridArea.rows ?? []) };
     }),
   );
 
