@@ -43,7 +43,7 @@ async function gridLoadProject(request: Request, gridAreaDto: GridAreaDto): Prom
   const rowKeys = projects.map((project) => project.name ?? '');
   const findRow = gridFindRow([...PROJECT_COLUMNS, undefined]);
 
-  return { ...gridAreaDto, text: 'Project Data', rows: [findRow, headerRow, ...rows], rowKeys };
+  return { ...gridAreaDto, text: 'Project Data', rows: [headerRow, findRow, ...rows], rowKeys };
 }
 
 async function gridLoadProjectCommand(request: Request, gridAreaDto: GridAreaDto): Promise<void> {
@@ -75,7 +75,7 @@ async function gridLoadUser(request: Request, gridAreaDto: GridAreaDto): Promise
   }));
   const findRow = gridFindRow([...USER_COLUMNS]);
 
-  return { ...gridAreaDto, text: 'User Data', rows: [findRow, headerRow, ...rows] };
+  return { ...gridAreaDto, text: 'User Data', rows: [headerRow, findRow, ...rows] };
 }
 
 async function gridLoadStorage(request: Request, gridAreaDto: GridAreaDto): Promise<GridAreaDto> {
@@ -89,7 +89,7 @@ async function gridLoadStorage(request: Request, gridAreaDto: GridAreaDto): Prom
   }));
   const findRow = gridFindRow([...STORAGE_FILE_COLUMNS]);
 
-  return { ...gridAreaDto, text: 'Storage Data', rows: [findRow, headerRow, ...fileRows] };
+  return { ...gridAreaDto, text: 'Storage Data', rows: [headerRow, findRow, ...fileRows] };
 }
 
 async function gridLoadHelloWorld(request: Request, gridAreaDto: GridAreaDto): Promise<GridAreaDto> {
