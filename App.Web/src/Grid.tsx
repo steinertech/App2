@@ -48,6 +48,12 @@ function gridCellContent(gridCell: GridCellDto, onCustomClick: (gridCustom: Grid
   if (gridCell.cellEnum === GridCellEnum.Custom) {
     return (gridCell.customs ?? []).map((gridCustom, index) => gridCustomContent(gridCustom, index, onCustomClick));
   }
+  if (gridCell.cellEnum === GridCellEnum.Empty) {
+    return 'Empty';
+  }
+  if (gridCell.cellEnum === GridCellEnum.Find || gridCell.cellEnum === GridCellEnum.Text) {
+    return <input type="text" placeholder={gridCell.placeHolder} defaultValue={gridCell.text} />;
+  }
   return gridCell.text;
 }
 

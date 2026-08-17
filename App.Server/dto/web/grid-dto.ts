@@ -3,6 +3,8 @@ export enum GridCellEnum {
   Text = 1,
   Header = 2,
   Custom = 3,
+  Find = 4,
+  Empty = 5,
 }
 
 export enum GridCustomEnum {
@@ -35,6 +37,7 @@ export interface GridCellDto {
   text?: string;
   rowIndex?: number;
   columnName?: string;
+  placeHolder?: string;
 }
 
 export interface GridRowDto {
