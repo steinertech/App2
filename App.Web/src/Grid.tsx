@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { apiUrl } from './page/App.tsx';
 import type { GridDto } from './util/util-grid.ts';
-import { buttonPrimaryClassName, textInputClassName } from './style.ts';
+import { buttonPrimaryClassName } from './style.ts';
 import {
   GridCellEnum,
   GridCommandEnum,
@@ -15,19 +15,6 @@ import {
 interface GridProps {
   gridDto: GridDto;
   gridName: string;
-}
-
-function gridCellClassName(gridCell: GridCellDto, rowSelected: boolean): string {
-  const classes = ['border', 'border-gray-300', 'p-2'];
-  if (rowSelected) {
-    classes.push('bg-blue-600', 'text-white');
-  } else if (gridCell.cellEnum === GridCellEnum.Header) {
-    classes.push('bg-gray-200', 'font-bold');
-  }
-  if (gridCell.rowIndex !== undefined || (gridCell.cellEnum === GridCellEnum.Header && gridCell.columnName !== undefined)) {
-    classes.push('cursor-pointer');
-  }
-  return classes.join(' ');
 }
 
 function gridCustomContent(gridCustom: GridCustomDto, key: number, onCustomClick: (gridCustom: GridCustomDto) => void): ReactNode {
@@ -49,14 +36,7 @@ function gridCellContent(gridCell: GridCellDto, onCustomClick: (gridCustom: Grid
     return 'Empty';
   }
   if (gridCell.cellEnum === GridCellEnum.Find || gridCell.cellEnum === GridCellEnum.Text) {
-    return (
-      <input
-        type="text"
-        placeholder={gridCell.placeHolder}
-        defaultValue={gridCell.text}
-        className={textInputClassName}
-      />
-    );
+    return <input type="text" placeholder={gridCell.placeHolder} defaultValue={gridCell.text} />;
   }
   if (gridCell.cellEnum === GridCellEnum.Header) {
     const arrow = gridCell.isSortAsc === true ? ' ↑' : gridCell.isSortAsc === false ? ' ↓' : '';
@@ -71,7 +51,6 @@ export default function Grid({ gridDto: gridDtoProp, gridName }: GridProps) {
 
   const gridArea = gridDto.areas?.find((area) => area.gridName === gridName);
   const gridRows = gridArea?.rows ?? [];
-  const [rowIndexSelected, setRowIndexSelected] = useState(gridArea?.state?.rowIndexSelected);
 
   const handleCustomClick = async (gridCell: GridCellDto, gridCustom: GridCustomDto) => {
     const gridCommand: GridCommandDto = { commandEnum: GridCommandEnum.CustomButtonClick };
@@ -125,19 +104,16 @@ export default function Grid({ gridDto: gridDtoProp, gridName }: GridProps) {
   return (
     <div>
       <h1>{gridArea?.text}</h1>
-      <table className="border-collapse">
+      <table className="w-full">
         <tbody>
           {gridRows.map((gridRow, rowIndex) => (
             <tr key={rowIndex}>
               {(gridRow.cells ?? []).map((gridCell, cellIndex) => (
                 <td
                   key={cellIndex}
-                  className={gridCellClassName(gridCell, gridCell.rowIndex !== undefined && gridCell.rowIndex === rowIndexSelected)}
                   onClick={() => {
                     if (gridCell.cellEnum === GridCellEnum.Header) {
                       void handleHeaderClick(gridCell);
-                    } else if (gridCell.rowIndex !== undefined) {
-                      setRowIndexSelected(gridCell.rowIndex);
                     }
                   }}
                 >
