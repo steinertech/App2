@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { apiUrl } from './App.tsx';
 import { refreshUserSession } from '../UserSession.tsx';
-import { buttonPrimaryClassName, textInputClassName } from '../style.ts';
+import { buttonPrimaryClassName, container, textInputClassName } from '../style.ts';
 
 export default function UserLogin() {
   const [email, setEmail] = useState('');
@@ -27,7 +27,7 @@ export default function UserLogin() {
   };
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center">
+    <div className={container}>
       <h1>User Login</h1>
       <label className="mb-2">
         Email

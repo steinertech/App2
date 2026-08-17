@@ -1,3 +1,5 @@
+export const container = 'container mx-auto px-4';
+
 export const buttonPrimaryClassName =
   'cursor-pointer rounded-md bg-blue-600 px-5 py-2.5 text-base font-medium text-white hover:bg-blue-700';
 
