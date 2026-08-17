@@ -1,6 +1,22 @@
 {
   "rewrites": [
     { "source": "/api/(.*)", "destination": "https://app2-kappa-roan.vercel.app/api/$1" },
+    { "source": "/", "destination": "/index.html" },
+    { "source": "/de", "destination": "/de/index.html" },
+    { "source": "/about", "destination": "/about/index.html" },
+    { "source": "/de/about", "destination": "/de/about/index.html" },
+    { "source": "/debug", "destination": "/debug/index.html" },
+    { "source": "/de/debug", "destination": "/de/debug/index.html" },
+    { "source": "/user-register", "destination": "/user-register/index.html" },
+    { "source": "/de/user-register", "destination": "/de/user-register/index.html" },
+    { "source": "/user-login", "destination": "/user-login/index.html" },
+    { "source": "/de/user-login", "destination": "/de/user-login/index.html" },
+    { "source": "/user-logout", "destination": "/user-logout/index.html" },
+    { "source": "/de/user-logout", "destination": "/de/user-logout/index.html" },
+    { "source": "/project", "destination": "/project/index.html" },
+    { "source": "/de/project", "destination": "/de/project/index.html" },
+    { "source": "/storage", "destination": "/storage/index.html" },
+    { "source": "/de/storage", "destination": "/de/storage/index.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
