@@ -1,4 +1,4 @@
-import { GridAreaDto, GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridRowDto, GridStateSortDto } from '../dto/web/grid-dto.js';
+import { GridAreaDto, GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridRowDto, GridSortDto } from '../dto/web/grid-dto.js';
 import { titleCase } from './util-main.js';
 import { projectsLoad } from './util-project.js';
 import { usersLoad, userProject } from './util-user.js';
@@ -34,7 +34,7 @@ function gridFindRow(columnNames: (string | undefined)[]): GridRowDto {
   };
 }
 
-function gridHeaderCell(column: string | undefined, sort?: GridStateSortDto): GridCellDto {
+function gridHeaderCell(column: string | undefined, sort?: GridSortDto): GridCellDto {
   const cell: GridCellDto = { cellEnum: GridCellEnum.Header, text: titleCase(column), columnName: column };
   if (sort && sort.columnName === column) {
     cell.isSortAsc = sort.isSortAsc;
