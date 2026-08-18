@@ -7,7 +7,7 @@ export default function Storage() {
   const { load } = useGridStore();
 
   useEffect(() => {
-    void load(['storage']);
+    void load('storage');
   }, [load]);
 
   return (

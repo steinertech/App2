@@ -11,7 +11,7 @@ export default function Debug() {
   const { load } = useGridStore();
 
   useEffect(() => {
-    void load(['project']);
+    void load('debug');
   }, [load]);
 
   const handleDebugDbClick = async () => {
@@ -60,7 +60,7 @@ export default function Debug() {
 
   const handleGridClick = async () => {
     try {
-      const data = await load(['project']);
+      const data = await load('debug');
       setResult(JSON.stringify(data, null, 2));
     } catch {
       setResult('Error fetching grid');

@@ -8,7 +8,7 @@ export type GridAreaOverride = Omit<GridAreaDto, 'gridName'>;
 
 interface GridStoreValue {
   gridDto: GridDto;
-  load: (gridNames: string[]) => Promise<GridDto>;
+  load: (pageName: string) => Promise<GridDto>;
   sendCommand: (gridName: string, override: GridAreaOverride) => Promise<GridDto>;
 }
 
@@ -17,22 +17,27 @@ const GridStoreContext = createContext<GridStoreValue | undefined>(undefined);
 export function GridStoreProvider({ children }: { children: ReactNode }) {
   const [gridDto, setGridDto] = useState<GridDto>({});
   const gridDtoRef = useRef<GridDto>(gridDto);
-  const gridNamesRef = useRef<string[]>([]);
+  const pageNameRef = useRef<string | undefined>(undefined);
   const overridesRef = useRef<Map<string, GridAreaOverride>>(new Map());
 
   const fetchAreas = useCallback(async (): Promise<GridDto> => {
-    const areas: GridAreaDto[] = gridNamesRef.current.map((gridName) => {
-      const existingArea = gridDtoRef.current.areas?.find((area) => area.gridName === gridName);
-      const area: GridAreaDto = { ...existingArea, gridName, ...overridesRef.current.get(gridName) };
+    const areas: GridAreaDto[] = (gridDtoRef.current.areas ?? []).map((existingArea) => {
+      const override = existingArea.gridName !== undefined ? overridesRef.current.get(existingArea.gridName) : undefined;
+      const area: GridAreaDto = { ...existingArea, ...override };
       delete area.rows;
       return area;
     });
     overridesRef.current.clear();
 
+    const body: GridDto = { areas };
+    if (pageNameRef.current !== undefined) {
+      body.pageName = pageNameRef.current;
+    }
+
     const response = await fetch(`${apiUrl}grid`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ areas } satisfies GridDto),
+      body: JSON.stringify(body),
     });
     const data = (await response.json()) as GridDto;
     gridDtoRef.current = data;
@@ -41,8 +46,10 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const load = useCallback(
-    (gridNames: string[]): Promise<GridDto> => {
-      gridNamesRef.current = gridNames;
+    (pageName: string): Promise<GridDto> => {
+      pageNameRef.current = pageName;
+      gridDtoRef.current = {};
+      overridesRef.current.clear();
       return fetchAreas();
     },
     [fetchAreas],
