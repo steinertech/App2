@@ -33,9 +33,9 @@ function gridFindRow(columnNames: (string | undefined)[]): GridRowDto {
   };
 }
 
-function gridHeaderCell(column: string, sort?: GridStateSortDto): GridCellDto {
+function gridHeaderCell(column: string | undefined, sort?: GridStateSortDto): GridCellDto {
   const cell: GridCellDto = { cellEnum: GridCellEnum.Header, text: column, columnName: column };
-  if (sort?.columnName === column) {
+  if (sort && sort.columnName === column) {
     cell.isSortAsc = sort.isSortAsc;
   }
   return cell;
@@ -60,13 +60,13 @@ async function gridLoadProject(request: Request, gridAreaDto: GridAreaDto): Prom
 
   const headerRow: GridRowDto = {
     cells: [
-      ...PROJECT_COLUMNS.columns.map((column) => gridHeaderCell(column.columnName, gridAreaDto.state?.sort)),
+      ...(PROJECT_COLUMNS.columns ?? []).map((column) => gridHeaderCell(column.columnName, gridAreaDto.state?.sort)),
       { cellEnum: GridCellEnum.Header, text: 'Command' },
     ],
   };
   const rows: GridRowDto[] = projects.map((project, rowIndex) => ({
     cells: [
-      ...PROJECT_COLUMNS.columns.map(
+      ...(PROJECT_COLUMNS.columns ?? []).map(
         (column): GridCellDto => ({
           cellEnum: GridCellEnum.Text,
           text: project[column.columnName as keyof ProjectDto] as string | undefined,
@@ -83,7 +83,7 @@ async function gridLoadProject(request: Request, gridAreaDto: GridAreaDto): Prom
   }));
 
   const rowKeys = projects.map((project) => project.name ?? '');
-  const findRow = gridFindRow([...PROJECT_COLUMNS.columns.map((column) => column.columnName), undefined]);
+  const findRow = gridFindRow([...(PROJECT_COLUMNS.columns ?? []).map((column) => column.columnName), undefined]);
 
   return { ...gridAreaDto, text: 'Project Data', rows: [headerRow, findRow, ...rows], rowKeys };
 }
@@ -110,10 +110,10 @@ async function gridLoadUser(request: Request, gridAreaDto: GridAreaDto): Promise
   const users = await usersLoad(request);
 
   const headerRow: GridRowDto = {
-    cells: USER_COLUMNS.columns.map((column) => gridHeaderCell(column.columnName, gridAreaDto.state?.sort)),
+    cells: (USER_COLUMNS.columns ?? []).map((column) => gridHeaderCell(column.columnName, gridAreaDto.state?.sort)),
   };
   const rows: GridRowDto[] = users.map((user, rowIndex) => ({
-    cells: USER_COLUMNS.columns.map(
+    cells: (USER_COLUMNS.columns ?? []).map(
       (column): GridCellDto => ({
         cellEnum: GridCellEnum.Text,
         text: user[column.columnName as keyof UserDto] as string | undefined,
@@ -122,7 +122,7 @@ async function gridLoadUser(request: Request, gridAreaDto: GridAreaDto): Promise
       }),
     ),
   }));
-  const findRow = gridFindRow([...USER_COLUMNS.columns.map((column) => column.columnName)]);
+  const findRow = gridFindRow([...(USER_COLUMNS.columns ?? []).map((column) => column.columnName)]);
 
   return { ...gridAreaDto, text: 'User Data', rows: [headerRow, findRow, ...rows] };
 }
@@ -131,10 +131,10 @@ async function gridLoadStorage(request: Request, gridAreaDto: GridAreaDto): Prom
   const files = await storageFiles(request);
 
   const headerRow: GridRowDto = {
-    cells: STORAGE_FILE_COLUMNS.columns.map((column) => gridHeaderCell(column.columnName, gridAreaDto.state?.sort)),
+    cells: (STORAGE_FILE_COLUMNS.columns ?? []).map((column) => gridHeaderCell(column.columnName, gridAreaDto.state?.sort)),
   };
   const fileRows: GridRowDto[] = files.map((file, rowIndex) => ({
-    cells: STORAGE_FILE_COLUMNS.columns.map(
+    cells: (STORAGE_FILE_COLUMNS.columns ?? []).map(
       (column): GridCellDto => ({
         cellEnum: GridCellEnum.Text,
         text: String(file[column.columnName as keyof StorageFileDto]),
@@ -143,7 +143,7 @@ async function gridLoadStorage(request: Request, gridAreaDto: GridAreaDto): Prom
       }),
     ),
   }));
-  const findRow = gridFindRow([...STORAGE_FILE_COLUMNS.columns.map((column) => column.columnName)]);
+  const findRow = gridFindRow([...(STORAGE_FILE_COLUMNS.columns ?? []).map((column) => column.columnName)]);
 
   return { ...gridAreaDto, text: 'Storage Data', rows: [headerRow, findRow, ...fileRows] };
 }

@@ -5,10 +5,10 @@ export enum GridConfigColumnType {
 }
 
 export interface GridConfigColumnDto {
-  columnName: string;
-  columnType: GridConfigColumnType;
+  columnName?: string;
+  columnType?: GridConfigColumnType;
 }
 
 export interface GridConfigDto {
-  columns: GridConfigColumnDto[];
+  columns?: GridConfigColumnDto[];
 }
