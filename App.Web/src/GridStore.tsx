@@ -4,12 +4,12 @@ import type { GridAreaDto, GridDto } from '../../App.Server/dto/web/grid-dto.ts'
 
 export type { GridDto };
 
-export type GridAreaOverride = Omit<GridAreaDto, 'gridName'>;
+export type GridAreaOverride = GridAreaDto;
 
 interface GridStoreValue {
   gridDto: GridDto;
   load: (pageName: string) => Promise<GridDto>;
-  sendCommand: (gridName: string, override: GridAreaOverride) => Promise<GridDto>;
+  sendCommand: (gridIndex: number, override: GridAreaOverride) => Promise<GridDto>;
 }
 
 const GridStoreContext = createContext<GridStoreValue | undefined>(undefined);
@@ -18,11 +18,11 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
   const [gridDto, setGridDto] = useState<GridDto>({});
   const gridDtoRef = useRef<GridDto>(gridDto);
   const pageNameRef = useRef<string | undefined>(undefined);
-  const overridesRef = useRef<Map<string, GridAreaOverride>>(new Map());
+  const overridesRef = useRef<Map<number, GridAreaOverride>>(new Map());
 
   const fetchAreas = useCallback(async (): Promise<GridDto> => {
-    const areas: GridAreaDto[] = (gridDtoRef.current.areas ?? []).map((existingArea) => {
-      const override = existingArea.gridName !== undefined ? overridesRef.current.get(existingArea.gridName) : undefined;
+    const areas: GridAreaDto[] = (gridDtoRef.current.areas ?? []).map((existingArea, gridIndex) => {
+      const override = overridesRef.current.get(gridIndex);
       const area: GridAreaDto = { ...existingArea, ...override };
       delete area.rows;
       return area;
@@ -56,8 +56,8 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
   );
 
   const sendCommand = useCallback(
-    (gridName: string, override: GridAreaOverride): Promise<GridDto> => {
-      overridesRef.current.set(gridName, override);
+    (gridIndex: number, override: GridAreaOverride): Promise<GridDto> => {
+      overridesRef.current.set(gridIndex, override);
       return fetchAreas();
     },
     [fetchAreas],

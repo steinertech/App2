@@ -13,8 +13,8 @@ export default function Project() {
   return (
     <div className={container}>
       <h1>Project</h1>
-      <Grid gridName="project" />
-      <Grid gridName="user" />
+      <Grid gridIndex={0} />
+      <Grid gridIndex={1} />
     </div>
   );
 }

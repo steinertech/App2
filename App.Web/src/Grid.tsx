@@ -11,7 +11,7 @@ import {
 } from '../../App.Server/dto/web/grid-dto.ts';
 
 interface GridProps {
-  gridName: string;
+  gridIndex: number;
 }
 
 function gridCellClassName(gridCell: GridCellDto, rowSelected: boolean): string {
@@ -55,10 +55,10 @@ function gridCellContent(gridCell: GridCellDto, onCustomClick: (gridCustom: Grid
   return gridCell.text;
 }
 
-export default function Grid({ gridName }: GridProps) {
+export default function Grid({ gridIndex }: GridProps) {
   const { gridDto, sendCommand } = useGridStore();
 
-  const gridArea = gridDto.areas?.find((area) => area.gridName === gridName);
+  const gridArea = gridDto.areas?.[gridIndex];
   const gridRows = gridArea?.rows ?? [];
   const [rowIndexSelected, setRowIndexSelected] = useState(gridArea?.state?.rowIndexSelected);
 
@@ -74,7 +74,7 @@ export default function Grid({ gridName }: GridProps) {
       gridCommand.customName = gridCustom.name;
     }
 
-    await sendCommand(gridName, { command: gridCommand });
+    await sendCommand(gridIndex, { command: gridCommand });
   };
 
   const handleHeaderClick = async (gridCell: GridCellDto) => {
@@ -82,11 +82,11 @@ export default function Grid({ gridName }: GridProps) {
       return;
     }
     const gridCommand: GridCommandDto = { commandEnum: GridCommandEnum.SortClick, columnName: gridCell.columnName };
-    await sendCommand(gridName, { command: gridCommand });
+    await sendCommand(gridIndex, { command: gridCommand });
   };
 
   const handleReloadClick = async () => {
-    await sendCommand(gridName, { command: { commandEnum: GridCommandEnum.Reload } });
+    await sendCommand(gridIndex, { command: { commandEnum: GridCommandEnum.Reload } });
   };
 
   return (

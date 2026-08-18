@@ -13,7 +13,7 @@ export default function Storage() {
   return (
     <div className={container}>
       <h1>Storage</h1>
-      <Grid gridName="storage" />
+      <Grid gridIndex={0} />
     </div>
   );
 }

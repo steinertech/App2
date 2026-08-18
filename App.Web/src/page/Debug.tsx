@@ -101,7 +101,7 @@ export default function Debug() {
       </button>
       <label className="mt-4 whitespace-pre-wrap">{result}</label>
       <div className="mt-4">
-        <Grid gridName="project" />
+        <Grid gridIndex={0} />
       </div>
     </div>
   );
