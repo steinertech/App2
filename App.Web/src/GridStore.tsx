@@ -1,79 +1,58 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react';
 import { apiUrl } from './page/App.tsx';
-import { GridCommandEnum, type GridAreaDto, type GridCommandDto, type GridDto } from '../../App.Server/dto/web/grid-dto.ts';
+import type { GridAreaDto, GridDto } from '../../App.Server/dto/web/grid-dto.ts';
 
 export type { GridDto };
+
+export type GridAreaOverride = Omit<GridAreaDto, 'gridName'>;
 
 interface GridStoreValue {
   gridDto: GridDto;
   load: (gridNames: string[]) => Promise<GridDto>;
-  reload: (gridName: string) => Promise<GridDto>;
-  sendArea: (area: GridAreaDto) => Promise<GridDto>;
+  sendCommand: (gridName: string, override: GridAreaOverride) => Promise<GridDto>;
 }
 
 const GridStoreContext = createContext<GridStoreValue | undefined>(undefined);
 
-function mergeAreas(gridDto: GridDto, newAreas: GridAreaDto[]): GridDto {
-  const areas = [...(gridDto.areas ?? [])];
-  for (const area of newAreas) {
-    const index = areas.findIndex((existing) => existing.gridName === area.gridName);
-    if (index === -1) {
-      areas.push(area);
-    } else {
-      areas[index] = area;
-    }
-  }
-  return { ...gridDto, areas };
-}
-
 export function GridStoreProvider({ children }: { children: ReactNode }) {
   const [gridDto, setGridDto] = useState<GridDto>({});
   const gridNamesRef = useRef<string[]>([]);
-  const commandsRef = useRef<Map<string, GridCommandDto>>(new Map());
+  const overridesRef = useRef<Map<string, GridAreaOverride>>(new Map());
 
-  const fetchAreas = useCallback(async (areas: GridAreaDto[]): Promise<GridDto> => {
+  const fetchAreas = useCallback(async (): Promise<GridDto> => {
+    const areas: GridAreaDto[] = gridNamesRef.current.map((gridName) => ({
+      gridName,
+      ...overridesRef.current.get(gridName),
+    }));
+    overridesRef.current.clear();
+
     const response = await fetch(`${apiUrl}grid`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ areas } satisfies GridDto),
     });
-    return (await response.json()) as GridDto;
+    const data = (await response.json()) as GridDto;
+    setGridDto(data);
+    return data;
   }, []);
 
   const load = useCallback(
-    async (gridNames: string[]): Promise<GridDto> => {
+    (gridNames: string[]): Promise<GridDto> => {
       gridNamesRef.current = gridNames;
-      const data = await fetchAreas(
-        gridNames.map((gridName): GridAreaDto => {
-          const command = commandsRef.current.get(gridName);
-          return command ? { gridName, command } : { gridName };
-        }),
-      );
-      commandsRef.current.clear();
-      setGridDto(data);
-      return data;
+      return fetchAreas();
     },
     [fetchAreas],
   );
 
-  const reload = useCallback(
-    (gridName: string): Promise<GridDto> => {
-      commandsRef.current.set(gridName, { commandEnum: GridCommandEnum.Reload });
-      return load(gridNamesRef.current);
-    },
-    [load],
-  );
-
-  const sendArea = useCallback(
-    async (area: GridAreaDto): Promise<GridDto> => {
-      const data = await fetchAreas([area]);
-      setGridDto((prev) => mergeAreas(prev, data.areas ?? []));
-      return data;
+  const sendCommand = useCallback(
+    (gridName: string, override: GridAreaOverride): Promise<GridDto> => {
+      overridesRef.current.set(gridName, override);
+      return fetchAreas();
     },
     [fetchAreas],
   );
 
-  return <GridStoreContext.Provider value={{ gridDto, load, reload, sendArea }}>{children}</GridStoreContext.Provider>;
+  return <GridStoreContext.Provider value={{ gridDto, load, sendCommand }}>{children}</GridStoreContext.Provider>;
 }
 
 export function useGridStore(): GridStoreValue {
