@@ -143,7 +143,7 @@ export default function Grid({ gridDto: gridDtoProp, gridName }: GridProps) {
           ))}
         </tbody>
       </table>
-      <button type="button" onClick={() => void reload()} className={`${buttonPrimaryClassName} mt-2`}>
+      <button type="button" onClick={() => void reload(gridName)} className={`${buttonPrimaryClassName} mt-2`}>
         Reload
       </button>
     </div>

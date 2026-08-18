@@ -6,8 +6,8 @@ export type { GridDto };
 
 interface GridStoreValue {
   gridDto: GridDto;
-  load: (gridNames: string[], command?: GridCommandDto) => Promise<GridDto>;
-  reload: () => Promise<GridDto>;
+  load: (gridNames: string[]) => Promise<GridDto>;
+  reload: (gridName: string) => Promise<GridDto>;
 }
 
 const GridStoreContext = createContext<GridStoreValue | undefined>(undefined);
@@ -15,24 +15,40 @@ const GridStoreContext = createContext<GridStoreValue | undefined>(undefined);
 export function GridStoreProvider({ children }: { children: ReactNode }) {
   const [gridDto, setGridDto] = useState<GridDto>({});
   const gridNamesRef = useRef<string[]>([]);
+  const commandsRef = useRef<Map<string, GridCommandDto>>(new Map());
 
-  const load = useCallback(async (gridNames: string[], command?: GridCommandDto): Promise<GridDto> => {
-    gridNamesRef.current = gridNames;
+  const fetchAreas = useCallback(async (gridNames: string[]): Promise<GridDto> => {
     const response = await fetch(`${apiUrl}grid`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        areas: gridNames.map((gridName): GridAreaDto => (command ? { gridName, command } : { gridName })),
+        areas: gridNames.map((gridName): GridAreaDto => {
+          const command = commandsRef.current.get(gridName);
+          return command ? { gridName, command } : { gridName };
+        }),
       } satisfies GridDto),
     });
     const data: GridDto = await response.json();
+    commandsRef.current.clear();
     setGridDto(data);
     return data;
   }, []);
 
-  const reload = useCallback((): Promise<GridDto> => {
-    return load(gridNamesRef.current, { commandEnum: GridCommandEnum.Reload });
-  }, [load]);
+  const load = useCallback(
+    (gridNames: string[]): Promise<GridDto> => {
+      gridNamesRef.current = gridNames;
+      return fetchAreas(gridNames);
+    },
+    [fetchAreas],
+  );
+
+  const reload = useCallback(
+    (gridName: string): Promise<GridDto> => {
+      commandsRef.current.set(gridName, { commandEnum: GridCommandEnum.Reload });
+      return fetchAreas(gridNamesRef.current);
+    },
+    [fetchAreas],
+  );
 
   return <GridStoreContext.Provider value={{ gridDto, load, reload }}>{children}</GridStoreContext.Provider>;
 }
