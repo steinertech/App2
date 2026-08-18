@@ -1,4 +1,4 @@
-export enum GridConfigColumnType {
+export enum GridConfigTypeEnum {
   None = 0,
   Text = 1,
   Number = 2,
@@ -6,7 +6,7 @@ export enum GridConfigColumnType {
 
 export interface GridConfigColumnDto {
   columnName?: string;
-  columnType?: GridConfigColumnType;
+  typeEnum?: GridConfigTypeEnum;
 }
 
 export interface GridConfigDto {
