@@ -4,7 +4,7 @@ import { useGridStore } from '../GridStore.tsx';
 import { container } from '../style.ts';
 
 export default function Storage() {
-  const { gridDto, load } = useGridStore();
+  const { load } = useGridStore();
 
   useEffect(() => {
     void load(['storage']);
@@ -13,7 +13,7 @@ export default function Storage() {
   return (
     <div className={container}>
       <h1>Storage</h1>
-      <Grid gridDto={gridDto} gridName="storage" />
+      <Grid gridName="storage" />
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { useGridStore } from '../GridStore.tsx';
 import { container } from '../style.ts';
 
 export default function Project() {
-  const { gridDto, load } = useGridStore();
+  const { load } = useGridStore();
 
   useEffect(() => {
     void load(['project', 'user']);
@@ -13,8 +13,8 @@ export default function Project() {
   return (
     <div className={container}>
       <h1>Project</h1>
-      <Grid gridDto={gridDto} gridName="project" />
-      <Grid gridDto={gridDto} gridName="user" />
+      <Grid gridName="project" />
+      <Grid gridName="user" />
     </div>
   );
 }

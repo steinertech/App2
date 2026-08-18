@@ -1,20 +1,16 @@
-import { useEffect, useState, type ReactNode } from 'react';
-import { apiUrl } from './page/App.tsx';
-import { useGridStore } from './GridStore.tsx';
+import { useState, type ReactNode } from 'react';
+import { useGridStore, type GridAreaOverride } from './GridStore.tsx';
 import { buttonPrimaryClassName } from './style.ts';
 import {
   GridCellEnum,
   GridCommandEnum,
   GridCustomEnum,
-  type GridAreaDto,
   type GridCellDto,
   type GridCommandDto,
   type GridCustomDto,
-  type GridDto,
 } from '../../App.Server/dto/web/grid-dto.ts';
 
 interface GridProps {
-  gridDto: GridDto;
   gridName: string;
 }
 
@@ -59,10 +55,8 @@ function gridCellContent(gridCell: GridCellDto, onCustomClick: (gridCustom: Grid
   return gridCell.text;
 }
 
-export default function Grid({ gridDto: gridDtoProp, gridName }: GridProps) {
-  const [gridDto, setGridDto] = useState(gridDtoProp);
-  useEffect(() => setGridDto(gridDtoProp), [gridDtoProp]);
-  const { reload } = useGridStore();
+export default function Grid({ gridName }: GridProps) {
+  const { gridDto, sendCommand } = useGridStore();
 
   const gridArea = gridDto.areas?.find((area) => area.gridName === gridName);
   const gridRows = gridArea?.rows ?? [];
@@ -80,18 +74,11 @@ export default function Grid({ gridDto: gridDtoProp, gridName }: GridProps) {
       gridCommand.customName = gridCustom.name;
     }
 
-    const area: GridAreaDto = { gridName, command: gridCommand };
+    const override: GridAreaOverride = { command: gridCommand };
     if (gridArea?.rowKeys !== undefined) {
-      area.rowKeys = gridArea.rowKeys;
+      override.rowKeys = gridArea.rowKeys;
     }
-    const body: GridDto = { areas: [area] };
-
-    const response = await fetch(`${apiUrl}grid`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    setGridDto(await response.json());
+    await sendCommand(gridName, override);
   };
 
   const handleHeaderClick = async (gridCell: GridCellDto) => {
@@ -100,21 +87,18 @@ export default function Grid({ gridDto: gridDtoProp, gridName }: GridProps) {
     }
     const gridCommand: GridCommandDto = { commandEnum: GridCommandEnum.SortClick, columnName: gridCell.columnName };
 
-    const area: GridAreaDto = { gridName, command: gridCommand };
+    const override: GridAreaOverride = { command: gridCommand };
     if (gridArea?.rowKeys !== undefined) {
-      area.rowKeys = gridArea.rowKeys;
+      override.rowKeys = gridArea.rowKeys;
     }
     if (gridArea?.state !== undefined) {
-      area.state = gridArea.state;
+      override.state = gridArea.state;
     }
-    const body: GridDto = { areas: [area] };
+    await sendCommand(gridName, override);
+  };
 
-    const response = await fetch(`${apiUrl}grid`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    setGridDto(await response.json());
+  const handleReloadClick = async () => {
+    await sendCommand(gridName, { command: { commandEnum: GridCommandEnum.Reload } });
   };
 
   return (
@@ -143,7 +127,7 @@ export default function Grid({ gridDto: gridDtoProp, gridName }: GridProps) {
           ))}
         </tbody>
       </table>
-      <button type="button" onClick={() => void reload()} className={`${buttonPrimaryClassName} mt-2`}>
+      <button type="button" onClick={() => void handleReloadClick()} className={`${buttonPrimaryClassName} mt-2`}>
         Reload
       </button>
     </div>

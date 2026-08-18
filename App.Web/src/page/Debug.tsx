@@ -8,7 +8,7 @@ export default function Debug() {
   const [email, setEmail] = useState('');
   const [result, setResult] = useState('');
   const [downloadUrl, setDownloadUrl] = useState('');
-  const { gridDto, load } = useGridStore();
+  const { load } = useGridStore();
 
   useEffect(() => {
     void load(['project']);
@@ -60,12 +60,7 @@ export default function Debug() {
 
   const handleGridClick = async () => {
     try {
-      const response = await fetch(`${apiUrl}grid`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ areas: [{ gridName: 'project' }] }),
-      });
-      const data = await response.json();
+      const data = await load(['project']);
       setResult(JSON.stringify(data, null, 2));
     } catch {
       setResult('Error fetching grid');
@@ -106,7 +101,7 @@ export default function Debug() {
       </button>
       <label className="mt-4 whitespace-pre-wrap">{result}</label>
       <div className="mt-4">
-        <Grid gridDto={gridDto} gridName="project" />
+        <Grid gridName="project" />
       </div>
     </div>
   );
