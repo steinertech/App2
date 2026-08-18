@@ -5,10 +5,23 @@ import { storageFiles } from './util-storage.js';
 import { StorageFileDto } from '../dto/web/storage-file-dto.js';
 import { ProjectDto } from '../dto/server/project-dto.js';
 import { UserDto } from '../dto/server/user-dto.js';
+import { GridConfigColumnDto, GridConfigColumnType, GridConfigDto } from '../dto/server/grid-config-dto.js';
 
-const STORAGE_FILE_COLUMNS: (keyof StorageFileDto)[] = ['fileName', 'fileNameOnly', 'isFolder'];
-const PROJECT_COLUMNS = ['name', 'sectorKey'] as const satisfies (keyof ProjectDto)[];
-const USER_COLUMNS = ['email', 'sectorKey'] as const satisfies (keyof UserDto)[];
+const STORAGE_FILE_COLUMNS: GridConfigDto = {
+  columns: (['fileName', 'fileNameOnly', 'isFolder'] as const satisfies readonly (keyof StorageFileDto)[]).map(
+    (columnName): GridConfigColumnDto => ({ columnName, columnType: GridConfigColumnType.Text }),
+  ),
+};
+const PROJECT_COLUMNS: GridConfigDto = {
+  columns: (['name', 'sectorKey'] as const satisfies readonly (keyof ProjectDto)[]).map(
+    (columnName): GridConfigColumnDto => ({ columnName, columnType: GridConfigColumnType.Text }),
+  ),
+};
+const USER_COLUMNS: GridConfigDto = {
+  columns: (['email', 'sectorKey'] as const satisfies readonly (keyof UserDto)[]).map(
+    (columnName): GridConfigColumnDto => ({ columnName, columnType: GridConfigColumnType.Text }),
+  ),
+};
 
 function gridFindRow(columnNames: (string | undefined)[]): GridRowDto {
   return {
@@ -47,13 +60,20 @@ async function gridLoadProject(request: Request, gridAreaDto: GridAreaDto): Prom
 
   const headerRow: GridRowDto = {
     cells: [
-      ...PROJECT_COLUMNS.map((column) => gridHeaderCell(column, gridAreaDto.state?.sort)),
+      ...PROJECT_COLUMNS.columns.map((column) => gridHeaderCell(column.columnName, gridAreaDto.state?.sort)),
       { cellEnum: GridCellEnum.Header, text: 'Command' },
     ],
   };
   const rows: GridRowDto[] = projects.map((project, rowIndex) => ({
     cells: [
-      ...PROJECT_COLUMNS.map((column): GridCellDto => ({ cellEnum: GridCellEnum.Text, text: project[column], rowIndex, columnName: column })),
+      ...PROJECT_COLUMNS.columns.map(
+        (column): GridCellDto => ({
+          cellEnum: GridCellEnum.Text,
+          text: project[column.columnName as keyof ProjectDto] as string | undefined,
+          rowIndex,
+          columnName: column.columnName,
+        }),
+      ),
       {
         cellEnum: GridCellEnum.Custom,
         customs: [{ text: 'Switch', name: 'Switch', customEnum: GridCustomEnum.Button, rowIndex } satisfies GridCustomDto],
@@ -63,7 +83,7 @@ async function gridLoadProject(request: Request, gridAreaDto: GridAreaDto): Prom
   }));
 
   const rowKeys = projects.map((project) => project.name ?? '');
-  const findRow = gridFindRow([...PROJECT_COLUMNS, undefined]);
+  const findRow = gridFindRow([...PROJECT_COLUMNS.columns.map((column) => column.columnName), undefined]);
 
   return { ...gridAreaDto, text: 'Project Data', rows: [headerRow, findRow, ...rows], rowKeys };
 }
@@ -90,12 +110,19 @@ async function gridLoadUser(request: Request, gridAreaDto: GridAreaDto): Promise
   const users = await usersLoad(request);
 
   const headerRow: GridRowDto = {
-    cells: USER_COLUMNS.map((column) => gridHeaderCell(column, gridAreaDto.state?.sort)),
+    cells: USER_COLUMNS.columns.map((column) => gridHeaderCell(column.columnName, gridAreaDto.state?.sort)),
   };
   const rows: GridRowDto[] = users.map((user, rowIndex) => ({
-    cells: USER_COLUMNS.map((column): GridCellDto => ({ cellEnum: GridCellEnum.Text, text: user[column], rowIndex, columnName: column })),
+    cells: USER_COLUMNS.columns.map(
+      (column): GridCellDto => ({
+        cellEnum: GridCellEnum.Text,
+        text: user[column.columnName as keyof UserDto] as string | undefined,
+        rowIndex,
+        columnName: column.columnName,
+      }),
+    ),
   }));
-  const findRow = gridFindRow([...USER_COLUMNS]);
+  const findRow = gridFindRow([...USER_COLUMNS.columns.map((column) => column.columnName)]);
 
   return { ...gridAreaDto, text: 'User Data', rows: [headerRow, findRow, ...rows] };
 }
@@ -104,12 +131,19 @@ async function gridLoadStorage(request: Request, gridAreaDto: GridAreaDto): Prom
   const files = await storageFiles(request);
 
   const headerRow: GridRowDto = {
-    cells: STORAGE_FILE_COLUMNS.map((column) => gridHeaderCell(column, gridAreaDto.state?.sort)),
+    cells: STORAGE_FILE_COLUMNS.columns.map((column) => gridHeaderCell(column.columnName, gridAreaDto.state?.sort)),
   };
   const fileRows: GridRowDto[] = files.map((file, rowIndex) => ({
-    cells: STORAGE_FILE_COLUMNS.map((column): GridCellDto => ({ cellEnum: GridCellEnum.Text, text: String(file[column]), rowIndex, columnName: column })),
+    cells: STORAGE_FILE_COLUMNS.columns.map(
+      (column): GridCellDto => ({
+        cellEnum: GridCellEnum.Text,
+        text: String(file[column.columnName as keyof StorageFileDto]),
+        rowIndex,
+        columnName: column.columnName,
+      }),
+    ),
   }));
-  const findRow = gridFindRow([...STORAGE_FILE_COLUMNS]);
+  const findRow = gridFindRow([...STORAGE_FILE_COLUMNS.columns.map((column) => column.columnName)]);
 
   return { ...gridAreaDto, text: 'Storage Data', rows: [headerRow, findRow, ...fileRows] };
 }
