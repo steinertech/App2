@@ -1,5 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
-import { apiUrl } from './page/App.tsx';
+import { useState, type ReactNode } from 'react';
 import { useGridStore } from './GridStore.tsx';
 import { buttonPrimaryClassName } from './style.ts';
 import {
@@ -10,11 +9,9 @@ import {
   type GridCellDto,
   type GridCommandDto,
   type GridCustomDto,
-  type GridDto,
 } from '../../App.Server/dto/web/grid-dto.ts';
 
 interface GridProps {
-  gridDto: GridDto;
   gridName: string;
 }
 
@@ -59,10 +56,8 @@ function gridCellContent(gridCell: GridCellDto, onCustomClick: (gridCustom: Grid
   return gridCell.text;
 }
 
-export default function Grid({ gridDto: gridDtoProp, gridName }: GridProps) {
-  const [gridDto, setGridDto] = useState(gridDtoProp);
-  useEffect(() => setGridDto(gridDtoProp), [gridDtoProp]);
-  const { reload } = useGridStore();
+export default function Grid({ gridName }: GridProps) {
+  const { gridDto, reload, sendArea } = useGridStore();
 
   const gridArea = gridDto.areas?.find((area) => area.gridName === gridName);
   const gridRows = gridArea?.rows ?? [];
@@ -84,14 +79,7 @@ export default function Grid({ gridDto: gridDtoProp, gridName }: GridProps) {
     if (gridArea?.rowKeys !== undefined) {
       area.rowKeys = gridArea.rowKeys;
     }
-    const body: GridDto = { areas: [area] };
-
-    const response = await fetch(`${apiUrl}grid`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    setGridDto(await response.json());
+    await sendArea(area);
   };
 
   const handleHeaderClick = async (gridCell: GridCellDto) => {
@@ -107,14 +95,7 @@ export default function Grid({ gridDto: gridDtoProp, gridName }: GridProps) {
     if (gridArea?.state !== undefined) {
       area.state = gridArea.state;
     }
-    const body: GridDto = { areas: [area] };
-
-    const response = await fetch(`${apiUrl}grid`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    setGridDto(await response.json());
+    await sendArea(area);
   };
 
   return (
