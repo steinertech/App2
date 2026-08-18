@@ -1,21 +1,18 @@
 import { useEffect, useState } from 'react';
 import { apiUrl } from './App.tsx';
 import Grid from '../Grid.tsx';
-import { Grid as GridModel, type GridDto } from '../util/util-grid.ts';
+import { useGridStore } from '../GridStore.tsx';
 import { buttonPrimaryClassName, container, textInputClassName } from '../style.ts';
 
 export default function Debug() {
   const [email, setEmail] = useState('');
   const [result, setResult] = useState('');
   const [downloadUrl, setDownloadUrl] = useState('');
-  const [grid] = useState(() => new GridModel(['project']));
-  const [gridDto, setGridDto] = useState<GridDto>(grid.gridDto);
+  const { gridDto, load } = useGridStore();
 
   useEffect(() => {
-    (async () => {
-      setGridDto(await grid.load());
-    })();
-  }, [grid]);
+    void load(['project']);
+  }, [load]);
 
   const handleDebugDbClick = async () => {
     try {
