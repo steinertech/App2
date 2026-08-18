@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
 import Grid from '../Grid.tsx';
-import { useStore } from '../Store.tsx';
+import { useGridStore } from '../GridStore.tsx';
 import { container } from '../style.ts';
 
 export default function Storage() {
-  const { gridDto, load } = useStore();
+  const { gridDto, load } = useGridStore();
 
   useEffect(() => {
     void load(['storage']);

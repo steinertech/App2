@@ -4,14 +4,14 @@ import type { GridAreaDto, GridCommandDto, GridDto } from '../../App.Server/dto/
 
 export type { GridDto };
 
-interface StoreValue {
+interface GridStoreValue {
   gridDto: GridDto;
   load: (gridNames: string[], command?: GridCommandDto) => Promise<GridDto>;
 }
 
-const StoreContext = createContext<StoreValue | undefined>(undefined);
+const GridStoreContext = createContext<GridStoreValue | undefined>(undefined);
 
-export function StoreProvider({ children }: { children: ReactNode }) {
+export function GridStoreProvider({ children }: { children: ReactNode }) {
   const [gridDto, setGridDto] = useState<GridDto>({});
 
   const load = useCallback(async (gridNames: string[], command?: GridCommandDto): Promise<GridDto> => {
@@ -27,13 +27,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return data;
   }, []);
 
-  return <StoreContext.Provider value={{ gridDto, load }}>{children}</StoreContext.Provider>;
+  return <GridStoreContext.Provider value={{ gridDto, load }}>{children}</GridStoreContext.Provider>;
 }
 
-export function useStore(): StoreValue {
-  const store = useContext(StoreContext);
+export function useGridStore(): GridStoreValue {
+  const store = useContext(GridStoreContext);
   if (store === undefined) {
-    throw new Error('useStore must be used within a StoreProvider');
+    throw new Error('useGridStore must be used within a GridStoreProvider');
   }
   return store;
 }

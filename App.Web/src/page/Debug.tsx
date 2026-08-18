@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
 import { apiUrl } from './App.tsx';
 import Grid from '../Grid.tsx';
-import { useStore } from '../Store.tsx';
+import { useGridStore } from '../GridStore.tsx';
 import { buttonPrimaryClassName, container, textInputClassName } from '../style.ts';
 
 export default function Debug() {
   const [email, setEmail] = useState('');
   const [result, setResult] = useState('');
   const [downloadUrl, setDownloadUrl] = useState('');
-  const { gridDto, load } = useStore();
+  const { gridDto, load } = useGridStore();
 
   useEffect(() => {
     void load(['project']);
