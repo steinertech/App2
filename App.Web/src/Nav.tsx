@@ -18,22 +18,11 @@ function linkLabel(key: string, label: string, language: Language): string {
 }
 
 function LanguageSwitch({ pathname, language }: { pathname: string; language: Language }) {
+  const nextLanguage = language === 'en' ? 'de' : 'en';
   return (
-    <div className="flex items-center gap-1 text-sm">
-      <Link
-        to={withLanguagePrefix(pathname, 'en')}
-        className={language === 'en' ? 'font-semibold text-white' : 'text-slate-400 hover:text-white'}
-      >
-        EN
-      </Link>
-      <span className="text-slate-500">/</span>
-      <Link
-        to={withLanguagePrefix(pathname, 'de')}
-        className={language === 'de' ? 'font-semibold text-white' : 'text-slate-400 hover:text-white'}
-      >
-        DE
-      </Link>
-    </div>
+    <Link to={withLanguagePrefix(pathname, nextLanguage)} className="text-sm text-slate-400 hover:text-white">
+      {nextLanguage.toUpperCase()}
+    </Link>
   );
 }
 
