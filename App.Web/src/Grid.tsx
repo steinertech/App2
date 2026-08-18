@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { apiUrl } from './page/App.tsx';
+import { useGridStore } from './GridStore.tsx';
 import { buttonPrimaryClassName } from './style.ts';
 import {
   GridCellEnum,
@@ -61,6 +62,7 @@ function gridCellContent(gridCell: GridCellDto, onCustomClick: (gridCustom: Grid
 export default function Grid({ gridDto: gridDtoProp, gridName }: GridProps) {
   const [gridDto, setGridDto] = useState(gridDtoProp);
   useEffect(() => setGridDto(gridDtoProp), [gridDtoProp]);
+  const { reload } = useGridStore();
 
   const gridArea = gridDto.areas?.find((area) => area.gridName === gridName);
   const gridRows = gridArea?.rows ?? [];
@@ -141,6 +143,9 @@ export default function Grid({ gridDto: gridDtoProp, gridName }: GridProps) {
           ))}
         </tbody>
       </table>
+      <button type="button" onClick={() => void reload()} className={`${buttonPrimaryClassName} mt-2`}>
+        Reload
+      </button>
     </div>
   );
 }
