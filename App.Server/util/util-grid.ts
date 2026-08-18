@@ -5,21 +5,21 @@ import { storageFiles } from './util-storage.js';
 import { StorageFileDto } from '../dto/web/storage-file-dto.js';
 import { ProjectDto } from '../dto/server/project-dto.js';
 import { UserDto } from '../dto/server/user-dto.js';
-import { GridConfigColumnDto, GridConfigColumnType, GridConfigDto } from '../dto/server/grid-config-dto.js';
+import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/server/grid-config-dto.js';
 
 const STORAGE_FILE_COLUMNS: GridConfigDto = {
   columns: (['fileName', 'fileNameOnly', 'isFolder'] as const satisfies readonly (keyof StorageFileDto)[]).map(
-    (columnName): GridConfigColumnDto => ({ columnName, columnType: GridConfigColumnType.Text }),
+    (columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text }),
   ),
 };
 const PROJECT_COLUMNS: GridConfigDto = {
   columns: (['name', 'sectorKey'] as const satisfies readonly (keyof ProjectDto)[]).map(
-    (columnName): GridConfigColumnDto => ({ columnName, columnType: GridConfigColumnType.Text }),
+    (columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text }),
   ),
 };
 const USER_COLUMNS: GridConfigDto = {
   columns: (['email', 'sectorKey'] as const satisfies readonly (keyof UserDto)[]).map(
-    (columnName): GridConfigColumnDto => ({ columnName, columnType: GridConfigColumnType.Text }),
+    (columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text }),
   ),
 };
 
