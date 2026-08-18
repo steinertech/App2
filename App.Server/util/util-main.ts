@@ -18,6 +18,14 @@ export async function sectorKey(request: Request, isProject: boolean = true): Pr
   return 'Domain' + '/' + domainName(request) + '/' + (isProject ? 'Project' : 'Global') + '/';
 }
 
+export function titleCase(text: string): string {
+  return text
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .split(' ')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
 export function corsHeaders(request: Request): Record<string, string> {
   return {
     'Access-Control-Allow-Origin': request.headers.get('origin') ?? '*',
