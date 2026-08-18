@@ -16,14 +16,17 @@ const GridStoreContext = createContext<GridStoreValue | undefined>(undefined);
 
 export function GridStoreProvider({ children }: { children: ReactNode }) {
   const [gridDto, setGridDto] = useState<GridDto>({});
+  const gridDtoRef = useRef<GridDto>(gridDto);
   const gridNamesRef = useRef<string[]>([]);
   const overridesRef = useRef<Map<string, GridAreaOverride>>(new Map());
 
   const fetchAreas = useCallback(async (): Promise<GridDto> => {
-    const areas: GridAreaDto[] = gridNamesRef.current.map((gridName) => ({
-      gridName,
-      ...overridesRef.current.get(gridName),
-    }));
+    const areas: GridAreaDto[] = gridNamesRef.current.map((gridName) => {
+      const existingArea = gridDtoRef.current.areas?.find((area) => area.gridName === gridName);
+      const area: GridAreaDto = { ...existingArea, gridName, ...overridesRef.current.get(gridName) };
+      delete area.rows;
+      return area;
+    });
     overridesRef.current.clear();
 
     const response = await fetch(`${apiUrl}grid`, {
@@ -32,6 +35,7 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify({ areas } satisfies GridDto),
     });
     const data = (await response.json()) as GridDto;
+    gridDtoRef.current = data;
     setGridDto(data);
     return data;
   }, []);

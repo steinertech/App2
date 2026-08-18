@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { useGridStore, type GridAreaOverride } from './GridStore.tsx';
+import { useGridStore } from './GridStore.tsx';
 import { buttonPrimaryClassName } from './style.ts';
 import {
   GridCellEnum,
@@ -74,11 +74,7 @@ export default function Grid({ gridName }: GridProps) {
       gridCommand.customName = gridCustom.name;
     }
 
-    const override: GridAreaOverride = { command: gridCommand };
-    if (gridArea?.rowKeys !== undefined) {
-      override.rowKeys = gridArea.rowKeys;
-    }
-    await sendCommand(gridName, override);
+    await sendCommand(gridName, { command: gridCommand });
   };
 
   const handleHeaderClick = async (gridCell: GridCellDto) => {
@@ -86,15 +82,7 @@ export default function Grid({ gridName }: GridProps) {
       return;
     }
     const gridCommand: GridCommandDto = { commandEnum: GridCommandEnum.SortClick, columnName: gridCell.columnName };
-
-    const override: GridAreaOverride = { command: gridCommand };
-    if (gridArea?.rowKeys !== undefined) {
-      override.rowKeys = gridArea.rowKeys;
-    }
-    if (gridArea?.state !== undefined) {
-      override.state = gridArea.state;
-    }
-    await sendCommand(gridName, override);
+    await sendCommand(gridName, { command: gridCommand });
   };
 
   const handleReloadClick = async () => {
