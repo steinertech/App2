@@ -23,6 +23,12 @@ const USER_COLUMNS: GridConfigDto = {
   ),
 };
 
+const PAGE_GRID_NAMES: Record<string, string[]> = {
+  debug: ['project'],
+  project: ['project', 'user'],
+  storage: ['storage'],
+};
+
 function gridFindRow(columnNames: (string | undefined)[]): GridRowDto {
   return {
     cells: columnNames.map((columnName): GridCellDto =>
@@ -168,7 +174,11 @@ async function gridLoadHelloWorld(request: Request, gridAreaDto: GridAreaDto): P
 }
 
 export async function gridLoad(request: Request, gridDto: GridDto): Promise<GridDto> {
-  for (const gridAreaDto of gridDto.areas ?? []) {
+  const gridNames = gridDto.pageName !== undefined ? (PAGE_GRID_NAMES[gridDto.pageName] ?? []) : [];
+  const incomingAreas = new Map((gridDto.areas ?? []).map((area): [string | undefined, GridAreaDto] => [area.gridName, area]));
+  const gridAreaDtos = gridNames.map((gridName): GridAreaDto => incomingAreas.get(gridName) ?? { gridName });
+
+  for (const gridAreaDto of gridAreaDtos) {
     gridCommandSortClick(gridAreaDto);
     if (gridAreaDto.gridName === 'project') {
       await gridLoadProjectCommand(request, gridAreaDto);
@@ -176,7 +186,7 @@ export async function gridLoad(request: Request, gridDto: GridDto): Promise<Grid
   }
 
   const areas = await Promise.all(
-    (gridDto.areas ?? []).map((gridAreaDto): Promise<GridAreaDto> => {
+    gridAreaDtos.map((gridAreaDto): Promise<GridAreaDto> => {
       if (gridAreaDto.gridName === 'project') {
         return gridLoadProject(request, gridAreaDto);
       }
@@ -193,5 +203,5 @@ export async function gridLoad(request: Request, gridDto: GridDto): Promise<Grid
     }),
   );
 
-  return { ...gridDto, areas };
+  return { areas };
 }

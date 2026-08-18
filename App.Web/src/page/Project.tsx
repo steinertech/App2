@@ -7,7 +7,7 @@ export default function Project() {
   const { load } = useGridStore();
 
   useEffect(() => {
-    void load(['project', 'user']);
+    void load('project');
   }, [load]);
 
   return (

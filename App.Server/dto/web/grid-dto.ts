@@ -67,5 +67,6 @@ export interface GridAreaDto {
 }
 
 export interface GridDto {
+  pageName?: string;
   areas?: GridAreaDto[];
 }
