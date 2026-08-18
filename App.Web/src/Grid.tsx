@@ -15,6 +15,7 @@ import {
 interface GridProps {
   gridDto: GridDto;
   gridName: string;
+  load: (command?: GridCommandDto) => Promise<GridDto>;
 }
 
 function gridCellClassName(gridCell: GridCellDto, rowSelected: boolean): string {
@@ -58,7 +59,7 @@ function gridCellContent(gridCell: GridCellDto, onCustomClick: (gridCustom: Grid
   return gridCell.text;
 }
 
-export default function Grid({ gridDto: gridDtoProp, gridName }: GridProps) {
+export default function Grid({ gridDto: gridDtoProp, gridName, load }: GridProps) {
   const [gridDto, setGridDto] = useState(gridDtoProp);
   useEffect(() => setGridDto(gridDtoProp), [gridDtoProp]);
 
@@ -115,6 +116,10 @@ export default function Grid({ gridDto: gridDtoProp, gridName }: GridProps) {
     setGridDto(await response.json());
   };
 
+  const handleReloadClick = async () => {
+    setGridDto(await load({ commandEnum: GridCommandEnum.Reload }));
+  };
+
   return (
     <div>
       <h1 className="text-4xl font-bold">{gridArea?.text}</h1>
@@ -141,6 +146,9 @@ export default function Grid({ gridDto: gridDtoProp, gridName }: GridProps) {
           ))}
         </tbody>
       </table>
+      <button type="button" onClick={() => void handleReloadClick()} className={`${buttonPrimaryClassName} mt-2`}>
+        Reload
+      </button>
     </div>
   );
 }

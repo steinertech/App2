@@ -1,5 +1,5 @@
 import { apiUrl } from '../page/App.tsx';
-import type { GridAreaDto, GridDto } from '../../../App.Server/dto/web/grid-dto.ts';
+import type { GridAreaDto, GridCommandDto, GridDto } from '../../../App.Server/dto/web/grid-dto.ts';
 
 export type { GridDto };
 
@@ -11,12 +11,12 @@ export class Grid {
     this.gridNames = gridNames;
   }
 
-  async load(): Promise<GridDto> {
+  async load(command?: GridCommandDto): Promise<GridDto> {
     const response = await fetch(`${apiUrl}grid`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        areas: this.gridNames.map((gridName): GridAreaDto => ({ gridName })),
+        areas: this.gridNames.map((gridName): GridAreaDto => (command ? { gridName, command } : { gridName })),
       } satisfies GridDto),
     });
     this.gridDto = await response.json();

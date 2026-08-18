@@ -16,7 +16,7 @@ export default function Storage() {
   return (
     <div className={container}>
       <h1>Storage</h1>
-      <Grid gridDto={gridDto} gridName="storage" />
+      <Grid gridDto={gridDto} gridName="storage" load={(command) => grid.load(command)} />
     </div>
   );
 }

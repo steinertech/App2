@@ -16,6 +16,7 @@ export enum GridCommandEnum {
   None = 0,
   CustomButtonClick = 1,
   SortClick = 2,
+  Reload = 3,
 }
 
 export interface GridCustomDto {

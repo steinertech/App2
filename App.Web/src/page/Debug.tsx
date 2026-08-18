@@ -109,7 +109,7 @@ export default function Debug() {
       </button>
       <label className="mt-4 whitespace-pre-wrap">{result}</label>
       <div className="mt-4">
-        <Grid gridDto={gridDto} gridName="project" />
+        <Grid gridDto={gridDto} gridName="project" load={(command) => grid.load(command)} />
       </div>
     </div>
   );

@@ -16,8 +16,8 @@ export default function Project() {
   return (
     <div className={container}>
       <h1>Project</h1>
-      <Grid gridDto={gridDto} gridName="project" />
-      <Grid gridDto={gridDto} gridName="user" />
+      <Grid gridDto={gridDto} gridName="project" load={(command) => grid.load(command)} />
+      <Grid gridDto={gridDto} gridName="user" load={(command) => grid.load(command)} />
     </div>
   );
 }
