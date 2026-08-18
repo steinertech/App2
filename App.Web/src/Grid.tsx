@@ -1,6 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { apiUrl } from './page/App.tsx';
-import type { GridDto } from './util/util-grid.ts';
 import { buttonPrimaryClassName } from './style.ts';
 import {
   GridCellEnum,
@@ -10,6 +9,7 @@ import {
   type GridCellDto,
   type GridCommandDto,
   type GridCustomDto,
+  type GridDto,
 } from '../../App.Server/dto/web/grid-dto.ts';
 
 interface GridProps {

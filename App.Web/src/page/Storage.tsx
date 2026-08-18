@@ -1,17 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import Grid from '../Grid.tsx';
-import { Grid as GridModel, type GridDto } from '../util/util-grid.ts';
+import { useStore } from '../Store.tsx';
 import { container } from '../style.ts';
 
 export default function Storage() {
-  const [grid] = useState(() => new GridModel(['storage']));
-  const [gridDto, setGridDto] = useState<GridDto>(grid.gridDto);
+  const { gridDto, load } = useStore();
 
   useEffect(() => {
-    (async () => {
-      setGridDto(await grid.load());
-    })();
-  }, [grid]);
+    void load(['storage']);
+  }, [load]);
 
   return (
     <div className={container}>
