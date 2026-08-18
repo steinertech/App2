@@ -35,7 +35,7 @@ function gridFindRow(columnNames: (string | undefined)[]): GridRowDto {
 }
 
 function gridHeaderCell(column: string | undefined, sort?: GridStateSortDto): GridCellDto {
-  const cell: GridCellDto = { cellEnum: GridCellEnum.Header, text: column !== undefined ? titleCase(column) : column, columnName: column };
+  const cell: GridCellDto = { cellEnum: GridCellEnum.Header, text: titleCase(column), columnName: column };
   if (sort && sort.columnName === column) {
     cell.isSortAsc = sort.isSortAsc;
   }

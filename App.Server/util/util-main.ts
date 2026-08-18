@@ -18,7 +18,8 @@ export async function sectorKey(request: Request, isProject: boolean = true): Pr
   return 'Domain' + '/' + domainName(request) + '/' + (isProject ? 'Project' : 'Global') + '/';
 }
 
-export function titleCase(text: string): string {
+export function titleCase(text?: string): string | undefined {
+  if (text === undefined) return undefined;
   return text
     .replace(/([a-z])([A-Z])/g, '$1 $2')
     .split(' ')
