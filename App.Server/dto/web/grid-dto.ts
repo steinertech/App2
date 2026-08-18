@@ -62,7 +62,6 @@ export interface GridAreaDto {
   rows?: GridRowDto[];
   state?: GridStateDto;
   command?: GridCommandDto;
-  gridName?: string;
   rowKeys?: string[];
 }
 
