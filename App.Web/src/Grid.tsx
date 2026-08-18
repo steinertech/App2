@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { useGridStore } from './GridStore.tsx';
-import { buttonPrimaryClassName } from './style.ts';
+import { buttonGridClassName, buttonPrimaryClassName } from './style.ts';
 import {
   GridCellEnum,
   GridCommandEnum,
@@ -30,7 +30,7 @@ function gridCellClassName(gridCell: GridCellDto, rowSelected: boolean): string 
 function gridCustomContent(gridCustom: GridCustomDto, key: number, onCustomClick: (gridCustom: GridCustomDto) => void): ReactNode {
   if (gridCustom.customEnum === GridCustomEnum.Button) {
     return (
-      <button key={key} type="button" onClick={() => onCustomClick(gridCustom)} className={buttonPrimaryClassName}>
+      <button key={key} type="button" onClick={() => onCustomClick(gridCustom)} className={buttonGridClassName}>
         {gridCustom.text}
       </button>
     );
