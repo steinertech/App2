@@ -53,6 +53,7 @@ function gridCellContent(
   if (gridCell.cellEnum === GridCellEnum.Text) {
     return (
       <input
+        key={gridCell.text}
         type="text"
         placeholder={gridCell.placeHolder}
         defaultValue={gridCell.text}
@@ -62,7 +63,7 @@ function gridCellContent(
     );
   }
   if (gridCell.cellEnum === GridCellEnum.Find) {
-    return <input type="text" placeholder={gridCell.placeHolder} defaultValue={gridCell.text} className="w-full" />;
+    return <input key={gridCell.text} type="text" placeholder={gridCell.placeHolder} defaultValue={gridCell.text} className="w-full" />;
   }
   if (gridCell.cellEnum === GridCellEnum.Header) {
     const arrow = gridCell.isSortAsc === true ? ' ↑' : gridCell.isSortAsc === false ? ' ↓' : '';
