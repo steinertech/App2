@@ -122,8 +122,15 @@ async function gridSaveProject(request: Request, gridAreaDto: GridAreaDto): Prom
 
   const projects = await projectsLoadByNames(request, names);
 
+  const columnNames = new Set((PROJECT_COLUMNS.columns ?? []).map((column) => column.columnName));
+
   for (const modify of modifies) {
-    if (modify.rowIndex === undefined || modify.columnName === undefined || modify.cellEnum !== GridCellEnum.Text) {
+    if (
+      modify.rowIndex === undefined ||
+      modify.columnName === undefined ||
+      modify.cellEnum !== GridCellEnum.Text ||
+      !columnNames.has(modify.columnName)
+    ) {
       continue;
     }
 
