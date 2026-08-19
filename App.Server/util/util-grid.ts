@@ -57,6 +57,8 @@ function gridCommandSortClick(gridAreaDto: GridAreaDto): void {
 }
 
 async function gridLoadProject(request: Request, gridAreaDto: GridAreaDto): Promise<GridAreaDto> {
+  await gridSaveProject(request, gridAreaDto);
+
   if (gridAreaDto.command?.commandEnum === GridCommandEnum.CustomButtonClick) {
     const rowIndex = gridAreaDto.command.rowIndex;
     if (rowIndex !== undefined) {
