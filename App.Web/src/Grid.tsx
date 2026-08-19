@@ -141,6 +141,10 @@ export default function Grid({ gridIndex }: GridProps) {
     await sendCommand(gridIndex, { command: { commandEnum: GridCommandEnum.Save }, modifies });
   };
 
+  const handleNewClick = async () => {
+    await sendCommand(gridIndex, { command: { commandEnum: GridCommandEnum.New }, modifies });
+  };
+
   return (
     <div>
       <h1 className="text-4xl font-bold">{gridArea?.text}</h1>
@@ -172,6 +176,9 @@ export default function Grid({ gridIndex }: GridProps) {
       </button>
       <button type="button" onClick={() => void handleSaveClick()} className={`${buttonPrimaryClassName} mt-2 ml-2`}>
         Save
+      </button>
+      <button type="button" onClick={() => void handleNewClick()} className={`${buttonPrimaryClassName} mt-2 ml-2`}>
+        New
       </button>
     </div>
   );

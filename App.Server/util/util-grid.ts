@@ -1,4 +1,4 @@
-import { GridAreaDto, GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridRowDto, GridRowKeyDto, GridSortDto } from '../dto/web/grid-dto.js';
+import { GridAreaDto, GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridRowDto, GridSortDto } from '../dto/web/grid-dto.js';
 import { titleCase } from './util-main.js';
 import { projectsLoad, projectsLoadByNames, projectsUpsert } from './util-project.js';
 import { usersLoad, userProject } from './util-user.js';
@@ -56,15 +56,19 @@ function gridCommandSortClick(gridAreaDto: GridAreaDto): void {
   gridAreaDto.state = { ...gridAreaDto.state, sort: { columnName, isSortAsc } };
 }
 
-async function gridLoadProject(request: Request, gridAreaDto: GridAreaDto): Promise<GridAreaDto> {
+async function gridProjectLoad(request: Request, gridAreaDto: GridAreaDto): Promise<GridAreaDto> {
   if (gridAreaDto.command?.commandEnum === GridCommandEnum.Save) {
-    await gridSaveProject(request, gridAreaDto);
+    await gridProjectSave(request, gridAreaDto);
+  }
+
+  if (gridAreaDto.command?.commandEnum === GridCommandEnum.New) {
+    await gridProjectNew(request, gridAreaDto);
   }
 
   if (gridAreaDto.command?.commandEnum === GridCommandEnum.CustomButtonClick) {
     const rowIndex = gridAreaDto.command.rowIndex;
     if (rowIndex !== undefined) {
-      const projectName = gridAreaDto.state?.rowKeys?.[rowIndex]?.rowKey;
+      const projectName = gridAreaDto.state?.rowKeys?.[rowIndex];
       if (projectName !== undefined) {
         await userProject(request, projectName);
       }
@@ -97,7 +101,7 @@ async function gridLoadProject(request: Request, gridAreaDto: GridAreaDto): Prom
     ],
   }));
 
-  const rowKeys: GridRowKeyDto[] = projects.map((project) => ({ isNew: false, rowKey: project.name ?? '' }));
+  const rowKeys: string[] = projects.map((project) => project.name ?? '');
   const findRow = gridFindRow([...(PROJECT_COLUMNS.columns ?? []).map((column) => column.columnName), undefined]);
 
   const time = new Date().toISOString().slice(11, 19);
@@ -110,14 +114,14 @@ async function gridLoadProject(request: Request, gridAreaDto: GridAreaDto): Prom
   };
 }
 
-async function gridSaveProject(request: Request, gridAreaDto: GridAreaDto): Promise<void> {
+async function gridProjectSave(request: Request, gridAreaDto: GridAreaDto): Promise<void> {
   const modifies = gridAreaDto.modifies ?? [];
   const rowKeys = gridAreaDto.state?.rowKeys ?? [];
 
   const names = [
     ...new Set(
       modifies
-        .map((modify) => (modify.rowIndex !== undefined ? rowKeys[modify.rowIndex]?.rowKey : undefined))
+        .map((modify) => (modify.rowIndex !== undefined ? rowKeys[modify.rowIndex] : undefined))
         .filter((rowKey): rowKey is string => rowKey !== undefined),
     ),
   ];
@@ -136,7 +140,7 @@ async function gridSaveProject(request: Request, gridAreaDto: GridAreaDto): Prom
       continue;
     }
 
-    const rowKey = rowKeys[modify.rowIndex]?.rowKey;
+    const rowKey = rowKeys[modify.rowIndex];
     const project = projects.find((project) => project.name === rowKey);
     if (project) {
       (project as Record<string, string | undefined>)[modify.columnName] = modify.textModified;
@@ -145,6 +149,8 @@ async function gridSaveProject(request: Request, gridAreaDto: GridAreaDto): Prom
 
   await projectsUpsert(request, projects);
 }
+
+async function gridProjectNew(request: Request, gridAreaDto: GridAreaDto): Promise<void> {}
 
 async function gridLoadUser(request: Request, gridAreaDto: GridAreaDto): Promise<GridAreaDto> {
   const users = await usersLoad(request);
@@ -191,8 +197,8 @@ async function gridLoadStorage(request: Request, gridAreaDto: GridAreaDto): Prom
 type GridAreaLoader = (request: Request, gridAreaDto: GridAreaDto) => Promise<GridAreaDto>;
 
 const PAGE_GRID_LOADERS: Record<string, GridAreaLoader[]> = {
-  debug: [gridLoadProject],
-  project: [gridLoadProject, gridLoadUser],
+  debug: [gridProjectLoad],
+  project: [gridProjectLoad, gridLoadUser],
   storage: [gridLoadStorage],
 };
 
