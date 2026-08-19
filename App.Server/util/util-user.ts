@@ -34,6 +34,7 @@ export async function userLogin(request: Request, email: string, password: strin
     isLogin: true,
     sessionId,
     name: sessionId,
+    projectName: user.projectName,
   });
 
   return sessionId;
@@ -78,6 +79,9 @@ export async function userProject(request: Request, projectName: string) {
     dto.projectName = projectName;
     const sessionCollection = client.db().collection<SessionDto>('myCollection');
     await sessionCollection.updateOne({ _id: dto._id }, { $set: { projectName } });
+
+    const userCollection = client.db().collection<UserDto>('myCollection');
+    await userCollection.updateOne({ email: dto.email, sectorKey: dto.sectorKey, type: 'UserDto' }, { $set: { projectName } });
   }
 
   return dto;
