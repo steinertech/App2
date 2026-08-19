@@ -8,6 +8,7 @@ import {
   type GridCellDto,
   type GridCommandDto,
   type GridCustomDto,
+  type GridModifyDto,
 } from '../../App.Server/dto/web/grid-dto.ts';
 
 interface GridProps {
@@ -38,14 +39,29 @@ function gridCustomContent(gridCustom: GridCustomDto, key: number, onCustomClick
   return null;
 }
 
-function gridCellContent(gridCell: GridCellDto, onCustomClick: (gridCustom: GridCustomDto) => void): ReactNode {
+function gridCellContent(
+  gridCell: GridCellDto,
+  onCustomClick: (gridCustom: GridCustomDto) => void,
+  onTextChange: (gridCell: GridCellDto, textModified: string) => void,
+): ReactNode {
   if (gridCell.cellEnum === GridCellEnum.Custom) {
     return (gridCell.customs ?? []).map((gridCustom, index) => gridCustomContent(gridCustom, index, onCustomClick));
   }
   if (gridCell.cellEnum === GridCellEnum.Empty) {
     return 'Empty';
   }
-  if (gridCell.cellEnum === GridCellEnum.Find || gridCell.cellEnum === GridCellEnum.Text) {
+  if (gridCell.cellEnum === GridCellEnum.Text) {
+    return (
+      <input
+        type="text"
+        placeholder={gridCell.placeHolder}
+        defaultValue={gridCell.text}
+        onChange={(event) => onTextChange(gridCell, event.target.value)}
+        className="w-full"
+      />
+    );
+  }
+  if (gridCell.cellEnum === GridCellEnum.Find) {
     return <input type="text" placeholder={gridCell.placeHolder} defaultValue={gridCell.text} className="w-full" />;
   }
   if (gridCell.cellEnum === GridCellEnum.Header) {
@@ -61,6 +77,32 @@ export default function Grid({ gridIndex }: GridProps) {
   const gridArea = gridDto.areas?.[gridIndex];
   const gridRows = gridArea?.rows ?? [];
   const [rowIndexSelected, setRowIndexSelected] = useState(gridArea?.state?.rowIndexSelected);
+  const [modifies, setModifies] = useState<GridModifyDto[]>(gridArea?.modifies ?? []);
+
+  const handleTextChange = (gridCell: GridCellDto, textModified: string) => {
+    setModifies((prev) => {
+      const filtered = prev.filter(
+        (modify) =>
+          !(modify.cellEnum === gridCell.cellEnum && modify.columnName === gridCell.columnName && modify.rowIndex === gridCell.rowIndex),
+      );
+
+      const modify: GridModifyDto = { textModified };
+      if (gridCell.cellEnum !== undefined) {
+        modify.cellEnum = gridCell.cellEnum;
+      }
+      if (gridCell.columnName !== undefined) {
+        modify.columnName = gridCell.columnName;
+      }
+      if (gridCell.rowIndex !== undefined) {
+        modify.rowIndex = gridCell.rowIndex;
+      }
+      if (gridCell.text !== undefined) {
+        modify.text = gridCell.text;
+      }
+
+      return [...filtered, modify];
+    });
+  };
 
   const handleCustomClick = async (gridCell: GridCellDto, gridCustom: GridCustomDto) => {
     const gridCommand: GridCommandDto = { commandEnum: GridCommandEnum.CustomButtonClick };
@@ -89,6 +131,10 @@ export default function Grid({ gridIndex }: GridProps) {
     await sendCommand(gridIndex, { command: { commandEnum: GridCommandEnum.Reload } });
   };
 
+  const handleSaveClick = async () => {
+    await sendCommand(gridIndex, { command: { commandEnum: GridCommandEnum.Save } });
+  };
+
   return (
     <div>
       <h1 className="text-4xl font-bold">{gridArea?.text}</h1>
@@ -108,7 +154,7 @@ export default function Grid({ gridIndex }: GridProps) {
                     }
                   }}
                 >
-                  {gridCellContent(gridCell, (gridCustom) => handleCustomClick(gridCell, gridCustom))}
+                  {gridCellContent(gridCell, (gridCustom) => handleCustomClick(gridCell, gridCustom), handleTextChange)}
                 </td>
               ))}
             </tr>
@@ -117,6 +163,9 @@ export default function Grid({ gridIndex }: GridProps) {
       </table>
       <button type="button" onClick={() => void handleReloadClick()} className={`${buttonPrimaryClassName} mt-2`}>
         Reload
+      </button>
+      <button type="button" onClick={() => void handleSaveClick()} className={`${buttonPrimaryClassName} mt-2 ml-2`}>
+        Save
       </button>
     </div>
   );
