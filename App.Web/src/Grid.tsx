@@ -41,6 +41,7 @@ function gridCustomContent(gridCustom: GridCustomDto, key: number, onCustomClick
 
 function gridCellContent(
   gridCell: GridCellDto,
+  gridVersion: number,
   onCustomClick: (gridCustom: GridCustomDto) => void,
   onTextChange: (gridCell: GridCellDto, textModified: string) => void,
 ): ReactNode {
@@ -53,7 +54,7 @@ function gridCellContent(
   if (gridCell.cellEnum === GridCellEnum.Text) {
     return (
       <input
-        key={gridCell.text}
+        key={gridVersion}
         type="text"
         placeholder={gridCell.placeHolder}
         defaultValue={gridCell.text}
@@ -63,7 +64,7 @@ function gridCellContent(
     );
   }
   if (gridCell.cellEnum === GridCellEnum.Find) {
-    return <input key={gridCell.text} type="text" placeholder={gridCell.placeHolder} defaultValue={gridCell.text} className="w-full" />;
+    return <input key={gridVersion} type="text" placeholder={gridCell.placeHolder} defaultValue={gridCell.text} className="w-full" />;
   }
   if (gridCell.cellEnum === GridCellEnum.Header) {
     const arrow = gridCell.isSortAsc === true ? ' ↑' : gridCell.isSortAsc === false ? ' ↓' : '';
@@ -73,7 +74,7 @@ function gridCellContent(
 }
 
 export default function Grid({ gridIndex }: GridProps) {
-  const { gridDto, sendCommand } = useGridStore();
+  const { gridDto, gridVersion, sendCommand } = useGridStore();
 
   const gridArea = gridDto.areas?.[gridIndex];
   const gridRows = gridArea?.rows ?? [];
@@ -159,7 +160,7 @@ export default function Grid({ gridIndex }: GridProps) {
                     }
                   }}
                 >
-                  {gridCellContent(gridCell, (gridCustom) => handleCustomClick(gridCell, gridCustom), handleTextChange)}
+                  {gridCellContent(gridCell, gridVersion, (gridCustom) => handleCustomClick(gridCell, gridCustom), handleTextChange)}
                 </td>
               ))}
             </tr>
