@@ -28,7 +28,7 @@ export function titleCase(text?: string): string | undefined {
     .join(' ');
 }
 
-export function path(state: GridStateDto): string {
+export function gridPath(state: GridStateDto): string {
   return (state.pathSegments ?? []).map((pathSegment) => pathSegment.name ?? '').join('');
 }
 
