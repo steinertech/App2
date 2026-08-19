@@ -1,6 +1,6 @@
 import { GridAreaDto, GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridRowDto, GridRowKeyDto, GridSortDto } from '../dto/web/grid-dto.js';
 import { titleCase } from './util-main.js';
-import { projectsLoad } from './util-project.js';
+import { projectsLoad, projectsLoadByNames, projectsUpsert } from './util-project.js';
 import { usersLoad, userProject } from './util-user.js';
 import { storageFiles } from './util-storage.js';
 import { StorageFileDto } from '../dto/web/storage-file-dto.js';
@@ -102,6 +102,35 @@ async function gridLoadProject(request: Request, gridAreaDto: GridAreaDto): Prom
     rows: [headerRow, findRow, ...rows],
     state: { ...gridAreaDto.state, rowKeys },
   };
+}
+
+async function gridSaveProject(request: Request, gridAreaDto: GridAreaDto): Promise<void> {
+  const modifies = gridAreaDto.modifies ?? [];
+  const rowKeys = gridAreaDto.state?.rowKeys ?? [];
+
+  const names = [
+    ...new Set(
+      modifies
+        .map((modify) => (modify.rowIndex !== undefined ? rowKeys[modify.rowIndex]?.rowKey : undefined))
+        .filter((rowKey): rowKey is string => rowKey !== undefined),
+    ),
+  ];
+
+  const projects = await projectsLoadByNames(request, names);
+
+  for (const modify of modifies) {
+    if (modify.rowIndex === undefined || modify.columnName === undefined) {
+      continue;
+    }
+
+    const rowKey = rowKeys[modify.rowIndex]?.rowKey;
+    const project = projects.find((project) => project.name === rowKey);
+    if (project) {
+      (project as Record<string, string | undefined>)[modify.columnName] = modify.textModified;
+    }
+  }
+
+  await projectsUpsert(request, projects);
 }
 
 async function gridLoadUser(request: Request, gridAreaDto: GridAreaDto): Promise<GridAreaDto> {
