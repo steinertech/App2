@@ -8,6 +8,7 @@ export type GridAreaOverride = GridAreaDto;
 
 interface GridStoreValue {
   gridDto: GridDto;
+  gridVersion: number;
   load: (pageName: string) => Promise<GridDto>;
   sendCommand: (gridIndex: number, override: GridAreaOverride) => Promise<GridDto>;
 }
@@ -16,6 +17,7 @@ const GridStoreContext = createContext<GridStoreValue | undefined>(undefined);
 
 export function GridStoreProvider({ children }: { children: ReactNode }) {
   const [gridDto, setGridDto] = useState<GridDto>({});
+  const [gridVersion, setGridVersion] = useState(0);
   const gridDtoRef = useRef<GridDto>(gridDto);
   const pageNameRef = useRef<string | undefined>(undefined);
   const overridesRef = useRef<Map<number, GridAreaOverride>>(new Map());
@@ -42,6 +44,7 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
     const data = (await response.json()) as GridDto;
     gridDtoRef.current = data;
     setGridDto(data);
+    setGridVersion((version) => version + 1);
     return data;
   }, []);
 
@@ -63,7 +66,7 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
     [fetchAreas],
   );
 
-  return <GridStoreContext.Provider value={{ gridDto, load, sendCommand }}>{children}</GridStoreContext.Provider>;
+  return <GridStoreContext.Provider value={{ gridDto, gridVersion, load, sendCommand }}>{children}</GridStoreContext.Provider>;
 }
 
 export function useGridStore(): GridStoreValue {
