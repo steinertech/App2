@@ -86,6 +86,10 @@ export default function Grid({ gridIndex }: GridProps) {
           !(modify.cellEnum === gridCell.cellEnum && modify.columnName === gridCell.columnName && modify.rowIndex === gridCell.rowIndex),
       );
 
+      if (gridCell.text === textModified) {
+        return filtered;
+      }
+
       const modify: GridModifyDto = { textModified };
       if (gridCell.cellEnum !== undefined) {
         modify.cellEnum = gridCell.cellEnum;
