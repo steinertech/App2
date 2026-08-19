@@ -52,7 +52,7 @@ export interface GridSortDto {
   columnName?: string;
 }
 
-export interface PathSegmentDto {
+export interface GridPathSegmentDto {
   name?: string;
   text?: string;
 }
@@ -60,7 +60,7 @@ export interface PathSegmentDto {
 export interface GridStateDto {
   rowIndexSelected?: number;
   sort?: GridSortDto;
-  pathSegments?: PathSegmentDto[];
+  pathSegments?: GridPathSegmentDto[];
 }
 
 export interface GridAreaDto {
