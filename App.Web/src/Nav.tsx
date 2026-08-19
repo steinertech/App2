@@ -4,13 +4,13 @@ import { languageFromPathname, withLanguagePrefix, type Language } from './util/
 
 const links = [
   { to: '/', key: 'home', label: 'Home' },
-  { to: '/about', key: 'about', label: 'About' },
-  { to: '/debug', key: 'debug', label: 'Debug' },
-  { to: '/user-register', key: 'user-register', label: 'User Register' },
-  { to: '/user-login', key: 'user-login', label: 'User Login' },
-  { to: '/user-logout', key: 'user-logout', label: 'User Logout' },
-  { to: '/project', key: 'project', label: 'Project' },
   { to: '/storage', key: 'storage', label: 'Storage' },
+  { to: '/project', key: 'project', label: 'Project' },
+  { to: '/debug', key: 'debug', label: 'Debug' },
+  { to: '/user-register', key: 'user-register', label: 'Sign Up' },
+  { to: '/user-logout', key: 'user-logout', label: 'Logout' },
+  { to: '/user-login', key: 'user-login', label: 'Login' },
+  { to: '/about', key: 'about', label: 'About' },
 ];
 
 function linkLabel(key: string, label: string, language: Language): string {
