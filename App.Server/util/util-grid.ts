@@ -1,4 +1,4 @@
-import { GridAreaDto, GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridRowDto, GridSortDto } from '../dto/web/grid-dto.js';
+import { GridAreaDto, GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridRowDto, GridRowKeyDto, GridSortDto } from '../dto/web/grid-dto.js';
 import { titleCase } from './util-main.js';
 import { projectsLoad } from './util-project.js';
 import { usersLoad, userProject } from './util-user.js';
@@ -60,7 +60,7 @@ async function gridLoadProject(request: Request, gridAreaDto: GridAreaDto): Prom
   if (gridAreaDto.command?.commandEnum === GridCommandEnum.CustomButtonClick) {
     const rowIndex = gridAreaDto.command.rowIndex;
     if (rowIndex !== undefined) {
-      const projectName = gridAreaDto.rowKeys?.[rowIndex];
+      const projectName = gridAreaDto.state?.rowKeys?.[rowIndex]?.rowKey;
       if (projectName !== undefined) {
         await userProject(request, projectName);
       }
@@ -93,10 +93,15 @@ async function gridLoadProject(request: Request, gridAreaDto: GridAreaDto): Prom
     ],
   }));
 
-  const rowKeys = projects.map((project) => project.name ?? '');
+  const rowKeys: GridRowKeyDto[] = projects.map((project) => ({ isNew: false, rowKey: project.name ?? '' }));
   const findRow = gridFindRow([...(PROJECT_COLUMNS.columns ?? []).map((column) => column.columnName), undefined]);
 
-  return { ...gridAreaDto, text: 'Project Data', rows: [headerRow, findRow, ...rows], rowKeys };
+  return {
+    ...gridAreaDto,
+    text: 'Project Data',
+    rows: [headerRow, findRow, ...rows],
+    state: { ...gridAreaDto.state, rowKeys },
+  };
 }
 
 async function gridLoadUser(request: Request, gridAreaDto: GridAreaDto): Promise<GridAreaDto> {
