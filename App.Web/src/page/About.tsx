@@ -13,9 +13,14 @@ export default function About() {
   useEffect(() => {
     const handleVersionClick = async () => {
       try {
-        const response = await fetch(`${apiUrl}version`, { headers: { 'Accept-Language': language } });
+        const response = await fetch(`${apiUrl}version`, {
+          headers: { 'Accept-Language': language },
+          credentials: 'include',
+        });
         const data = await response.json();
-        setResult(`VersionServer=${data.version}; VersionClient=${VERSION_CLIENT}; Domain=${data.domainName}; Text=${data.text};`);
+        setResult(
+          `VersionServer=${data.version}; VersionClient=${VERSION_CLIENT}; Domain=${data.domainName}; Email=${data.email}; Project=${data.projectName}; Text=${data.text};`,
+        );
       } catch {
         setResult('Error fetching version');
       }
