@@ -8,6 +8,12 @@ export async function projectsLoad(request: Request): Promise<ProjectDto[]> {
   return collection.find({ sectorKey: key, type: 'ProjectDto' }).toArray();
 }
 
+export async function projectsLoadByNames(request: Request, names: string[]): Promise<ProjectDto[]> {
+  const key = await sectorKey(request, false);
+  const collection = client.db().collection<ProjectDto>('myCollection');
+  return collection.find({ sectorKey: key, type: 'ProjectDto', name: { $in: names } }).toArray();
+}
+
 export async function projectsUpsert(request: Request, projectDtos: ProjectDto[]): Promise<ProjectDto[]> {
   const key = await sectorKey(request, false);
   const collection = client.db().collection<ProjectDto>('myCollection');
