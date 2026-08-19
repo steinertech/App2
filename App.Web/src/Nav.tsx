@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { languageFromPathname, withLanguagePrefix, type Language } from './util/util-i18n.ts';
+import { languageFromPathname, stripLanguagePrefix, withLanguagePrefix, type Language } from './util/util-i18n.ts';
 
 const links = [
   { to: '/', key: 'home', label: 'Home' },
@@ -30,6 +30,7 @@ export default function Nav() {
   const [open, setOpen] = useState(false);
   const location = useLocation();
   const language = languageFromPathname(location.pathname);
+  const currentPath = stripLanguagePrefix(location.pathname);
 
   return (
     <nav className="bg-slate-900 text-white">
@@ -40,7 +41,11 @@ export default function Nav() {
 
         <div className="hidden md:flex md:items-center md:gap-6">
           {links.map((link) => (
-            <Link key={link.key} to={withLanguagePrefix(link.to, language)} className="hover:text-slate-300">
+            <Link
+              key={link.key}
+              to={withLanguagePrefix(link.to, language)}
+              className={link.to === currentPath ? 'font-semibold text-white' : 'text-slate-400 hover:text-slate-300'}
+            >
               {linkLabel(link.key, link.label, language)}
             </Link>
           ))}
@@ -70,7 +75,9 @@ export default function Nav() {
               key={link.key}
               to={withLanguagePrefix(link.to, language)}
               onClick={() => setOpen(false)}
-              className="rounded px-2 py-2 hover:bg-slate-800"
+              className={`rounded px-2 py-2 hover:bg-slate-800 ${
+                link.to === currentPath ? 'bg-slate-800 font-semibold text-white' : ''
+              }`}
             >
               {linkLabel(link.key, link.label, language)}
             </Link>
