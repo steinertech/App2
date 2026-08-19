@@ -132,7 +132,7 @@ export default function Grid({ gridIndex }: GridProps) {
   };
 
   const handleSaveClick = async () => {
-    await sendCommand(gridIndex, { command: { commandEnum: GridCommandEnum.Save } });
+    await sendCommand(gridIndex, { command: { commandEnum: GridCommandEnum.Save }, modifies });
   };
 
   return (
