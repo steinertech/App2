@@ -100,9 +100,11 @@ async function gridLoadProject(request: Request, gridAreaDto: GridAreaDto): Prom
   const rowKeys: GridRowKeyDto[] = projects.map((project) => ({ isNew: false, rowKey: project.name ?? '' }));
   const findRow = gridFindRow([...(PROJECT_COLUMNS.columns ?? []).map((column) => column.columnName), undefined]);
 
+  const time = new Date().toISOString().slice(11, 19);
+
   return {
     ...gridAreaDto,
-    text: 'Project Data',
+    text: `Project Data (${time})`,
     rows: [headerRow, findRow, ...rows],
     state: { ...gridAreaDto.state, rowKeys },
   };
