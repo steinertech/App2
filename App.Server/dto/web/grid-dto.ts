@@ -47,14 +47,20 @@ export interface GridRowDto {
   cells?: GridCellDto[];
 }
 
-export interface GridStateSortDto {
+export interface GridSortDto {
   isSortAsc?: boolean;
   columnName?: string;
 }
 
+export interface GridPathSegmentDto {
+  name?: string;
+  text?: string;
+}
+
 export interface GridStateDto {
   rowIndexSelected?: number;
-  sort?: GridStateSortDto;
+  sort?: GridSortDto;
+  pathSegments?: GridPathSegmentDto[];
 }
 
 export interface GridAreaDto {
