@@ -8,14 +8,26 @@ export async function projectsLoad(request: Request): Promise<ProjectDto[]> {
   return collection.find({ sectorKey: key, type: 'ProjectDto' }).toArray();
 }
 
-export async function projectsUpsert(request: Request, projectDto: ProjectDto): Promise<ProjectDto> {
+export async function projectsUpsert(request: Request, projectDtos: ProjectDto[]): Promise<ProjectDto[]> {
   const key = await sectorKey(request, false);
   const collection = client.db().collection<ProjectDto>('myCollection');
 
-  const { _id, ...rest } = projectDto;
-  const project: ProjectDto = { ...rest, sectorKey: key, type: 'ProjectDto' };
+  const projects = projectDtos.map((projectDto): ProjectDto => {
+    const { _id, ...rest } = projectDto;
+    return { ...rest, sectorKey: key, type: 'ProjectDto' };
+  });
 
-  await collection.updateOne({ name: project.name, sectorKey: key, type: 'ProjectDto' }, { $set: project }, { upsert: true });
+  if (projects.length > 0) {
+    await collection.bulkWrite(
+      projects.map((project) => ({
+        updateOne: {
+          filter: { name: project.name, sectorKey: key, type: 'ProjectDto' },
+          update: { $set: project },
+          upsert: true,
+        },
+      })),
+    );
+  }
 
-  return project;
+  return projects;
 }
