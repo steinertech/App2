@@ -18,6 +18,7 @@ export enum GridCommandEnum {
   SortClick = 2,
   Reload = 3,
   Save = 4,
+  New = 5,
 }
 
 export interface GridCustomDto {
@@ -58,11 +59,6 @@ export interface GridPathSegmentDto {
   text?: string;
 }
 
-export interface GridRowKeyDto {
-  isNew?: boolean;
-  rowKey?: string;
-}
-
 export interface GridModifyDto {
   cellEnum?: GridCellEnum;
   columnName?: string;
@@ -75,7 +71,7 @@ export interface GridStateDto {
   rowIndexSelected?: number;
   sort?: GridSortDto;
   pathSegments?: GridPathSegmentDto[];
-  rowKeys?: GridRowKeyDto[];
+  rowKeys?: string[];
 }
 
 export interface GridAreaDto {
