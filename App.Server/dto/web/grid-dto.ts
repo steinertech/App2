@@ -57,10 +57,16 @@ export interface GridPathSegmentDto {
   text?: string;
 }
 
+export interface GridRowKeyDto {
+  isNew?: boolean;
+  rowKey?: string;
+}
+
 export interface GridStateDto {
   rowIndexSelected?: number;
   sort?: GridSortDto;
   pathSegments?: GridPathSegmentDto[];
+  rowKeys?: GridRowKeyDto[];
 }
 
 export interface GridAreaDto {
@@ -68,7 +74,6 @@ export interface GridAreaDto {
   rows?: GridRowDto[];
   state?: GridStateDto;
   command?: GridCommandDto;
-  rowKeys?: string[];
 }
 
 export interface GridDto {
