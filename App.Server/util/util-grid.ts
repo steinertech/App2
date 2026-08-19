@@ -14,7 +14,7 @@ const STORAGE_FILE_COLUMNS: GridConfigDto = {
   ),
 };
 const PROJECT_COLUMNS: GridConfigDto = {
-  columns: (['name', 'sectorKey'] as const satisfies readonly (keyof ProjectDto)[]).map(
+  columns: (['name', 'description'] as const satisfies readonly (keyof ProjectDto)[]).map(
     (columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text }),
   ),
 };
