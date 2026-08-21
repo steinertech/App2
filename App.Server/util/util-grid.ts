@@ -153,17 +153,24 @@ async function gridProjectSave(request: Request, gridDto: GridDto): Promise<void
 }
 
 async function gridProjectNew(request: Request, gridDto: GridDto): Promise<void> {
-  const rowIndex = gridDto.rows?.length ?? 0;
-  const cells: GridCellDto[] = (PROJECT_COLUMNS.columns ?? []).map(
-    (column): GridCellDto => ({
-      cellEnum: GridCellEnum.Text,
-      columnName: column.columnName,
-      placeHolder: 'New',
-      rowIndex,
-      isNew: true,
-    }),
-  );
-  gridDto.rows = [...(gridDto.rows ?? []), { cells }];
+  const rows = gridDto.rows ?? [];
+
+  const newRows: GridRowDto[] = [0, 1].map((rowOffset) => {
+    const rowIndex = rows.length + rowOffset;
+    return {
+      cells: (PROJECT_COLUMNS.columns ?? []).map(
+        (column): GridCellDto => ({
+          cellEnum: GridCellEnum.Text,
+          columnName: column.columnName,
+          placeHolder: 'New',
+          rowIndex,
+          isNew: true,
+        }),
+      ),
+    };
+  });
+
+  gridDto.rows = [...rows, ...newRows];
 }
 
 async function gridLoadUser(request: Request, gridDto: GridDto): Promise<GridDto> {
