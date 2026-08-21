@@ -57,7 +57,7 @@ export default function Project({ path = [] }: ProjectProps) {
     <div className={container}>
       <h1>Project</h1>
       {grids}
-      <label className="mt-4 block whitespace-pre-wrap">{storageJson}</label>
+      <pre className="mt-4 overflow-x-auto whitespace-pre-wrap">{storageJson}</pre>
     </div>
   );
 }
