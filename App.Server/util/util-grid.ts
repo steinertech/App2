@@ -1,6 +1,6 @@
 import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPageDto, GridRowDto, GridSortDto } from '../dto/web/grid-dto.js';
 import { titleCase } from './util-main.js';
-import { projectsLoad, projectsLoadByNames, projectsUpdate, projectsInsert } from './util-project.js';
+import { projectsLoad, projectsLoadByNames, projectsUpdate, projectsInsert, projectsDeleteByNames } from './util-project.js';
 import { usersLoad, userProject } from './util-user.js';
 import { storageFiles } from './util-storage.js';
 import { StorageFileDto } from '../dto/web/storage-file-dto.js';
@@ -62,12 +62,22 @@ async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<Grid
     await gridProjectSaveInsert(request, gridDto);
   }
 
-  if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick) {
+  if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === 'Switch') {
     const rowIndex = gridDto.command.rowIndex;
     if (rowIndex !== undefined) {
       const projectName = gridDto.state?.rowKeys?.[rowIndex];
       if (projectName !== undefined) {
         await userProject(request, projectName);
+      }
+    }
+  }
+
+  if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === 'Delete') {
+    const rowIndex = gridDto.command.rowIndex;
+    if (rowIndex !== undefined) {
+      const projectName = gridDto.state?.rowKeys?.[rowIndex];
+      if (projectName !== undefined) {
+        await projectsDeleteByNames(request, [projectName]);
       }
     }
   }
@@ -92,7 +102,10 @@ async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<Grid
       ),
       {
         cellEnum: GridCellEnum.Custom,
-        customs: [{ text: 'Switch', name: 'Switch', customEnum: GridCustomEnum.Button, rowIndex } satisfies GridCustomDto],
+        customs: [
+          { text: 'Switch', name: 'Switch', customEnum: GridCustomEnum.Button, rowIndex } satisfies GridCustomDto,
+          { text: 'Delete', name: 'Delete', customEnum: GridCustomEnum.Button, rowIndex } satisfies GridCustomDto,
+        ],
         rowIndex,
       },
     ],
