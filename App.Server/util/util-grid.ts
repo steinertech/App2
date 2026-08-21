@@ -53,6 +53,7 @@ function gridConfirm(text: string): GridDto {
         customs: [
           { customEnum: GridCustomEnum.Button, text: 'Ok', name: 'Ok' },
           { customEnum: GridCustomEnum.Button, text: 'Cancel', name: 'Cancel' },
+          { customEnum: GridCustomEnum.Button, text: 'ConfirmTwo', name: 'ConfirmTwo' },
         ],
       },
     ],
