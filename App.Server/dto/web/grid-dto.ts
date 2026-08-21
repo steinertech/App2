@@ -84,5 +84,5 @@ export interface GridDto {
 
 export interface GridPageDto {
   pageName?: string;
-  area?: GridDto[];
+  page?: GridDto[];
 }

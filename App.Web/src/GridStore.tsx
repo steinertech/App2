@@ -22,8 +22,8 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
   const pageNameRef = useRef<string | undefined>(undefined);
   const overridesRef = useRef<Map<number, GridOverride>>(new Map());
 
-  const fetchArea = useCallback(async (): Promise<GridPageDto> => {
-    const area: GridDto[] = (gridPageDtoRef.current.area ?? []).map((existingGrid, gridIndex) => {
+  const fetchPage = useCallback(async (): Promise<GridPageDto> => {
+    const page: GridDto[] = (gridPageDtoRef.current.page ?? []).map((existingGrid, gridIndex) => {
       const override = overridesRef.current.get(gridIndex);
       const grid: GridDto = { ...existingGrid, ...override };
       delete grid.rows;
@@ -31,7 +31,7 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
     });
     overridesRef.current.clear();
 
-    const body: GridPageDto = { area };
+    const body: GridPageDto = { page };
     if (pageNameRef.current !== undefined) {
       body.pageName = pageNameRef.current;
     }
@@ -53,17 +53,17 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
       pageNameRef.current = pageName;
       gridPageDtoRef.current = {};
       overridesRef.current.clear();
-      return fetchArea();
+      return fetchPage();
     },
-    [fetchArea],
+    [fetchPage],
   );
 
   const sendCommand = useCallback(
     (gridIndex: number, override: GridOverride): Promise<GridPageDto> => {
       overridesRef.current.set(gridIndex, override);
-      return fetchArea();
+      return fetchPage();
     },
-    [fetchArea],
+    [fetchPage],
   );
 
   return <GridStoreContext.Provider value={{ gridPageDto, gridVersion, load, sendCommand }}>{children}</GridStoreContext.Provider>;

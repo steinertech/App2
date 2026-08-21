@@ -76,7 +76,7 @@ function gridCellContent(
 export default function Grid({ gridIndex }: GridProps) {
   const { gridPageDto, gridVersion, sendCommand } = useGridStore();
 
-  const grid = gridPageDto.area?.[gridIndex];
+  const grid = gridPageDto.page?.[gridIndex];
   const gridRows = grid?.rows ?? [];
   const [rowIndexSelected, setRowIndexSelected] = useState(grid?.state?.rowIndexSelected);
   const [modifies, setModifies] = useState<GridModifyDto[]>(grid?.modifies ?? []);

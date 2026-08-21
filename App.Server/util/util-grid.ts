@@ -204,15 +204,15 @@ const PAGE_GRID_LOADERS: Record<string, GridLoader[]> = {
 
 export async function gridLoad(request: Request, gridPageDto: GridPageDto): Promise<GridPageDto> {
   const loaders = gridPageDto.pageName !== undefined ? (PAGE_GRID_LOADERS[gridPageDto.pageName] ?? []) : [];
-  const incomingArea = gridPageDto.area ?? [];
+  const incomingPage = gridPageDto.page ?? [];
 
-  const area = await Promise.all(
+  const page = await Promise.all(
     loaders.map((loader, gridIndex): Promise<GridDto> => {
-      const gridDto: GridDto = incomingArea[gridIndex] ?? {};
+      const gridDto: GridDto = incomingPage[gridIndex] ?? {};
       gridCommandSortClick(gridDto);
       return loader(request, gridDto);
     }),
   );
 
-  return { area };
+  return { page };
 }
