@@ -74,7 +74,7 @@ export interface GridStateDto {
   rowKeys?: string[];
 }
 
-export interface GridAreaDto {
+export interface GridDto {
   text?: string;
   rows?: GridRowDto[];
   state?: GridStateDto;
@@ -82,7 +82,7 @@ export interface GridAreaDto {
   modifies?: GridModifyDto[];
 }
 
-export interface GridDto {
+export interface GridPageDto {
   pageName?: string;
-  areas?: GridAreaDto[];
+  area?: GridDto[];
 }
