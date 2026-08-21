@@ -66,6 +66,7 @@ export interface GridModifyDto {
   rowIndex?: number;
   text?: string;
   textModified?: string;
+  isNew?: boolean;
 }
 
 export interface GridStateDto {

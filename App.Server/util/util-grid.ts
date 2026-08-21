@@ -1,6 +1,6 @@
 import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPageDto, GridRowDto, GridSortDto } from '../dto/web/grid-dto.js';
 import { titleCase } from './util-main.js';
-import { projectsLoad, projectsLoadByNames, projectsUpsert } from './util-project.js';
+import { projectsLoad, projectsLoadByNames, projectsUpdate, projectsInsert } from './util-project.js';
 import { usersLoad, userProject } from './util-user.js';
 import { storageFiles } from './util-storage.js';
 import { StorageFileDto } from '../dto/web/storage-file-dto.js';
@@ -58,7 +58,7 @@ function gridCommandSortClick(gridDto: GridDto): void {
 
 async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<GridDto> {
   if (gridDto.command?.commandEnum === GridCommandEnum.Save) {
-    await gridProjectSave(request, gridDto);
+    await gridProjectSaveUpdate(request, gridDto);
   }
 
   if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick) {
@@ -116,7 +116,7 @@ async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<Grid
   return result;
 }
 
-async function gridProjectSave(request: Request, gridDto: GridDto): Promise<void> {
+async function gridProjectSaveUpdate(request: Request, gridDto: GridDto): Promise<void> {
   const modifies = gridDto.modifies ?? [];
   const rowKeys = gridDto.state?.rowKeys ?? [];
 
@@ -149,21 +149,53 @@ async function gridProjectSave(request: Request, gridDto: GridDto): Promise<void
     }
   }
 
-  await projectsUpsert(request, projects);
+  await projectsUpdate(request, projects);
+}
+
+async function gridProjectSaveInsert(request: Request, gridDto: GridDto): Promise<void> {
+  const modifies = (gridDto.modifies ?? []).filter((modify) => modify.isNew);
+
+  const columnNames = new Set((PROJECT_COLUMNS.columns ?? []).map((column) => column.columnName));
+
+  const projectsByRowIndex = new Map<number, ProjectDto>();
+
+  for (const modify of modifies) {
+    if (
+      modify.rowIndex === undefined ||
+      modify.columnName === undefined ||
+      modify.cellEnum !== GridCellEnum.Text ||
+      !columnNames.has(modify.columnName)
+    ) {
+      continue;
+    }
+
+    const project = projectsByRowIndex.get(modify.rowIndex) ?? {};
+    (project as Record<string, string | undefined>)[modify.columnName] = modify.textModified;
+    projectsByRowIndex.set(modify.rowIndex, project);
+  }
+
+  await projectsInsert(request, [...projectsByRowIndex.values()]);
 }
 
 async function gridProjectNew(request: Request, gridDto: GridDto): Promise<void> {
-  const rowIndex = gridDto.rows?.length ?? 0;
-  const cells: GridCellDto[] = (PROJECT_COLUMNS.columns ?? []).map(
-    (column): GridCellDto => ({
-      cellEnum: GridCellEnum.Text,
-      columnName: column.columnName,
-      placeHolder: 'New',
-      rowIndex,
-      isNew: true,
-    }),
-  );
-  gridDto.rows = [...(gridDto.rows ?? []), { cells }];
+  const rows = gridDto.rows ?? [];
+
+  const newRows: GridRowDto[] = [0, 1].map((rowOffset) => {
+    const rowIndex = rows.length + rowOffset;
+    return {
+      cells: (PROJECT_COLUMNS.columns ?? []).map(
+        (column): GridCellDto => ({
+          cellEnum: GridCellEnum.Text,
+          columnName: column.columnName,
+          placeHolder: 'New',
+          rowIndex,
+          isNew: true,
+        }),
+      ),
+    };
+  });
+
+  gridDto.rows = [...rows, ...newRows];
 }
 
 async function gridLoadUser(request: Request, gridDto: GridDto): Promise<GridDto> {
