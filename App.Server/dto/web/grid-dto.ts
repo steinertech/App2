@@ -10,7 +10,7 @@ export enum GridCellEnum {
 export enum GridCustomEnum {
   None = 0,
   Button = 1,
-  Text = 2,
+  Label = 2,
 }
 
 export enum GridCommandEnum {

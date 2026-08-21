@@ -38,7 +38,7 @@ function gridCustomContent(gridCustom: GridCustomDto, key: number, onCustomClick
       </button>
     );
   }
-  if (gridCustom.customEnum === GridCustomEnum.Text) {
+  if (gridCustom.customEnum === GridCustomEnum.Label) {
     return <span key={key}>{gridCustom.text}</span>;
   }
   return null;

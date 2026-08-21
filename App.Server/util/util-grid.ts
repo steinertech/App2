@@ -44,7 +44,7 @@ function gridHeaderCell(column: string | undefined, sort?: GridSortDto): GridCel
 
 function gridConfirm(text: string): GridDto {
   const textRow: GridRowDto = {
-    cells: [{ cellEnum: GridCellEnum.Custom, customs: [{ customEnum: GridCustomEnum.Text, text }] }],
+    cells: [{ cellEnum: GridCellEnum.Custom, customs: [{ customEnum: GridCustomEnum.Label, text }] }],
   };
   const buttonRow: GridRowDto = {
     cells: [
