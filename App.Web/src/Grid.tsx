@@ -21,7 +21,7 @@ function gridCellClassName(gridCell: GridCellDto, rowSelected: boolean): string 
   if (gridCell.cellEnum === GridCellEnum.Header) {
     return 'font-bold text-white bg-blue-600';
   }
-  if (gridCell.cellEnum === GridCellEnum.Find) {
+  if (gridCell.cellEnum === GridCellEnum.Search) {
     return 'bg-blue-50';
   }
   if (rowSelected) {
@@ -38,7 +38,7 @@ function gridCustomContent(gridCustom: GridCustomDto, key: number, onCustomClick
       </button>
     );
   }
-  if (gridCustom.customEnum === GridCustomEnum.Text) {
+  if (gridCustom.customEnum === GridCustomEnum.Label) {
     return <span key={key}>{gridCustom.text}</span>;
   }
   return null;
@@ -57,7 +57,7 @@ function gridCellContent(
     content = (gridCell.customs ?? []).map((gridCustom, index) => gridCustomContent(gridCustom, index, onCustomClick));
   } else if (gridCell.cellEnum === GridCellEnum.Empty) {
     content = 'Empty';
-  } else if (gridCell.cellEnum === GridCellEnum.Text) {
+  } else if (gridCell.cellEnum === GridCellEnum.Edit) {
     content = (
       <input
         key={gridVersion}
@@ -68,7 +68,7 @@ function gridCellContent(
         className="w-full"
       />
     );
-  } else if (gridCell.cellEnum === GridCellEnum.Find) {
+  } else if (gridCell.cellEnum === GridCellEnum.Search) {
     content = <input key={gridVersion} type="text" placeholder={gridCell.placeHolder} defaultValue={gridCell.text} className="w-full" />;
   } else if (gridCell.cellEnum === GridCellEnum.Header) {
     const arrow = gridCell.isSortAsc === true ? ' ↑' : gridCell.isSortAsc === false ? ' ↓' : '';

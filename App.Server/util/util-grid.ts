@@ -28,7 +28,7 @@ function gridFindRow(columnNames: (string | undefined)[]): GridRowDto {
   return {
     cells: columnNames.map((columnName): GridCellDto =>
       columnName !== undefined
-        ? { cellEnum: GridCellEnum.Find, columnName, placeHolder: 'Search' }
+        ? { cellEnum: GridCellEnum.Search, columnName, placeHolder: 'Search' }
         : { cellEnum: GridCellEnum.Empty },
     ),
   };
@@ -44,7 +44,7 @@ function gridHeaderCell(column: string | undefined, sort?: GridSortDto): GridCel
 
 function gridConfirm(text: string): GridDto {
   const textRow: GridRowDto = {
-    cells: [{ cellEnum: GridCellEnum.Custom, customs: [{ customEnum: GridCustomEnum.Text, text }] }],
+    cells: [{ cellEnum: GridCellEnum.Custom, customs: [{ customEnum: GridCustomEnum.Label, text }] }],
   };
   const buttonRow: GridRowDto = {
     cells: [
@@ -53,6 +53,7 @@ function gridConfirm(text: string): GridDto {
         customs: [
           { customEnum: GridCustomEnum.Button, text: 'Ok', name: 'Ok' },
           { customEnum: GridCustomEnum.Button, text: 'Cancel', name: 'Cancel' },
+          { customEnum: GridCustomEnum.Button, text: 'ConfirmTwo', name: 'ConfirmTwo' },
         ],
       },
     ],
@@ -122,7 +123,7 @@ async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<Grid
     cells: [
       ...(PROJECT_COLUMNS.columns ?? []).map(
         (column, columnIndex): GridCellDto => ({
-          cellEnum: GridCellEnum.Text,
+          cellEnum: GridCellEnum.Edit,
           text: project[column.columnName as keyof ProjectDto] as string | undefined,
           rowIndex,
           columnName: column.columnName,
@@ -193,7 +194,7 @@ async function gridProjectSaveUpdate(request: Request, gridDto: GridDto): Promis
     if (
       modify.rowIndex === undefined ||
       modify.columnName === undefined ||
-      modify.cellEnum !== GridCellEnum.Text ||
+      modify.cellEnum !== GridCellEnum.Edit ||
       !columnNames.has(modify.columnName)
     ) {
       continue;
@@ -220,7 +221,7 @@ async function gridProjectSaveInsert(request: Request, gridDto: GridDto): Promis
     if (
       modify.rowIndex === undefined ||
       modify.columnName === undefined ||
-      modify.cellEnum !== GridCellEnum.Text ||
+      modify.cellEnum !== GridCellEnum.Edit ||
       !columnNames.has(modify.columnName)
     ) {
       continue;
@@ -242,7 +243,7 @@ async function gridProjectNew(request: Request, gridDto: GridDto): Promise<void>
     return {
       cells: (PROJECT_COLUMNS.columns ?? []).map(
         (column): GridCellDto => ({
-          cellEnum: GridCellEnum.Text,
+          cellEnum: GridCellEnum.Edit,
           columnName: column.columnName,
           placeHolder: 'New',
           rowIndex,
@@ -264,7 +265,7 @@ async function gridLoadUser(request: Request, gridDto: GridDto): Promise<GridDto
   const rows: GridRowDto[] = users.map((user, rowIndex) => ({
     cells: (USER_COLUMNS.columns ?? []).map(
       (column): GridCellDto => ({
-        cellEnum: GridCellEnum.Text,
+        cellEnum: GridCellEnum.Edit,
         text: user[column.columnName as keyof UserDto] as string | undefined,
         rowIndex,
         columnName: column.columnName,
@@ -285,7 +286,7 @@ async function gridLoadStorage(request: Request, gridDto: GridDto): Promise<Grid
   const fileRows: GridRowDto[] = files.map((file, rowIndex) => ({
     cells: (STORAGE_FILE_COLUMNS.columns ?? []).map(
       (column): GridCellDto => ({
-        cellEnum: GridCellEnum.Text,
+        cellEnum: GridCellEnum.Edit,
         text: String(file[column.columnName as keyof StorageFileDto]),
         rowIndex,
         columnName: column.columnName,

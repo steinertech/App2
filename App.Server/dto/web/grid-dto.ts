@@ -1,16 +1,16 @@
 export enum GridCellEnum {
   None = 0,
-  Text = 1,
+  Edit = 1,
   Header = 2,
   Custom = 3,
-  Find = 4,
+  Search = 4,
   Empty = 5,
 }
 
 export enum GridCustomEnum {
   None = 0,
   Button = 1,
-  Text = 2,
+  Label = 2,
 }
 
 export enum GridCommandEnum {
