@@ -66,6 +66,24 @@ function gridConfirmCommand(gridDto: GridDto): GridCommandDto | undefined {
   return gridDto.pages?.[0]?.page?.[0]?.command;
 }
 
+/** Recursively walks gridDto and every GridDto nested under gridDto.pages (GridPageDto[] -> GridDto[] -> pages -> ...) for the first one whose own command matches customName. */
+function gridFindCommand(gridDto: GridDto, customName: string): GridDto | undefined {
+  if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === customName) {
+    return gridDto;
+  }
+
+  for (const gridPage of gridDto.pages ?? []) {
+    for (const nestedGridDto of gridPage.page ?? []) {
+      const found = gridFindCommand(nestedGridDto, customName);
+      if (found !== undefined) {
+        return found;
+      }
+    }
+  }
+
+  return undefined;
+}
+
 function gridCommandSortClick(gridDto: GridDto): void {
   if (gridDto.command?.commandEnum !== GridCommandEnum.SortClick) {
     return;
@@ -183,9 +201,9 @@ async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<Grid
     result.pages = undefined;
   }
 
-  if (confirmCommand?.commandEnum === GridCommandEnum.CustomButtonClick && confirmCommand.customName === 'ConfirmTwo') {
-    result.text = 'Hello World (ConfirmTwo)';
-    result.pages = undefined;
+  const confirmTwoGridDto = gridFindCommand(gridDto, 'ConfirmTwo');
+  if (confirmTwoGridDto !== undefined) {
+    confirmTwoGridDto.pages = [{ page: [gridConfirm('Are you sure?')] }];
   }
 
   // Command is transient: clear it so it isn't re-processed on a later request that only carries a nested dialog override.
