@@ -1,4 +1,4 @@
-import { GridCellDto, GridCellEnum, GridCommandDto, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPageDto, GridRowDto, GridSortDto } from '../dto/web/grid-dto.js';
+import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPageDto, GridRowDto, GridSortDto } from '../dto/web/grid-dto.js';
 import { titleCase } from './util-main.js';
 import { projectsLoad, projectsLoadByNames, projectsUpdate, projectsInsert, projectsDeleteByNames } from './util-project.js';
 import { usersLoad, userProject } from './util-user.js';
@@ -61,9 +61,35 @@ function gridConfirm(text: string): GridDto {
   return { rows: [textRow, buttonRow] };
 }
 
-/** The command clicked inside a gridConfirm dialog is stored on that nested GridDto (gridDto.pages[0].grids[0]), not on gridDto itself. */
-function gridConfirmCommand(gridDto: GridDto): GridCommandDto | undefined {
-  return gridDto.pages?.[0]?.grids?.[0]?.command;
+/**
+ * Recursively walks gridDto.pages for the GridPageDto whose grids contain a GridDto with the given customName
+ * command, and removes that GridPageDto from its immediate parent's pages list. Returns true if found and removed.
+ */
+function gridRemoveCommand(gridDto: GridDto, customName: string): boolean {
+  const pages = gridDto.pages;
+  if (pages === undefined) {
+    return false;
+  }
+
+  for (let pagesIndex = 0; pagesIndex < pages.length; pagesIndex += 1) {
+    const grids = pages[pagesIndex].grids ?? [];
+    const isMatch = grids.some(
+      (nestedGridDto) =>
+        nestedGridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && nestedGridDto.command.customName === customName,
+    );
+    if (isMatch) {
+      pages.splice(pagesIndex, 1);
+      return true;
+    }
+
+    for (const nestedGridDto of grids) {
+      if (gridRemoveCommand(nestedGridDto, customName)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 /** Recursively walks gridDto and every GridDto nested under gridDto.pages (GridPageDto[] -> GridDto[] -> pages -> ...) for the first one whose own command matches customName. */
@@ -194,11 +220,8 @@ async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<Grid
     result.pages = [{ grids: [gridConfirm('Are you sure?')] }];
   }
 
-  const confirmCommand = gridConfirmCommand(gridDto);
-
-  if (confirmCommand?.commandEnum === GridCommandEnum.CustomButtonClick && confirmCommand.customName === 'Cancel') {
+  if (gridRemoveCommand(gridDto, 'Cancel')) {
     result.text = 'Hello World (Cancel)';
-    result.pages = undefined;
   }
 
   const confirmTwoGridDto = gridFindCommand(gridDto, 'ConfirmTwo');
