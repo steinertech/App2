@@ -42,6 +42,24 @@ function gridHeaderCell(column: string | undefined, sort?: GridSortDto): GridCel
   return cell;
 }
 
+function gridConfirm(text: string): GridDto {
+  const textRow: GridRowDto = {
+    cells: [{ cellEnum: GridCellEnum.Custom, customs: [{ customEnum: GridCustomEnum.Text, text }] }],
+  };
+  const buttonRow: GridRowDto = {
+    cells: [
+      {
+        cellEnum: GridCellEnum.Custom,
+        customs: [
+          { customEnum: GridCustomEnum.Button, text: 'Ok', name: 'Ok' },
+          { customEnum: GridCustomEnum.Button, text: 'Cancel', name: 'Cancel' },
+        ],
+      },
+    ],
+  };
+  return { rows: [textRow, buttonRow] };
+}
+
 function gridCommandSortClick(gridDto: GridDto): void {
   if (gridDto.command?.commandEnum !== GridCommandEnum.SortClick) {
     return;
@@ -116,6 +134,7 @@ async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<Grid
         customs: [
           { text: 'Switch', name: 'Switch', customEnum: GridCustomEnum.Button, rowIndex } satisfies GridCustomDto,
           { text: 'Delete', name: 'Delete', customEnum: GridCustomEnum.Button, rowIndex } satisfies GridCustomDto,
+          { text: 'Confirm', name: 'Confirm', customEnum: GridCustomEnum.Button, rowIndex } satisfies GridCustomDto,
         ],
         rowIndex,
       },
@@ -145,6 +164,10 @@ async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<Grid
 
   if (gridDto.command?.commandEnum === GridCommandEnum.New) {
     await gridProjectNew(request, result);
+  }
+
+  if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === 'Confirm') {
+    result.pages = [{ page: [gridConfirm('Are you sure?')] }];
   }
 
   return result;

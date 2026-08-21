@@ -10,6 +10,7 @@ export enum GridCellEnum {
 export enum GridCustomEnum {
   None = 0,
   Button = 1,
+  Text = 2,
 }
 
 export enum GridCommandEnum {
@@ -87,6 +88,7 @@ export interface GridDto {
   state?: GridStateDto;
   command?: GridCommandDto;
   modifies?: GridModifyDto[];
+  pages?: GridPageDto[];
 }
 
 export interface GridPageDto {

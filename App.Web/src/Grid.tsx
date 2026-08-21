@@ -13,6 +13,8 @@ import {
 
 interface GridProps {
   gridIndex: number;
+  /** If set, render gridPageDto.page[gridIndex].pages[pagesIndex].page[0] instead of gridPageDto.page[gridIndex] */
+  pagesIndex?: number;
 }
 
 function gridCellClassName(gridCell: GridCellDto, rowSelected: boolean): string {
@@ -35,6 +37,9 @@ function gridCustomContent(gridCustom: GridCustomDto, key: number, onCustomClick
         {gridCustom.text}
       </button>
     );
+  }
+  if (gridCustom.customEnum === GridCustomEnum.Text) {
+    return <span key={key}>{gridCustom.text}</span>;
   }
   return null;
 }
@@ -89,10 +94,10 @@ function gridCellContent(
   return content;
 }
 
-export default function Grid({ gridIndex }: GridProps) {
+export default function Grid({ gridIndex, pagesIndex }: GridProps) {
   const { gridPageDto, gridVersion, sendCommand } = useGridStore();
 
-  const grid = gridPageDto.page?.[gridIndex];
+  const grid = pagesIndex !== undefined ? gridPageDto.page?.[gridIndex]?.pages?.[pagesIndex]?.page?.[0] : gridPageDto.page?.[gridIndex];
   const gridRows = grid?.rows ?? [];
   const [rowIndexSelected, setRowIndexSelected] = useState(grid?.state?.selected);
   const [modifies, setModifies] = useState<GridModifyDto[]>(grid?.modifies ?? []);
