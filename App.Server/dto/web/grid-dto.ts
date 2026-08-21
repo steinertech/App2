@@ -1,9 +1,9 @@
 export enum GridCellEnum {
   None = 0,
-  Text = 1,
+  Edit = 1,
   Header = 2,
   Custom = 3,
-  Find = 4,
+  Search = 4,
   Empty = 5,
 }
 
