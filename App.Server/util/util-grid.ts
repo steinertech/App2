@@ -262,7 +262,7 @@ const PAGE_GRID_LOADERS: Record<string, GridLoader[]> = {
   storage: [gridLoadStorage],
 };
 
-export async function gridLoad(request: Request, gridPageDto: GridPageDto): Promise<GridPageDto> {
+export async function gridPageLoad(request: Request, gridPageDto: GridPageDto): Promise<GridPageDto> {
   const loaders = gridPageDto.pageName !== undefined ? (PAGE_GRID_LOADERS[gridPageDto.pageName] ?? []) : [];
   const incomingPage = gridPageDto.page ?? [];
 
