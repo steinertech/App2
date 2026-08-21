@@ -1,37 +1,37 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react';
 import { apiUrl } from './page/App.tsx';
-import type { GridAreaDto, GridDto } from '../../App.Server/dto/web/grid-dto.ts';
+import type { GridDto, GridPageDto } from '../../App.Server/dto/web/grid-dto.ts';
 
-export type { GridDto };
+export type { GridPageDto };
 
-export type GridAreaOverride = GridAreaDto;
+export type GridOverride = GridDto;
 
 interface GridStoreValue {
-  gridDto: GridDto;
+  gridPageDto: GridPageDto;
   gridVersion: number;
-  load: (pageName: string) => Promise<GridDto>;
-  sendCommand: (gridIndex: number, override: GridAreaOverride) => Promise<GridDto>;
+  load: (pageName: string) => Promise<GridPageDto>;
+  sendCommand: (gridIndex: number, override: GridOverride) => Promise<GridPageDto>;
 }
 
 const GridStoreContext = createContext<GridStoreValue | undefined>(undefined);
 
 export function GridStoreProvider({ children }: { children: ReactNode }) {
-  const [gridDto, setGridDto] = useState<GridDto>({});
+  const [gridPageDto, setGridPageDto] = useState<GridPageDto>({});
   const [gridVersion, setGridVersion] = useState(0);
-  const gridDtoRef = useRef<GridDto>(gridDto);
+  const gridPageDtoRef = useRef<GridPageDto>(gridPageDto);
   const pageNameRef = useRef<string | undefined>(undefined);
-  const overridesRef = useRef<Map<number, GridAreaOverride>>(new Map());
+  const overridesRef = useRef<Map<number, GridOverride>>(new Map());
 
-  const fetchAreas = useCallback(async (): Promise<GridDto> => {
-    const areas: GridAreaDto[] = (gridDtoRef.current.areas ?? []).map((existingArea, gridIndex) => {
+  const fetchPage = useCallback(async (): Promise<GridPageDto> => {
+    const page: GridDto[] = (gridPageDtoRef.current.page ?? []).map((existingGrid, gridIndex) => {
       const override = overridesRef.current.get(gridIndex);
-      const area: GridAreaDto = { ...existingArea, ...override };
-      delete area.rows;
-      return area;
+      const grid: GridDto = { ...existingGrid, ...override };
+      delete grid.rows;
+      return grid;
     });
     overridesRef.current.clear();
 
-    const body: GridDto = { areas };
+    const body: GridPageDto = { page };
     if (pageNameRef.current !== undefined) {
       body.pageName = pageNameRef.current;
     }
@@ -41,32 +41,32 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body),
     });
-    const data = (await response.json()) as GridDto;
-    gridDtoRef.current = data;
-    setGridDto(data);
+    const data = (await response.json()) as GridPageDto;
+    gridPageDtoRef.current = data;
+    setGridPageDto(data);
     setGridVersion((version) => version + 1);
     return data;
   }, []);
 
   const load = useCallback(
-    (pageName: string): Promise<GridDto> => {
+    (pageName: string): Promise<GridPageDto> => {
       pageNameRef.current = pageName;
-      gridDtoRef.current = {};
+      gridPageDtoRef.current = {};
       overridesRef.current.clear();
-      return fetchAreas();
+      return fetchPage();
     },
-    [fetchAreas],
+    [fetchPage],
   );
 
   const sendCommand = useCallback(
-    (gridIndex: number, override: GridAreaOverride): Promise<GridDto> => {
+    (gridIndex: number, override: GridOverride): Promise<GridPageDto> => {
       overridesRef.current.set(gridIndex, override);
-      return fetchAreas();
+      return fetchPage();
     },
-    [fetchAreas],
+    [fetchPage],
   );
 
-  return <GridStoreContext.Provider value={{ gridDto, gridVersion, load, sendCommand }}>{children}</GridStoreContext.Provider>;
+  return <GridStoreContext.Provider value={{ gridPageDto, gridVersion, load, sendCommand }}>{children}</GridStoreContext.Provider>;
 }
 
 export function useGridStore(): GridStoreValue {

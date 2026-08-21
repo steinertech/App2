@@ -1,4 +1,4 @@
-import { GridAreaDto, GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridRowDto, GridSortDto } from '../dto/web/grid-dto.js';
+import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPageDto, GridRowDto, GridSortDto } from '../dto/web/grid-dto.js';
 import { titleCase } from './util-main.js';
 import { projectsLoad, projectsLoadByNames, projectsUpsert } from './util-project.js';
 import { usersLoad, userProject } from './util-user.js';
@@ -42,33 +42,33 @@ function gridHeaderCell(column: string | undefined, sort?: GridSortDto): GridCel
   return cell;
 }
 
-function gridCommandSortClick(gridAreaDto: GridAreaDto): void {
-  if (gridAreaDto.command?.commandEnum !== GridCommandEnum.SortClick) {
+function gridCommandSortClick(gridDto: GridDto): void {
+  if (gridDto.command?.commandEnum !== GridCommandEnum.SortClick) {
     return;
   }
 
-  const columnName = gridAreaDto.command.columnName;
+  const columnName = gridDto.command.columnName;
   if (columnName === undefined) {
     return;
   }
 
-  const isSortAsc = !(gridAreaDto.state?.sort?.isSortAsc ?? false);
-  gridAreaDto.state = { ...gridAreaDto.state, sort: { columnName, isSortAsc } };
+  const isSortAsc = !(gridDto.state?.sort?.isSortAsc ?? false);
+  gridDto.state = { ...gridDto.state, sort: { columnName, isSortAsc } };
 }
 
-async function gridProjectLoad(request: Request, gridAreaDto: GridAreaDto): Promise<GridAreaDto> {
-  if (gridAreaDto.command?.commandEnum === GridCommandEnum.Save) {
-    await gridProjectSave(request, gridAreaDto);
+async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<GridDto> {
+  if (gridDto.command?.commandEnum === GridCommandEnum.Save) {
+    await gridProjectSave(request, gridDto);
   }
 
-  if (gridAreaDto.command?.commandEnum === GridCommandEnum.New) {
-    await gridProjectNew(request, gridAreaDto);
+  if (gridDto.command?.commandEnum === GridCommandEnum.New) {
+    await gridProjectNew(request, gridDto);
   }
 
-  if (gridAreaDto.command?.commandEnum === GridCommandEnum.CustomButtonClick) {
-    const rowIndex = gridAreaDto.command.rowIndex;
+  if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick) {
+    const rowIndex = gridDto.command.rowIndex;
     if (rowIndex !== undefined) {
-      const projectName = gridAreaDto.state?.rowKeys?.[rowIndex];
+      const projectName = gridDto.state?.rowKeys?.[rowIndex];
       if (projectName !== undefined) {
         await userProject(request, projectName);
       }
@@ -79,7 +79,7 @@ async function gridProjectLoad(request: Request, gridAreaDto: GridAreaDto): Prom
 
   const headerRow: GridRowDto = {
     cells: [
-      ...(PROJECT_COLUMNS.columns ?? []).map((column) => gridHeaderCell(column.columnName, gridAreaDto.state?.sort)),
+      ...(PROJECT_COLUMNS.columns ?? []).map((column) => gridHeaderCell(column.columnName, gridDto.state?.sort)),
       { cellEnum: GridCellEnum.Header, text: 'Command' },
     ],
   };
@@ -107,16 +107,16 @@ async function gridProjectLoad(request: Request, gridAreaDto: GridAreaDto): Prom
   const time = new Date().toISOString().slice(11, 19);
 
   return {
-    ...gridAreaDto,
+    ...gridDto,
     text: `Project Data (${time})`,
     rows: [headerRow, findRow, ...rows],
-    state: { ...gridAreaDto.state, rowKeys },
+    state: { ...gridDto.state, rowKeys },
   };
 }
 
-async function gridProjectSave(request: Request, gridAreaDto: GridAreaDto): Promise<void> {
-  const modifies = gridAreaDto.modifies ?? [];
-  const rowKeys = gridAreaDto.state?.rowKeys ?? [];
+async function gridProjectSave(request: Request, gridDto: GridDto): Promise<void> {
+  const modifies = gridDto.modifies ?? [];
+  const rowKeys = gridDto.state?.rowKeys ?? [];
 
   const names = [
     ...new Set(
@@ -150,13 +150,13 @@ async function gridProjectSave(request: Request, gridAreaDto: GridAreaDto): Prom
   await projectsUpsert(request, projects);
 }
 
-async function gridProjectNew(request: Request, gridAreaDto: GridAreaDto): Promise<void> {}
+async function gridProjectNew(request: Request, gridDto: GridDto): Promise<void> {}
 
-async function gridLoadUser(request: Request, gridAreaDto: GridAreaDto): Promise<GridAreaDto> {
+async function gridLoadUser(request: Request, gridDto: GridDto): Promise<GridDto> {
   const users = await usersLoad(request);
 
   const headerRow: GridRowDto = {
-    cells: (USER_COLUMNS.columns ?? []).map((column) => gridHeaderCell(column.columnName, gridAreaDto.state?.sort)),
+    cells: (USER_COLUMNS.columns ?? []).map((column) => gridHeaderCell(column.columnName, gridDto.state?.sort)),
   };
   const rows: GridRowDto[] = users.map((user, rowIndex) => ({
     cells: (USER_COLUMNS.columns ?? []).map(
@@ -170,14 +170,14 @@ async function gridLoadUser(request: Request, gridAreaDto: GridAreaDto): Promise
   }));
   const findRow = gridFindRow([...(USER_COLUMNS.columns ?? []).map((column) => column.columnName)]);
 
-  return { ...gridAreaDto, text: 'User Data', rows: [headerRow, findRow, ...rows] };
+  return { ...gridDto, text: 'User Data', rows: [headerRow, findRow, ...rows] };
 }
 
-async function gridLoadStorage(request: Request, gridAreaDto: GridAreaDto): Promise<GridAreaDto> {
+async function gridLoadStorage(request: Request, gridDto: GridDto): Promise<GridDto> {
   const files = await storageFiles(request);
 
   const headerRow: GridRowDto = {
-    cells: (STORAGE_FILE_COLUMNS.columns ?? []).map((column) => gridHeaderCell(column.columnName, gridAreaDto.state?.sort)),
+    cells: (STORAGE_FILE_COLUMNS.columns ?? []).map((column) => gridHeaderCell(column.columnName, gridDto.state?.sort)),
   };
   const fileRows: GridRowDto[] = files.map((file, rowIndex) => ({
     cells: (STORAGE_FILE_COLUMNS.columns ?? []).map(
@@ -191,28 +191,28 @@ async function gridLoadStorage(request: Request, gridAreaDto: GridAreaDto): Prom
   }));
   const findRow = gridFindRow([...(STORAGE_FILE_COLUMNS.columns ?? []).map((column) => column.columnName)]);
 
-  return { ...gridAreaDto, text: 'Storage Data', rows: [headerRow, findRow, ...fileRows] };
+  return { ...gridDto, text: 'Storage Data', rows: [headerRow, findRow, ...fileRows] };
 }
 
-type GridAreaLoader = (request: Request, gridAreaDto: GridAreaDto) => Promise<GridAreaDto>;
+type GridLoader = (request: Request, gridDto: GridDto) => Promise<GridDto>;
 
-const PAGE_GRID_LOADERS: Record<string, GridAreaLoader[]> = {
+const PAGE_GRID_LOADERS: Record<string, GridLoader[]> = {
   debug: [gridProjectLoad],
   project: [gridProjectLoad, gridLoadUser],
   storage: [gridLoadStorage],
 };
 
-export async function gridLoad(request: Request, gridDto: GridDto): Promise<GridDto> {
-  const loaders = gridDto.pageName !== undefined ? (PAGE_GRID_LOADERS[gridDto.pageName] ?? []) : [];
-  const incomingAreas = gridDto.areas ?? [];
+export async function gridLoad(request: Request, gridPageDto: GridPageDto): Promise<GridPageDto> {
+  const loaders = gridPageDto.pageName !== undefined ? (PAGE_GRID_LOADERS[gridPageDto.pageName] ?? []) : [];
+  const incomingPage = gridPageDto.page ?? [];
 
-  const areas = await Promise.all(
-    loaders.map((loader, gridIndex): Promise<GridAreaDto> => {
-      const gridAreaDto: GridAreaDto = incomingAreas[gridIndex] ?? {};
-      gridCommandSortClick(gridAreaDto);
-      return loader(request, gridAreaDto);
+  const page = await Promise.all(
+    loaders.map((loader, gridIndex): Promise<GridDto> => {
+      const gridDto: GridDto = incomingPage[gridIndex] ?? {};
+      gridCommandSortClick(gridDto);
+      return loader(request, gridDto);
     }),
   );
 
-  return { areas };
+  return { page };
 }

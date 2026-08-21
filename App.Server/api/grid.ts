@@ -7,11 +7,11 @@ export default {
       return new Response(null, { status: 204, headers: corsHeaders(request) });
     }
 
-    const gridDto = await request.json();
+    const gridPageDto = await request.json();
 
-    const grid = await gridLoad(request, gridDto);
+    const gridPage = await gridLoad(request, gridPageDto);
 
-    return new Response(JSON.stringify(grid), {
+    return new Response(JSON.stringify(gridPage), {
       headers: { 'content-type': 'application/json', ...corsHeaders(request) },
     });
   },

@@ -74,12 +74,12 @@ function gridCellContent(
 }
 
 export default function Grid({ gridIndex }: GridProps) {
-  const { gridDto, gridVersion, sendCommand } = useGridStore();
+  const { gridPageDto, gridVersion, sendCommand } = useGridStore();
 
-  const gridArea = gridDto.areas?.[gridIndex];
-  const gridRows = gridArea?.rows ?? [];
-  const [rowIndexSelected, setRowIndexSelected] = useState(gridArea?.state?.rowIndexSelected);
-  const [modifies, setModifies] = useState<GridModifyDto[]>(gridArea?.modifies ?? []);
+  const grid = gridPageDto.page?.[gridIndex];
+  const gridRows = grid?.rows ?? [];
+  const [rowIndexSelected, setRowIndexSelected] = useState(grid?.state?.rowIndexSelected);
+  const [modifies, setModifies] = useState<GridModifyDto[]>(grid?.modifies ?? []);
 
   const handleTextChange = (gridCell: GridCellDto, textModified: string) => {
     setModifies((prev) => {
@@ -147,7 +147,7 @@ export default function Grid({ gridIndex }: GridProps) {
 
   return (
     <div>
-      <h1 className="text-4xl font-bold">{gridArea?.text}</h1>
+      <h1 className="text-4xl font-bold">{grid?.text}</h1>
       <table className="w-full">
         <tbody>
           {gridRows.map((gridRow, rowIndex) => (
