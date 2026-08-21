@@ -1,4 +1,4 @@
-import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPageDto, GridRowDto, GridSortDto } from '../dto/web/grid-dto.js';
+import { GridCellDto, GridCellEnum, GridCommandDto, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPageDto, GridRowDto, GridSortDto } from '../dto/web/grid-dto.js';
 import { titleCase } from './util-main.js';
 import { projectsLoad, projectsLoadByNames, projectsUpdate, projectsInsert, projectsDeleteByNames } from './util-project.js';
 import { usersLoad, userProject } from './util-user.js';
@@ -59,6 +59,11 @@ function gridConfirm(text: string): GridDto {
     ],
   };
   return { rows: [textRow, buttonRow] };
+}
+
+/** The command clicked inside a gridConfirm dialog is stored on that nested GridDto (gridDto.pages[0].page[0]), not on gridDto itself. */
+function gridConfirmCommand(gridDto: GridDto): GridCommandDto | undefined {
+  return gridDto.pages?.[0]?.page?.[0]?.command;
 }
 
 function gridCommandSortClick(gridDto: GridDto): void {
@@ -171,13 +176,20 @@ async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<Grid
     result.pages = [{ page: [gridConfirm('Are you sure?')] }];
   }
 
-  if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === 'Cancel') {
+  const confirmCommand = gridConfirmCommand(gridDto);
+
+  if (confirmCommand?.commandEnum === GridCommandEnum.CustomButtonClick && confirmCommand.customName === 'Cancel') {
     result.text = 'Hello World (Cancel)';
+    result.pages = undefined;
   }
 
-  if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === 'ConfirmTwo') {
+  if (confirmCommand?.commandEnum === GridCommandEnum.CustomButtonClick && confirmCommand.customName === 'ConfirmTwo') {
     result.text = 'Hello World (ConfirmTwo)';
+    result.pages = undefined;
   }
+
+  // Command is transient: clear it so it isn't re-processed on a later request that only carries a nested dialog override.
+  result.command = undefined;
 
   return result;
 }

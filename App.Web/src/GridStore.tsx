@@ -6,11 +6,18 @@ export type { GridPageDto };
 
 export type GridOverride = GridDto;
 
+interface GridOverrideEntry {
+  gridIndex: number;
+  /** When set, the override targets the nested GridDto at page[gridIndex].pages[pagesIndex].page[0] instead of page[gridIndex]. */
+  pagesIndex: number | undefined;
+  override: GridOverride;
+}
+
 interface GridStoreValue {
   gridPageDto: GridPageDto;
   gridVersion: number;
   load: (pageName: string) => Promise<GridPageDto>;
-  sendCommand: (gridIndex: number, override: GridOverride) => Promise<GridPageDto>;
+  sendCommand: (gridIndex: number, pagesIndex: number | undefined, override: GridOverride) => Promise<GridPageDto>;
 }
 
 const GridStoreContext = createContext<GridStoreValue | undefined>(undefined);
@@ -20,16 +27,32 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
   const [gridVersion, setGridVersion] = useState(0);
   const gridPageDtoRef = useRef<GridPageDto>(gridPageDto);
   const pageNameRef = useRef<string | undefined>(undefined);
-  const overridesRef = useRef<Map<number, GridOverride>>(new Map());
+  const overridesRef = useRef<Map<string, GridOverrideEntry>>(new Map());
 
   const fetchPage = useCallback(async (): Promise<GridPageDto> => {
+    const entries = [...overridesRef.current.values()];
+    overridesRef.current.clear();
+
     const page: GridDto[] = (gridPageDtoRef.current.page ?? []).map((existingGrid, gridIndex) => {
-      const override = overridesRef.current.get(gridIndex);
-      const grid: GridDto = { ...existingGrid, ...override };
+      const rootEntry = entries.find((entry) => entry.gridIndex === gridIndex && entry.pagesIndex === undefined);
+      const grid: GridDto = { ...existingGrid, ...rootEntry?.override };
       delete grid.rows;
+
+      const nestedEntries = entries.filter((entry) => entry.gridIndex === gridIndex && entry.pagesIndex !== undefined);
+      if (nestedEntries.length > 0 && grid.pages !== undefined) {
+        grid.pages = grid.pages.map((gridPage, pagesIndex) => {
+          const nestedEntry = nestedEntries.find((entry) => entry.pagesIndex === pagesIndex);
+          if (nestedEntry === undefined) {
+            return gridPage;
+          }
+          const nestedGrid: GridDto = { ...gridPage.page?.[0], ...nestedEntry.override };
+          delete nestedGrid.rows;
+          return { ...gridPage, page: [nestedGrid] };
+        });
+      }
+
       return grid;
     });
-    overridesRef.current.clear();
 
     const body: GridPageDto = { page };
     if (pageNameRef.current !== undefined) {
@@ -59,8 +82,8 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
   );
 
   const sendCommand = useCallback(
-    (gridIndex: number, override: GridOverride): Promise<GridPageDto> => {
-      overridesRef.current.set(gridIndex, override);
+    (gridIndex: number, pagesIndex: number | undefined, override: GridOverride): Promise<GridPageDto> => {
+      overridesRef.current.set(`${gridIndex}:${pagesIndex ?? ''}`, { gridIndex, pagesIndex, override });
       return fetchPage();
     },
     [fetchPage],

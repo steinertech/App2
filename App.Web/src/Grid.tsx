@@ -155,7 +155,7 @@ export default function Grid({ gridIndex, pagesIndex }: GridProps) {
       gridCommand.customName = gridCustom.name;
     }
 
-    await sendCommand(gridIndex, { command: gridCommand, state: { ...grid?.state, isSelectedMulti } });
+    await sendCommand(gridIndex, pagesIndex, { command: gridCommand, state: { ...grid?.state, isSelectedMulti } });
   };
 
   const handleHeaderClick = async (gridCell: GridCellDto) => {
@@ -163,19 +163,19 @@ export default function Grid({ gridIndex, pagesIndex }: GridProps) {
       return;
     }
     const gridCommand: GridCommandDto = { commandEnum: GridCommandEnum.SortClick, columnName: gridCell.columnName };
-    await sendCommand(gridIndex, { command: gridCommand });
+    await sendCommand(gridIndex, pagesIndex, { command: gridCommand });
   };
 
   const handleReloadClick = async () => {
-    await sendCommand(gridIndex, { command: { commandEnum: GridCommandEnum.Reload } });
+    await sendCommand(gridIndex, pagesIndex, { command: { commandEnum: GridCommandEnum.Reload } });
   };
 
   const handleSaveClick = async () => {
-    await sendCommand(gridIndex, { command: { commandEnum: GridCommandEnum.Save }, modifies });
+    await sendCommand(gridIndex, pagesIndex, { command: { commandEnum: GridCommandEnum.Save }, modifies });
   };
 
   const handleNewClick = async () => {
-    await sendCommand(gridIndex, { command: { commandEnum: GridCommandEnum.New }, modifies });
+    await sendCommand(gridIndex, pagesIndex, { command: { commandEnum: GridCommandEnum.New }, modifies });
   };
 
   return (
