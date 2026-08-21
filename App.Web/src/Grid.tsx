@@ -105,6 +105,9 @@ export default function Grid({ gridIndex }: GridProps) {
       if (gridCell.text !== undefined) {
         modify.text = gridCell.text;
       }
+      if (gridCell.isNew !== undefined) {
+        modify.isNew = gridCell.isNew;
+      }
 
       return [...filtered, modify];
     });
