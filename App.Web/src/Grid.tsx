@@ -75,15 +75,14 @@ function gridCellContent(
   if (gridCell.isSelectMulti && gridCell.rowIndex !== undefined) {
     const rowIndex = gridCell.rowIndex;
     return (
-      <>
+      <span className="flex items-center gap-2">
         <input
           type="checkbox"
           checked={isSelectedMulti[rowIndex] ?? false}
           onChange={(event) => onSelectMultiChange(rowIndex, event.target.checked)}
-          className="mr-2"
         />
-        {content}
-      </>
+        <span className="flex-1">{content}</span>
+      </span>
     );
   }
 
@@ -151,7 +150,7 @@ export default function Grid({ gridIndex }: GridProps) {
       gridCommand.customName = gridCustom.name;
     }
 
-    await sendCommand(gridIndex, { command: gridCommand });
+    await sendCommand(gridIndex, { command: gridCommand, state: { ...grid?.state, isSelectedMulti } });
   };
 
   const handleHeaderClick = async (gridCell: GridCellDto) => {

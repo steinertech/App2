@@ -82,6 +82,16 @@ async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<Grid
     }
   }
 
+  if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === 'DeleteMulti') {
+    const rowKeys = gridDto.state?.rowKeys ?? [];
+    const projectNames = (gridDto.state?.isSelectedMulti ?? [])
+      .map((isSelected, rowIndex) => (isSelected ? rowKeys[rowIndex] : undefined))
+      .filter((projectName): projectName is string => projectName !== undefined);
+    if (projectNames.length > 0) {
+      await projectsDeleteByNames(request, projectNames);
+    }
+  }
+
   const projects = await projectsLoad(request);
 
   const headerRow: GridRowDto = {
@@ -115,12 +125,21 @@ async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<Grid
   const rowKeys: string[] = projects.map((project) => project.name ?? '');
   const findRow = gridFindRow([...(PROJECT_COLUMNS.columns ?? []).map((column) => column.columnName), undefined]);
 
+  const deleteMultiRow: GridRowDto = {
+    cells: [
+      {
+        cellEnum: GridCellEnum.Custom,
+        customs: [{ text: 'Delete', name: 'DeleteMulti', customEnum: GridCustomEnum.Button } satisfies GridCustomDto],
+      },
+    ],
+  };
+
   const time = new Date().toISOString().slice(11, 19);
 
   const result: GridDto = {
     ...gridDto,
     text: `Project Data (${time})`,
-    rows: [headerRow, findRow, ...rows],
+    rows: [deleteMultiRow, headerRow, findRow, ...rows],
     state: { ...gridDto.state, rowKeys },
   };
 
