@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import Project from './page/Project.tsx';
 import { useGridStore } from './GridStore.tsx';
 import { buttonGridClassName, buttonPrimaryClassName } from './style.ts';
 import {
@@ -236,13 +237,11 @@ export default function Grid({ path }: GridProps) {
       <button type="button" onClick={() => void handleNewClick()} className={`${buttonPrimaryClassName} mt-2 ml-2`}>
         New
       </button>
-      {(grid?.pages ?? []).map((gridPage, pagesIndex) => (
-        <div key={pagesIndex} className="mt-4 border-l-2 border-gray-300 pl-4">
-          {(gridPage.grids ?? []).map((_, gridIndex) => (
-            <Grid key={gridIndex} path={[...path, pagesIndex, gridIndex]} />
-          ))}
+      {grid?.pages !== undefined && grid.pages.length > 0 && (
+        <div className="mt-4 border-l-2 border-gray-300 pl-4">
+          <Project path={[...path, 0]} />
         </div>
-      ))}
+      )}
     </div>
   );
 }
