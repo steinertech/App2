@@ -8,13 +8,29 @@ import {
   type GridCellDto,
   type GridCommandDto,
   type GridCustomDto,
+  type GridDto,
   type GridModifyDto,
 } from '../../App.Server/dto/web/grid-dto.ts';
 
 interface GridProps {
-  gridIndex: number;
-  /** If set, render gridPageDto.page[gridIndex].pages[pagesIndex].page[0] instead of gridPageDto.page[gridIndex] */
-  pagesIndex?: number;
+  /**
+   * Address of this GridDto within the recursive GridPageDto tree: [gridIndex] for a
+   * root grid, or [gridIndex, pagesIndex, gridIndex, pagesIndex, ...] to reach a GridDto
+   * nested under GridDto.pages (e.g. a confirmation dialog opened by a parent grid).
+   */
+  path: number[];
+}
+
+function resolveGrid(rootGrids: GridDto[] | undefined, path: number[]): GridDto | undefined {
+  const [gridIndex, pagesIndex, nestedGridIndex, ...rest] = path;
+  if (gridIndex === undefined) {
+    return undefined;
+  }
+  const grid = rootGrids?.[gridIndex];
+  if (pagesIndex === undefined || nestedGridIndex === undefined) {
+    return grid;
+  }
+  return resolveGrid(grid?.pages?.[pagesIndex]?.grids, [nestedGridIndex, ...rest]);
 }
 
 function gridCellClassName(gridCell: GridCellDto, rowSelected: boolean): string {
@@ -94,10 +110,10 @@ function gridCellContent(
   return content;
 }
 
-export default function Grid({ gridIndex, pagesIndex }: GridProps) {
+export default function Grid({ path }: GridProps) {
   const { gridPageDto, gridVersion, sendCommand } = useGridStore();
 
-  const grid = pagesIndex !== undefined ? gridPageDto.page?.[gridIndex]?.pages?.[pagesIndex]?.page?.[0] : gridPageDto.page?.[gridIndex];
+  const grid = resolveGrid(gridPageDto.grids, path);
   const gridRows = grid?.rows ?? [];
   const [rowIndexSelected, setRowIndexSelected] = useState(grid?.state?.selected);
   const [modifies, setModifies] = useState<GridModifyDto[]>(grid?.modifies ?? []);
@@ -155,7 +171,7 @@ export default function Grid({ gridIndex, pagesIndex }: GridProps) {
       gridCommand.customName = gridCustom.name;
     }
 
-    await sendCommand(gridIndex, { command: gridCommand, state: { ...grid?.state, isSelectedMulti } });
+    await sendCommand(path, { command: gridCommand, state: { ...grid?.state, isSelectedMulti } });
   };
 
   const handleHeaderClick = async (gridCell: GridCellDto) => {
@@ -163,19 +179,19 @@ export default function Grid({ gridIndex, pagesIndex }: GridProps) {
       return;
     }
     const gridCommand: GridCommandDto = { commandEnum: GridCommandEnum.SortClick, columnName: gridCell.columnName };
-    await sendCommand(gridIndex, { command: gridCommand });
+    await sendCommand(path, { command: gridCommand });
   };
 
   const handleReloadClick = async () => {
-    await sendCommand(gridIndex, { command: { commandEnum: GridCommandEnum.Reload } });
+    await sendCommand(path, { command: { commandEnum: GridCommandEnum.Reload } });
   };
 
   const handleSaveClick = async () => {
-    await sendCommand(gridIndex, { command: { commandEnum: GridCommandEnum.Save }, modifies });
+    await sendCommand(path, { command: { commandEnum: GridCommandEnum.Save }, modifies });
   };
 
   const handleNewClick = async () => {
-    await sendCommand(gridIndex, { command: { commandEnum: GridCommandEnum.New }, modifies });
+    await sendCommand(path, { command: { commandEnum: GridCommandEnum.New }, modifies });
   };
 
   return (
@@ -220,6 +236,13 @@ export default function Grid({ gridIndex, pagesIndex }: GridProps) {
       <button type="button" onClick={() => void handleNewClick()} className={`${buttonPrimaryClassName} mt-2 ml-2`}>
         New
       </button>
+      {(grid?.pages ?? []).map((gridPage, pagesIndex) => (
+        <div key={pagesIndex} className="mt-4 border-l-2 border-gray-300 pl-4">
+          {(gridPage.grids ?? []).map((_, gridIndex) => (
+            <Grid key={gridIndex} path={[...path, pagesIndex, gridIndex]} />
+          ))}
+        </div>
+      ))}
     </div>
   );
 }

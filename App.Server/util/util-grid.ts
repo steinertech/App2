@@ -61,6 +61,55 @@ function gridConfirm(text: string): GridDto {
   return { rows: [textRow, buttonRow] };
 }
 
+/**
+ * Recursively walks gridDto.pages for the GridPageDto whose grids contain a GridDto with the given customName
+ * command, and removes that GridPageDto from its immediate parent's pages list. Returns true if found and removed.
+ */
+function gridRemoveCommand(gridDto: GridDto, customName: string): boolean {
+  const pages = gridDto.pages;
+  if (pages === undefined) {
+    return false;
+  }
+
+  for (let pagesIndex = 0; pagesIndex < pages.length; pagesIndex += 1) {
+    const grids = pages[pagesIndex].grids ?? [];
+    const isMatch = grids.some(
+      (nestedGridDto) =>
+        nestedGridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && nestedGridDto.command.customName === customName,
+    );
+    if (isMatch) {
+      pages.splice(pagesIndex, 1);
+      return true;
+    }
+
+    for (const nestedGridDto of grids) {
+      if (gridRemoveCommand(nestedGridDto, customName)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+/** Recursively walks gridDto and every GridDto nested under gridDto.pages (GridPageDto[] -> GridDto[] -> pages -> ...) for the first one whose own command matches customName. */
+function gridFindCommand(gridDto: GridDto, customName: string): GridDto | undefined {
+  if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === customName) {
+    return gridDto;
+  }
+
+  for (const gridPage of gridDto.pages ?? []) {
+    for (const nestedGridDto of gridPage.grids ?? []) {
+      const found = gridFindCommand(nestedGridDto, customName);
+      if (found !== undefined) {
+        return found;
+      }
+    }
+  }
+
+  return undefined;
+}
+
 function gridCommandSortClick(gridDto: GridDto): void {
   if (gridDto.command?.commandEnum !== GridCommandEnum.SortClick) {
     return;
@@ -168,16 +217,20 @@ async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<Grid
   }
 
   if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === 'Confirm') {
-    result.pages = [{ page: [gridConfirm('Are you sure?')] }];
+    result.pages = [{ grids: [gridConfirm('Are you sure?')] }];
   }
 
-  if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === 'Cancel') {
+  if (gridRemoveCommand(gridDto, 'Cancel')) {
     result.text = 'Hello World (Cancel)';
   }
 
-  if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === 'ConfirmTwo') {
-    result.text = 'Hello World (ConfirmTwo)';
+  const confirmTwoGridDto = gridFindCommand(gridDto, 'ConfirmTwo');
+  if (confirmTwoGridDto !== undefined) {
+    confirmTwoGridDto.pages = [{ grids: [gridConfirm('Are you sure?')] }];
   }
+
+  // Command is transient: clear it so it isn't re-processed on a later request that only carries a nested dialog override.
+  result.command = undefined;
 
   return result;
 }
@@ -316,15 +369,15 @@ const PAGE_GRID_LOADERS: Record<string, GridLoader[]> = {
 
 export async function gridPageLoad(request: Request, gridPageDto: GridPageDto): Promise<GridPageDto> {
   const loaders = gridPageDto.pageName !== undefined ? (PAGE_GRID_LOADERS[gridPageDto.pageName] ?? []) : [];
-  const incomingPage = gridPageDto.page ?? [];
+  const incomingGrids = gridPageDto.grids ?? [];
 
-  const page = await Promise.all(
+  const grids = await Promise.all(
     loaders.map((loader, gridIndex): Promise<GridDto> => {
-      const gridDto: GridDto = incomingPage[gridIndex] ?? {};
+      const gridDto: GridDto = incomingGrids[gridIndex] ?? {};
       gridCommandSortClick(gridDto);
       return loader(request, gridDto);
     }),
   );
 
-  return { page };
+  return { grids };
 }
