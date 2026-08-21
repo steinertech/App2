@@ -171,6 +171,14 @@ async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<Grid
     result.pages = [{ page: [gridConfirm('Are you sure?')] }];
   }
 
+  if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === 'Cancel') {
+    result.text = 'Hello World (Cancel)';
+  }
+
+  if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === 'ConfirmTwo') {
+    result.text = 'Hello World (ConfirmTwo)';
+  }
+
   return result;
 }
 
