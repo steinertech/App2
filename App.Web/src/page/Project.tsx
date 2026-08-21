@@ -13,8 +13,8 @@ export default function Project() {
   return (
     <div className={container}>
       <h1>Project</h1>
-      <Grid gridIndex={0} />
-      <Grid gridIndex={1} />
+      <Grid path={[0]} />
+      <Grid path={[1]} />
     </div>
   );
 }
