@@ -93,5 +93,5 @@ export interface GridDto {
 
 export interface GridPageDto {
   pageName?: string;
-  page?: GridDto[];
+  grids?: GridDto[];
 }

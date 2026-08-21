@@ -34,7 +34,7 @@ function buildOutgoingGrid(existingGrid: GridDto, path: number[], entries: GridO
   if (grid.pages !== undefined) {
     grid.pages = grid.pages.map((gridPage, pagesIndex) => ({
       ...gridPage,
-      page: (gridPage.page ?? []).map((nestedGrid, gridIndex) => buildOutgoingGrid(nestedGrid, [...path, pagesIndex, gridIndex], entries)),
+      grids: (gridPage.grids ?? []).map((nestedGrid, gridIndex) => buildOutgoingGrid(nestedGrid, [...path, pagesIndex, gridIndex], entries)),
     }));
   }
 
@@ -52,11 +52,11 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
     const entries = [...overridesRef.current.values()];
     overridesRef.current.clear();
 
-    const page: GridDto[] = (gridPageDtoRef.current.page ?? []).map((existingGrid, gridIndex) =>
+    const grids: GridDto[] = (gridPageDtoRef.current.grids ?? []).map((existingGrid, gridIndex) =>
       buildOutgoingGrid(existingGrid, [gridIndex], entries),
     );
 
-    const body: GridPageDto = { page };
+    const body: GridPageDto = { grids };
     if (pageNameRef.current !== undefined) {
       body.pageName = pageNameRef.current;
     }

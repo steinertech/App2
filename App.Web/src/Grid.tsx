@@ -21,16 +21,16 @@ interface GridProps {
   path: number[];
 }
 
-function resolveGrid(rootPage: GridDto[] | undefined, path: number[]): GridDto | undefined {
+function resolveGrid(rootGrids: GridDto[] | undefined, path: number[]): GridDto | undefined {
   const [gridIndex, pagesIndex, nestedGridIndex, ...rest] = path;
   if (gridIndex === undefined) {
     return undefined;
   }
-  const grid = rootPage?.[gridIndex];
+  const grid = rootGrids?.[gridIndex];
   if (pagesIndex === undefined || nestedGridIndex === undefined) {
     return grid;
   }
-  return resolveGrid(grid?.pages?.[pagesIndex]?.page, [nestedGridIndex, ...rest]);
+  return resolveGrid(grid?.pages?.[pagesIndex]?.grids, [nestedGridIndex, ...rest]);
 }
 
 function gridCellClassName(gridCell: GridCellDto, rowSelected: boolean): string {
@@ -113,7 +113,7 @@ function gridCellContent(
 export default function Grid({ path }: GridProps) {
   const { gridPageDto, gridVersion, sendCommand } = useGridStore();
 
-  const grid = resolveGrid(gridPageDto.page, path);
+  const grid = resolveGrid(gridPageDto.grids, path);
   const gridRows = grid?.rows ?? [];
   const [rowIndexSelected, setRowIndexSelected] = useState(grid?.state?.selected);
   const [modifies, setModifies] = useState<GridModifyDto[]>(grid?.modifies ?? []);
@@ -238,7 +238,7 @@ export default function Grid({ path }: GridProps) {
       </button>
       {(grid?.pages ?? []).map((gridPage, pagesIndex) => (
         <div key={pagesIndex} className="mt-4 border-l-2 border-gray-300 pl-4">
-          {(gridPage.page ?? []).map((_, gridIndex) => (
+          {(gridPage.grids ?? []).map((_, gridIndex) => (
             <Grid key={gridIndex} path={[...path, pagesIndex, gridIndex]} />
           ))}
         </div>

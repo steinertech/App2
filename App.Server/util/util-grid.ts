@@ -61,9 +61,9 @@ function gridConfirm(text: string): GridDto {
   return { rows: [textRow, buttonRow] };
 }
 
-/** The command clicked inside a gridConfirm dialog is stored on that nested GridDto (gridDto.pages[0].page[0]), not on gridDto itself. */
+/** The command clicked inside a gridConfirm dialog is stored on that nested GridDto (gridDto.pages[0].grids[0]), not on gridDto itself. */
 function gridConfirmCommand(gridDto: GridDto): GridCommandDto | undefined {
-  return gridDto.pages?.[0]?.page?.[0]?.command;
+  return gridDto.pages?.[0]?.grids?.[0]?.command;
 }
 
 /** Recursively walks gridDto and every GridDto nested under gridDto.pages (GridPageDto[] -> GridDto[] -> pages -> ...) for the first one whose own command matches customName. */
@@ -73,7 +73,7 @@ function gridFindCommand(gridDto: GridDto, customName: string): GridDto | undefi
   }
 
   for (const gridPage of gridDto.pages ?? []) {
-    for (const nestedGridDto of gridPage.page ?? []) {
+    for (const nestedGridDto of gridPage.grids ?? []) {
       const found = gridFindCommand(nestedGridDto, customName);
       if (found !== undefined) {
         return found;
@@ -191,7 +191,7 @@ async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<Grid
   }
 
   if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === 'Confirm') {
-    result.pages = [{ page: [gridConfirm('Are you sure?')] }];
+    result.pages = [{ grids: [gridConfirm('Are you sure?')] }];
   }
 
   const confirmCommand = gridConfirmCommand(gridDto);
@@ -203,7 +203,7 @@ async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<Grid
 
   const confirmTwoGridDto = gridFindCommand(gridDto, 'ConfirmTwo');
   if (confirmTwoGridDto !== undefined) {
-    confirmTwoGridDto.pages = [{ page: [gridConfirm('Are you sure?')] }];
+    confirmTwoGridDto.pages = [{ grids: [gridConfirm('Are you sure?')] }];
   }
 
   // Command is transient: clear it so it isn't re-processed on a later request that only carries a nested dialog override.
@@ -346,15 +346,15 @@ const PAGE_GRID_LOADERS: Record<string, GridLoader[]> = {
 
 export async function gridPageLoad(request: Request, gridPageDto: GridPageDto): Promise<GridPageDto> {
   const loaders = gridPageDto.pageName !== undefined ? (PAGE_GRID_LOADERS[gridPageDto.pageName] ?? []) : [];
-  const incomingPage = gridPageDto.page ?? [];
+  const incomingGrids = gridPageDto.grids ?? [];
 
-  const page = await Promise.all(
+  const grids = await Promise.all(
     loaders.map((loader, gridIndex): Promise<GridDto> => {
-      const gridDto: GridDto = incomingPage[gridIndex] ?? {};
+      const gridDto: GridDto = incomingGrids[gridIndex] ?? {};
       gridCommandSortClick(gridDto);
       return loader(request, gridDto);
     }),
   );
 
-  return { page };
+  return { grids };
 }
