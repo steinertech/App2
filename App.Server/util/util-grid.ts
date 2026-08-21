@@ -150,7 +150,17 @@ async function gridProjectSave(request: Request, gridDto: GridDto): Promise<void
   await projectsUpsert(request, projects);
 }
 
-async function gridProjectNew(request: Request, gridDto: GridDto): Promise<void> {}
+async function gridProjectNew(request: Request, gridDto: GridDto): Promise<void> {
+  const cells: GridCellDto[] = (PROJECT_COLUMNS.columns ?? []).map(
+    (column): GridCellDto => ({
+      cellEnum: GridCellEnum.Text,
+      columnName: column.columnName,
+      placeHolder: 'New',
+      rowIndex: 0,
+    }),
+  );
+  gridDto.rows = [...(gridDto.rows ?? []), { cells }];
+}
 
 async function gridLoadUser(request: Request, gridDto: GridDto): Promise<GridDto> {
   const users = await usersLoad(request);
