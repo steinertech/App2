@@ -62,7 +62,7 @@ async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<Grid
     await gridProjectSaveInsert(request, gridDto);
   }
 
-  if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick) {
+  if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === 'Switch') {
     const rowIndex = gridDto.command.rowIndex;
     if (rowIndex !== undefined) {
       const projectName = gridDto.state?.rowKeys?.[rowIndex];
