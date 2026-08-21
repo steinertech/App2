@@ -59,6 +59,7 @@ function gridCommandSortClick(gridDto: GridDto): void {
 async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<GridDto> {
   if (gridDto.command?.commandEnum === GridCommandEnum.Save) {
     await gridProjectSaveUpdate(request, gridDto);
+    await gridProjectSaveInsert(request, gridDto);
   }
 
   if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick) {
