@@ -33,7 +33,7 @@ export default function Project({ path = [] }: ProjectProps) {
           body: JSON.stringify({ pageName: 'storage', grids: [] } satisfies GridPageDto),
         });
         const data = (await response.json()) as GridPageDto;
-        setStorageJson(JSON.stringify(data, null, 2));
+        setStorageJson(JSON.stringify(data, null, 2).replace(/\s+/g, ' ').trim());
       } catch {
         setStorageJson('Error fetching storage');
       }
@@ -57,7 +57,7 @@ export default function Project({ path = [] }: ProjectProps) {
     <div className={container}>
       <h1>Project</h1>
       {grids}
-      <pre className="mt-4 overflow-x-auto whitespace-pre-wrap">{storageJson}</pre>
+      <p className="mt-4 break-words">{storageJson}</p>
     </div>
   );
 }
