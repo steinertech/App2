@@ -227,6 +227,7 @@ async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<Grid
   const confirmTwoGridDto = gridFindCommand(gridDto, 'ConfirmTwo');
   if (confirmTwoGridDto !== undefined) {
     confirmTwoGridDto.pages = [{ grids: [gridConfirm('Are you sure?')] }];
+    confirmTwoGridDto.command = undefined;
   }
 
   // Command is transient: clear it so it isn't re-processed on a later request that only carries a nested dialog override.
