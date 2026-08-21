@@ -1,4 +1,4 @@
-import { gridLoad } from '../util/util-grid.js';
+import { gridPageLoad } from '../util/util-grid.js';
 import { corsHeaders } from '../util/util-main.js';
 
 export default {
@@ -9,7 +9,7 @@ export default {
 
     const gridPageDto = await request.json();
 
-    const gridPage = await gridLoad(request, gridPageDto);
+    const gridPage = await gridPageLoad(request, gridPageDto);
 
     return new Response(JSON.stringify(gridPage), {
       headers: { 'content-type': 'application/json', ...corsHeaders(request) },

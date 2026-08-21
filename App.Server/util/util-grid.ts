@@ -93,11 +93,12 @@ async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<Grid
   const rows: GridRowDto[] = projects.map((project, rowIndex) => ({
     cells: [
       ...(PROJECT_COLUMNS.columns ?? []).map(
-        (column): GridCellDto => ({
+        (column, columnIndex): GridCellDto => ({
           cellEnum: GridCellEnum.Text,
           text: project[column.columnName as keyof ProjectDto] as string | undefined,
           rowIndex,
           columnName: column.columnName,
+          isSelectMulti: columnIndex === 0 ? true : undefined,
         }),
       ),
       {
@@ -262,7 +263,7 @@ const PAGE_GRID_LOADERS: Record<string, GridLoader[]> = {
   storage: [gridLoadStorage],
 };
 
-export async function gridLoad(request: Request, gridPageDto: GridPageDto): Promise<GridPageDto> {
+export async function gridPageLoad(request: Request, gridPageDto: GridPageDto): Promise<GridPageDto> {
   const loaders = gridPageDto.pageName !== undefined ? (PAGE_GRID_LOADERS[gridPageDto.pageName] ?? []) : [];
   const incomingPage = gridPageDto.page ?? [];
 

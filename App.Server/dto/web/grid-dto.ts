@@ -44,6 +44,8 @@ export interface GridCellDto {
   placeHolder?: string;
   isSortAsc?: boolean;
   isNew?: boolean;
+  /** If true, show checkbox */
+  isSelectMulti?: boolean;
 }
 
 export interface GridRowDto {
@@ -70,7 +72,10 @@ export interface GridModifyDto {
 }
 
 export interface GridStateDto {
-  rowIndexSelected?: number;
+  /** rowIndex of selected row */
+  selected?: number;
+  /** rowIndex of selected rows */
+  isSelectedMulti?: boolean[];
   sort?: GridSortDto;
   pathSegments?: GridPathSegmentDto[];
   rowKeys?: string[];
