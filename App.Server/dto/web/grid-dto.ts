@@ -43,6 +43,7 @@ export interface GridCellDto {
   columnName?: string;
   placeHolder?: string;
   isSortAsc?: boolean;
+  isNew?: boolean;
 }
 
 export interface GridRowDto {

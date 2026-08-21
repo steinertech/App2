@@ -61,10 +61,6 @@ async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<Grid
     await gridProjectSave(request, gridDto);
   }
 
-  if (gridDto.command?.commandEnum === GridCommandEnum.New) {
-    await gridProjectNew(request, gridDto);
-  }
-
   if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick) {
     const rowIndex = gridDto.command.rowIndex;
     if (rowIndex !== undefined) {
@@ -106,12 +102,18 @@ async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<Grid
 
   const time = new Date().toISOString().slice(11, 19);
 
-  return {
+  const result: GridDto = {
     ...gridDto,
     text: `Project Data (${time})`,
     rows: [headerRow, findRow, ...rows],
     state: { ...gridDto.state, rowKeys },
   };
+
+  if (gridDto.command?.commandEnum === GridCommandEnum.New) {
+    await gridProjectNew(request, result);
+  }
+
+  return result;
 }
 
 async function gridProjectSave(request: Request, gridDto: GridDto): Promise<void> {
@@ -151,12 +153,14 @@ async function gridProjectSave(request: Request, gridDto: GridDto): Promise<void
 }
 
 async function gridProjectNew(request: Request, gridDto: GridDto): Promise<void> {
+  const rowIndex = gridDto.rows?.length ?? 0;
   const cells: GridCellDto[] = (PROJECT_COLUMNS.columns ?? []).map(
     (column): GridCellDto => ({
       cellEnum: GridCellEnum.Text,
       columnName: column.columnName,
       placeHolder: 'New',
-      rowIndex: 0,
+      rowIndex,
+      isNew: true,
     }),
   );
   gridDto.rows = [...(gridDto.rows ?? []), { cells }];
