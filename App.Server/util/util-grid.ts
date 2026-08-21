@@ -93,11 +93,12 @@ async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<Grid
   const rows: GridRowDto[] = projects.map((project, rowIndex) => ({
     cells: [
       ...(PROJECT_COLUMNS.columns ?? []).map(
-        (column): GridCellDto => ({
+        (column, columnIndex): GridCellDto => ({
           cellEnum: GridCellEnum.Text,
           text: project[column.columnName as keyof ProjectDto] as string | undefined,
           rowIndex,
           columnName: column.columnName,
+          isSelectMulti: columnIndex === 0 ? true : undefined,
         }),
       ),
       {

@@ -44,15 +44,16 @@ function gridCellContent(
   gridVersion: number,
   onCustomClick: (gridCustom: GridCustomDto) => void,
   onTextChange: (gridCell: GridCellDto, textModified: string) => void,
+  onSelectMultiChange: (rowIndex: number, checked: boolean) => void,
+  isSelectedMulti: boolean[],
 ): ReactNode {
+  let content: ReactNode;
   if (gridCell.cellEnum === GridCellEnum.Custom) {
-    return (gridCell.customs ?? []).map((gridCustom, index) => gridCustomContent(gridCustom, index, onCustomClick));
-  }
-  if (gridCell.cellEnum === GridCellEnum.Empty) {
-    return 'Empty';
-  }
-  if (gridCell.cellEnum === GridCellEnum.Text) {
-    return (
+    content = (gridCell.customs ?? []).map((gridCustom, index) => gridCustomContent(gridCustom, index, onCustomClick));
+  } else if (gridCell.cellEnum === GridCellEnum.Empty) {
+    content = 'Empty';
+  } else if (gridCell.cellEnum === GridCellEnum.Text) {
+    content = (
       <input
         key={gridVersion}
         type="text"
@@ -62,15 +63,31 @@ function gridCellContent(
         className="w-full"
       />
     );
-  }
-  if (gridCell.cellEnum === GridCellEnum.Find) {
-    return <input key={gridVersion} type="text" placeholder={gridCell.placeHolder} defaultValue={gridCell.text} className="w-full" />;
-  }
-  if (gridCell.cellEnum === GridCellEnum.Header) {
+  } else if (gridCell.cellEnum === GridCellEnum.Find) {
+    content = <input key={gridVersion} type="text" placeholder={gridCell.placeHolder} defaultValue={gridCell.text} className="w-full" />;
+  } else if (gridCell.cellEnum === GridCellEnum.Header) {
     const arrow = gridCell.isSortAsc === true ? ' ↑' : gridCell.isSortAsc === false ? ' ↓' : '';
-    return `${gridCell.text ?? ''}${arrow}`;
+    content = `${gridCell.text ?? ''}${arrow}`;
+  } else {
+    content = gridCell.text;
   }
-  return gridCell.text;
+
+  if (gridCell.isSelectMulti && gridCell.rowIndex !== undefined) {
+    const rowIndex = gridCell.rowIndex;
+    return (
+      <>
+        <input
+          type="checkbox"
+          checked={isSelectedMulti[rowIndex] ?? false}
+          onChange={(event) => onSelectMultiChange(rowIndex, event.target.checked)}
+          className="mr-2"
+        />
+        {content}
+      </>
+    );
+  }
+
+  return content;
 }
 
 export default function Grid({ gridIndex }: GridProps) {
@@ -78,8 +95,17 @@ export default function Grid({ gridIndex }: GridProps) {
 
   const grid = gridPageDto.page?.[gridIndex];
   const gridRows = grid?.rows ?? [];
-  const [rowIndexSelected, setRowIndexSelected] = useState(grid?.state?.rowIndexSelected);
+  const [rowIndexSelected, setRowIndexSelected] = useState(grid?.state?.selected);
   const [modifies, setModifies] = useState<GridModifyDto[]>(grid?.modifies ?? []);
+  const [isSelectedMulti, setIsSelectedMulti] = useState<boolean[]>(grid?.state?.isSelectedMulti ?? []);
+
+  const handleSelectMultiChange = (rowIndex: number, checked: boolean) => {
+    setIsSelectedMulti((prev) => {
+      const next = [...prev];
+      next[rowIndex] = checked;
+      return next;
+    });
+  };
 
   const handleTextChange = (gridCell: GridCellDto, textModified: string) => {
     setModifies((prev) => {
@@ -167,7 +193,14 @@ export default function Grid({ gridIndex }: GridProps) {
                     }
                   }}
                 >
-                  {gridCellContent(gridCell, gridVersion, (gridCustom) => handleCustomClick(gridCell, gridCustom), handleTextChange)}
+                  {gridCellContent(
+                    gridCell,
+                    gridVersion,
+                    (gridCustom) => handleCustomClick(gridCell, gridCustom),
+                    handleTextChange,
+                    handleSelectMultiChange,
+                    isSelectedMulti,
+                  )}
                 </td>
               ))}
             </tr>
