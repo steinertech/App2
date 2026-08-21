@@ -14,6 +14,12 @@ export async function projectsLoadByNames(request: Request, names: string[]): Pr
   return collection.find({ sectorKey: key, type: 'ProjectDto', name: { $in: names } }).toArray();
 }
 
+export async function projectsDeleteByNames(request: Request, names: string[]): Promise<void> {
+  const key = await sectorKey(request, false);
+  const collection = client.db().collection<ProjectDto>('myCollection');
+  await collection.deleteMany({ sectorKey: key, type: 'ProjectDto', name: { $in: names } });
+}
+
 export async function projectsInsert(request: Request, projectDtos: ProjectDto[]): Promise<ProjectDto[]> {
   const key = await sectorKey(request, false);
   const collection = client.db().collection<ProjectDto>('myCollection');
