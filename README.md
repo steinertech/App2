@@ -16,6 +16,9 @@ SPA Application
 
 Note: Flag IsProject if true, access with login only.
 
+# GridPage
+![GridPage](GridPage.png)
+
 # Tech Stack
 App.Server
 - TypeScript
