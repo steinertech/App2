@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import Grid from '../Grid.tsx';
-import { useGridStore, type GridPageDto } from '../GridStore.tsx';
+import { useGridStore, type GridPlaneDto } from '../GridStore.tsx';
 import { container } from '../style.ts';
 import { apiUrl } from './App.tsx';
 
 interface ProjectProps {
-  /** Address of this Project's grid pair within the recursive GridPageDto tree: [] at the root, or a path ending at a GridDto.pages entry when rendered recursively from Grid. */
+  /** Address of this Project's grid pair within the recursive GridPlaneDto tree: [] at the root, or a path ending at a GridDto.planes entry when rendered recursively from Grid. */
   path?: number[];
 }
 
@@ -30,9 +30,9 @@ export default function Project({ path = [] }: ProjectProps) {
         const response = await fetch(`${apiUrl}grid`, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ pageName: 'storage', grids: [] } satisfies GridPageDto),
+          body: JSON.stringify({ planeName: 'storage', grids: [] } satisfies GridPlaneDto),
         });
-        const data = (await response.json()) as GridPageDto;
+        const data = (await response.json()) as GridPlaneDto;
         setStorageJson(JSON.stringify(data, null, 2).replace(/\s+/g, ' ').trim());
       } catch {
         setStorageJson('Error fetching storage');

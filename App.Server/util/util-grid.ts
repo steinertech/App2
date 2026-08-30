@@ -1,4 +1,4 @@
-import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPageDto, GridRowDto, GridSortDto } from '../dto/web/grid-dto.js';
+import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPlaneDto, GridRowDto, GridSortDto } from '../dto/web/grid-dto.js';
 import { titleCase } from './util-main.js';
 import { projectsLoad, projectsLoadByNames, projectsUpdate, projectsInsert, projectsDeleteByNames } from './util-project.js';
 import { usersLoad, userProject } from './util-user.js';
@@ -62,23 +62,23 @@ function gridConfirm(text: string): GridDto {
 }
 
 /**
- * Recursively walks gridDto.pages for the GridPageDto whose grids contain a GridDto with the given customName
- * command, and removes that GridPageDto from its immediate parent's pages list. Returns true if found and removed.
+ * Recursively walks gridDto.planes for the GridPlaneDto whose grids contain a GridDto with the given customName
+ * command, and removes that GridPlaneDto from its immediate parent's planes list. Returns true if found and removed.
  */
 function gridRemoveCommand(gridDto: GridDto, customName: string): boolean {
-  const pages = gridDto.pages;
-  if (pages === undefined) {
+  const planes = gridDto.planes;
+  if (planes === undefined) {
     return false;
   }
 
-  for (let pagesIndex = 0; pagesIndex < pages.length; pagesIndex += 1) {
-    const grids = pages[pagesIndex].grids ?? [];
+  for (let planesIndex = 0; planesIndex < planes.length; planesIndex += 1) {
+    const grids = planes[planesIndex].grids ?? [];
     const isMatch = grids.some(
       (nestedGridDto) =>
         nestedGridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && nestedGridDto.command.customName === customName,
     );
     if (isMatch) {
-      pages.splice(pagesIndex, 1);
+      planes.splice(planesIndex, 1);
       return true;
     }
 
@@ -92,14 +92,14 @@ function gridRemoveCommand(gridDto: GridDto, customName: string): boolean {
   return false;
 }
 
-/** Recursively walks gridDto and every GridDto nested under gridDto.pages (GridPageDto[] -> GridDto[] -> pages -> ...) for the first one whose own command matches customName. */
+/** Recursively walks gridDto and every GridDto nested under gridDto.planes (GridPlaneDto[] -> GridDto[] -> planes -> ...) for the first one whose own command matches customName. */
 function gridFindCommand(gridDto: GridDto, customName: string): GridDto | undefined {
   if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === customName) {
     return gridDto;
   }
 
-  for (const gridPage of gridDto.pages ?? []) {
-    for (const nestedGridDto of gridPage.grids ?? []) {
+  for (const gridPlane of gridDto.planes ?? []) {
+    for (const nestedGridDto of gridPlane.grids ?? []) {
       const found = gridFindCommand(nestedGridDto, customName);
       if (found !== undefined) {
         return found;
@@ -217,7 +217,7 @@ async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<Grid
   }
 
   if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === 'Confirm') {
-    result.pages = [{ grids: [gridConfirm('Are you sure?')] }];
+    result.planes = [{ grids: [gridConfirm('Are you sure?')] }];
   }
 
   if (gridRemoveCommand(gridDto, 'Cancel')) {
@@ -226,7 +226,7 @@ async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<Grid
 
   const confirmTwoGridDto = gridFindCommand(gridDto, 'ConfirmTwo');
   if (confirmTwoGridDto !== undefined) {
-    confirmTwoGridDto.pages = [{ grids: [gridConfirm('Are you sure?')] }];
+    confirmTwoGridDto.planes = [{ grids: [gridConfirm('Are you sure?')] }];
     confirmTwoGridDto.command = undefined;
   }
 
@@ -362,15 +362,15 @@ async function gridLoadStorage(request: Request, gridDto: GridDto): Promise<Grid
 
 type GridLoader = (request: Request, gridDto: GridDto) => Promise<GridDto>;
 
-const PAGE_GRID_LOADERS: Record<string, GridLoader[]> = {
+const PLANE_GRID_LOADERS: Record<string, GridLoader[]> = {
   debug: [gridProjectLoad],
   project: [gridProjectLoad, gridLoadUser],
   storage: [gridLoadStorage],
 };
 
-export async function gridPageLoad(request: Request, gridPageDto: GridPageDto): Promise<GridPageDto> {
-  const loaders = gridPageDto.pageName !== undefined ? (PAGE_GRID_LOADERS[gridPageDto.pageName] ?? []) : [];
-  const incomingGrids = gridPageDto.grids ?? [];
+export async function gridPlaneLoad(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
+  const loaders = gridPlaneDto.planeName !== undefined ? (PLANE_GRID_LOADERS[gridPlaneDto.planeName] ?? []) : [];
+  const incomingGrids = gridPlaneDto.grids ?? [];
 
   const grids = await Promise.all(
     loaders.map((loader, gridIndex): Promise<GridDto> => {

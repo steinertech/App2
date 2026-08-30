@@ -1,4 +1,4 @@
-import { gridPageLoad } from '../util/util-grid.js';
+import { gridPlaneLoad } from '../util/util-grid.js';
 import { corsHeaders } from '../util/util-main.js';
 
 export default {
@@ -7,11 +7,11 @@ export default {
       return new Response(null, { status: 204, headers: corsHeaders(request) });
     }
 
-    const gridPageDto = await request.json();
+    const gridPlaneDto = await request.json();
 
-    const gridPage = await gridPageLoad(request, gridPageDto);
+    const gridPlane = await gridPlaneLoad(request, gridPlaneDto);
 
-    return new Response(JSON.stringify(gridPage), {
+    return new Response(JSON.stringify(gridPlane), {
       headers: { 'content-type': 'application/json', ...corsHeaders(request) },
     });
   },

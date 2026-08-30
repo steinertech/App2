@@ -16,8 +16,8 @@ SPA Application
 
 Note: Flag IsProject if true, access with login only.
 
-# GridPage
-![GridPage](GridPage.png)
+# GridPlane
+![GridPlane](GridPlane.png)
 
 # Tech Stack
 App.Server
