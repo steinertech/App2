@@ -54,7 +54,12 @@ export async function userSession(request: Request) {
   }
 
   const sessionCollection = client.db().collection<SessionDto>('myCollection');
-  return sessionCollection.findOne({ sessionId, isLogin: true, type: 'SessionDto' });
+  const dto = await sessionCollection.findOne({ sessionId, isLogin: true, type: 'SessionDto' });
+  if (dto && dto.domainName !== domainName(request)) {
+    return null;
+  }
+
+  return dto;
 }
 
 export async function usersLoad(request: Request): Promise<UserDto[]> {
