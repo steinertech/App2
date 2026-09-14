@@ -6,6 +6,7 @@ export interface SessionDto {
   name?: string;
   projectName?: string;
   sectorKey?: string;
+  domainName?: string;
   type?: string;
   isLogin?: boolean;
   sessionId?: string;
