@@ -8,5 +8,6 @@ export interface UserDto {
   projectNames?: string[];
   projectName?: string;
   sectorKey?: string;
+  domainName?: string;
   type?: string;
 }
