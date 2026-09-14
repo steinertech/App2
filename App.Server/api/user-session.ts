@@ -9,7 +9,7 @@ export default {
 
     const session = await userSession(request);
 
-    return new Response(JSON.stringify({ ...session, domainName: session?.domain }), {
+    return new Response(JSON.stringify(session), {
       headers: { 'content-type': 'application/json', ...corsHeaders(request) },
     });
   },

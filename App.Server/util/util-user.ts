@@ -30,7 +30,7 @@ export async function userLogin(request: Request, email: string, password: strin
   await sessionCollection.insertOne({
     email,
     sectorKey: await sectorKey(request, false),
-    domain: domainName(request),
+    domainName: domainName(request),
     type: 'SessionDto',
     isLogin: true,
     sessionId,
