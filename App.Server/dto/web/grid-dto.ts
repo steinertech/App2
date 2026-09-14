@@ -88,10 +88,10 @@ export interface GridDto {
   state?: GridStateDto;
   command?: GridCommandDto;
   modifies?: GridModifyDto[];
-  pages?: GridPageDto[];
+  planes?: GridPlaneDto[];
 }
 
-export interface GridPageDto {
-  pageName?: string;
+export interface GridPlaneDto {
+  planeName?: string;
   grids?: GridDto[];
 }

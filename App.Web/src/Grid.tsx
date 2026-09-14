@@ -15,23 +15,23 @@ import {
 
 interface GridProps {
   /**
-   * Address of this GridDto within the recursive GridPageDto tree: [gridIndex] for a
-   * root grid, or [gridIndex, pagesIndex, gridIndex, pagesIndex, ...] to reach a GridDto
-   * nested under GridDto.pages (e.g. a confirmation dialog opened by a parent grid).
+   * Address of this GridDto within the recursive GridPlaneDto tree: [gridIndex] for a
+   * root grid, or [gridIndex, planesIndex, gridIndex, planesIndex, ...] to reach a GridDto
+   * nested under GridDto.planes (e.g. a confirmation dialog opened by a parent grid).
    */
   path: number[];
 }
 
 function resolveGrid(rootGrids: GridDto[] | undefined, path: number[]): GridDto | undefined {
-  const [gridIndex, pagesIndex, nestedGridIndex, ...rest] = path;
+  const [gridIndex, planesIndex, nestedGridIndex, ...rest] = path;
   if (gridIndex === undefined) {
     return undefined;
   }
   const grid = rootGrids?.[gridIndex];
-  if (pagesIndex === undefined || nestedGridIndex === undefined) {
+  if (planesIndex === undefined || nestedGridIndex === undefined) {
     return grid;
   }
-  return resolveGrid(grid?.pages?.[pagesIndex]?.grids, [nestedGridIndex, ...rest]);
+  return resolveGrid(grid?.planes?.[planesIndex]?.grids, [nestedGridIndex, ...rest]);
 }
 
 function gridCellClassName(gridCell: GridCellDto, rowSelected: boolean): string {
@@ -112,9 +112,9 @@ function gridCellContent(
 }
 
 export default function Grid({ path }: GridProps) {
-  const { gridPageDto, gridVersion, sendCommand } = useGridStore();
+  const { gridPlaneDto, gridVersion, sendCommand } = useGridStore();
 
-  const grid = resolveGrid(gridPageDto.grids, path);
+  const grid = resolveGrid(gridPlaneDto.grids, path);
   const gridRows = grid?.rows ?? [];
   const [rowIndexSelected, setRowIndexSelected] = useState(grid?.state?.selected);
   const [modifies, setModifies] = useState<GridModifyDto[]>(grid?.modifies ?? []);
@@ -237,7 +237,7 @@ export default function Grid({ path }: GridProps) {
       <button type="button" onClick={() => void handleNewClick()} className={`${buttonPrimaryClassName} mt-2 ml-2`}>
         New
       </button>
-      {grid?.pages !== undefined && grid.pages.length > 0 && (
+      {grid?.planes !== undefined && grid.planes.length > 0 && (
         <div className="mt-4 border-l-2 border-gray-300 pl-4">
           <Project path={[...path, 0]} />
         </div>
