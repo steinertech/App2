@@ -8,6 +8,7 @@ export function refreshUserSession() {
 }
 
 export default function UserSession() {
+  const [domainName, setDomainName] = useState('');
   const [email, setEmail] = useState('');
   const [projectName, setProjectName] = useState('');
 
@@ -16,9 +17,11 @@ export default function UserSession() {
       try {
         const response = await fetch(`${apiUrl}user-session`, { credentials: 'include' });
         const data = await response.json();
+        setDomainName(data?.domainName ?? '');
         setEmail(data?.email ?? '');
         setProjectName(data?.projectName ?? '');
       } catch {
+        setDomainName('');
         setEmail('');
         setProjectName('');
       }
@@ -31,7 +34,7 @@ export default function UserSession() {
 
   return (
     <div className="bg-sky-200 px-4 py-2">
-      {`Email=${email}; Project=${projectName};`}
+      {`Domain=${domainName}; Email=${email}; Project=${projectName};`}
     </div>
   );
 }
