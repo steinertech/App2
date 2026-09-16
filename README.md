@@ -34,6 +34,7 @@ App.Web
 - https://github.com/steinertech/App2 (Repo)
 - https://vercel.com/ (Hosting)
 - https://app2-9a9d-three.vercel.app (App)
+- https://app3-web.vercel.app (App)
 - https://vscode.dev/ (Editor)
 
 # TODO
