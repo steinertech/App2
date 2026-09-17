@@ -20,7 +20,13 @@ export async function userRegister(request: Request, email: string, password: st
 export async function userLogin(request: Request, email: string, password: string) {
   const userCollection = client.db().collection<UserDto>('myCollection');
 
-  const user = await userCollection.findOne({ email, password, sectorKey: await sectorKey(request, false), type: 'UserDto' });
+  const user = await userCollection.findOne({
+    email,
+    password,
+    name: domainName(request) + '/' + email,
+    sectorKey: await sectorKey(request, false),
+    type: 'UserDto',
+  });
   if (!user || user.domainName !== domainName(request)) {
     return null;
   }
