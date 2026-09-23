@@ -12,7 +12,6 @@ export async function userRegister(request: Request, email: string, password: st
     name: domainName(request) + '/' + email,
     password,
     sectorKey: await sectorKey(request, false),
-    domainName: domainName(request),
     type: 'UserDto',
   });
 }
@@ -27,7 +26,7 @@ export async function userLogin(request: Request, email: string, password: strin
     sectorKey: await sectorKey(request, false),
     type: 'UserDto',
   });
-  if (!user || user.domainName !== domainName(request)) {
+  if (!user) {
     return null;
   }
 
@@ -37,7 +36,6 @@ export async function userLogin(request: Request, email: string, password: strin
   await sessionCollection.insertOne({
     email,
     sectorKey: await sectorKey(request, false),
-    domainName: domainName(request),
     type: 'SessionDto',
     isLogin: true,
     sessionId,
@@ -61,12 +59,12 @@ export async function userSession(request: Request) {
   }
 
   const sessionCollection = client.db().collection<SessionDto>('myCollection');
-  const dto = await sessionCollection.findOne({ sessionId, isLogin: true, type: 'SessionDto' });
-  if (dto && dto.domainName !== domainName(request)) {
-    return null;
-  }
-
-  return dto;
+  return sessionCollection.findOne({
+    sessionId,
+    isLogin: true,
+    sectorKey: await sectorKey(request, false),
+    type: 'SessionDto',
+  });
 }
 
 export async function usersLoad(request: Request): Promise<UserDto[]> {

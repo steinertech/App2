@@ -1,5 +1,5 @@
 import { userSession } from '../util/util-user.js';
-import { corsHeaders } from '../util/util-main.js';
+import { corsHeaders, domainName } from '../util/util-main.js';
 
 export default {
   async fetch(request: Request): Promise<Response> {
@@ -9,7 +9,7 @@ export default {
 
     const session = await userSession(request);
 
-    return new Response(JSON.stringify(session), {
+    return new Response(JSON.stringify(session ? { ...session, domainName: domainName(request) } : null), {
       headers: { 'content-type': 'application/json', ...corsHeaders(request) },
     });
   },
