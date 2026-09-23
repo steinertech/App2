@@ -57,6 +57,9 @@ DTOs (plain interfaces, not classes) live under `App.Server/dto/`, split into tw
 
 New DTOs go in whichever folder matches their shape — `dto/web/` unless they carry an `ObjectId` (or another Node-only field), in which case `dto/server/`.
 
+### App version
+The app version is stored in two places: `VERSION_CLIENT` in `App.Web/src/util/util-main.ts` and `VERSION_SERVER` in `App.Server/util/util-main.ts`. **Both values must always be identical** — whenever one is bumped, bump the other to the same value in the same change. (`App.Web/src/page/About.tsx` displays both side by side.)
+
 ### Single-collection MongoDB pattern
 All DTOs (`UserDto`, `SessionDto`, `ProjectDto`, ...) are stored in one MongoDB collection (`'myCollection'`), disambiguated by a `type` field (e.g. `type: 'UserDto'`) and scoped by a `sectorKey` field. Adding a new entity means adding a new DTO interface plus a `type` discriminator, not a new collection.
 
