@@ -12,7 +12,6 @@ export async function userRegister(request: Request, email: string, password: st
     name: domainName(request) + '/' + email,
     password,
     sectorKey: await sectorKey(request, false),
-    domainName: domainName(request),
     type: 'UserDto',
   });
 }
@@ -27,7 +26,7 @@ export async function userLogin(request: Request, email: string, password: strin
     sectorKey: await sectorKey(request, false),
     type: 'UserDto',
   });
-  if (!user || user.domainName !== domainName(request)) {
+  if (!user) {
     return null;
   }
 
