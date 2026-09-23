@@ -1,1 +1,1 @@
-export const VERSION_CLIENT = '1.16';
+export const VERSION_CLIENT = '1.17';
