@@ -29,6 +29,20 @@ App.Web
 - React
 - Vite (Build)
 
+# Vercel
+Develop locally with Vercel connection to storage and db.
+```
+cd App.Server
+vercel login # Local dev to access blob and MongoDb
+vercel env pull # Creates file .env.local with credential for blob and MongoDB. And creates folder ../.vercel
+```
+
+# VS Code
+Follwing files are used to make it run in VS Code
+- launch.json
+- tasks.json
+- vite.config.ts (Proxy section only)
+
 # Links
 - https://claude.ai/code (AI)
 - https://github.com/steinertech/App2 (Repo)

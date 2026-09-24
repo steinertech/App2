@@ -1,7 +1,7 @@
 import { userSession } from './util-user.js';
 import { GridStateDto } from '../dto/web/grid-dto.js';
 
-export const VERSION_SERVER = '1.17';
+export const VERSION_SERVER = '1.18';
 
 export function domainName(request: Request): string {
   const originHeader = request.headers.get('origin');

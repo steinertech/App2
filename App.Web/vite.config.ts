@@ -7,5 +7,8 @@ export default defineConfig({
     fs: {
       allow: ['..'],
     },
+    proxy: {
+      '/api': 'http://localhost:3000',
+    },
   },
 });

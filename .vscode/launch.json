@@ -1,0 +1,31 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+
+    {
+      "name": "App.Server",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/App.Server",
+      "runtimeExecutable": "vercel",
+      "runtimeArgs": ["dev", "--listen", "3000"],
+      "autoAttachChildProcesses": true,
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+    },
+    {
+      "name": "App.Web",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/App.Web",
+      "preLaunchTask": "App.Web (vite dev)"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "App",
+      "configurations": ["App.Server", "App.Web"]
+    }
+  ]
+}
