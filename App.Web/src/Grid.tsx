@@ -11,6 +11,7 @@ import {
   type GridCustomDto,
   type GridDto,
   type GridModifyDto,
+  type GridPathSegmentDto,
 } from '../../App.Server/dto/web/grid-dto.ts';
 
 interface GridProps {
@@ -47,7 +48,29 @@ function gridCellClassName(gridCell: GridCellDto, rowSelected: boolean): string 
   return '';
 }
 
-function gridCustomContent(gridCustom: GridCustomDto, key: number, onCustomClick: (gridCustom: GridCustomDto) => void): ReactNode {
+function gridCustomContent(
+  gridCustom: GridCustomDto,
+  key: number,
+  onCustomClick: (gridCustom: GridCustomDto, pathIndex?: number) => void,
+  pathSegments: GridPathSegmentDto[],
+): ReactNode {
+  if (gridCustom.customEnum === GridCustomEnum.Path) {
+    return (
+      <nav key={key} className="inline-flex items-center gap-1">
+        <button type="button" onClick={() => onCustomClick(gridCustom, -1)} className="text-blue-600 hover:underline">
+          Root
+        </button>
+        {pathSegments.map((pathSegment, pathIndex) => (
+          <span key={pathIndex} className="inline-flex items-center gap-1">
+            <span>/</span>
+            <button type="button" onClick={() => onCustomClick(gridCustom, pathIndex)} className="text-blue-600 hover:underline">
+              {pathSegment.text}
+            </button>
+          </span>
+        ))}
+      </nav>
+    );
+  }
   if (gridCustom.customEnum === GridCustomEnum.Button) {
     return (
       <button key={key} type="button" onClick={() => onCustomClick(gridCustom)} className={buttonGridClassName}>
@@ -64,14 +87,15 @@ function gridCustomContent(gridCustom: GridCustomDto, key: number, onCustomClick
 function gridCellContent(
   gridCell: GridCellDto,
   gridVersion: number,
-  onCustomClick: (gridCustom: GridCustomDto) => void,
+  onCustomClick: (gridCustom: GridCustomDto, pathIndex?: number) => void,
   onTextChange: (gridCell: GridCellDto, textModified: string) => void,
   onSelectMultiChange: (rowIndex: number, checked: boolean) => void,
   isSelectedMulti: boolean[],
+  pathSegments: GridPathSegmentDto[],
 ): ReactNode {
   let content: ReactNode;
   if (gridCell.cellEnum === GridCellEnum.Custom) {
-    content = (gridCell.customs ?? []).map((gridCustom, index) => gridCustomContent(gridCustom, index, onCustomClick));
+    content = (gridCell.customs ?? []).map((gridCustom, index) => gridCustomContent(gridCustom, index, onCustomClick, pathSegments));
   } else if (gridCell.cellEnum === GridCellEnum.Empty) {
     content = 'Empty';
   } else if (gridCell.cellEnum === GridCellEnum.Edit) {
@@ -160,10 +184,13 @@ export default function Grid({ path }: GridProps) {
     });
   };
 
-  const handleCustomClick = async (gridCell: GridCellDto, gridCustom: GridCustomDto) => {
+  const handleCustomClick = async (gridCell: GridCellDto, gridCustom: GridCustomDto, pathIndex?: number) => {
     const gridCommand: GridCommandDto = { commandEnum: GridCommandEnum.CustomButtonClick };
     if (gridCustom.rowIndex !== undefined) {
       gridCommand.rowIndex = gridCustom.rowIndex;
+    }
+    if (pathIndex !== undefined) {
+      gridCommand.pathIndex = pathIndex;
     }
     if (gridCell.columnName !== undefined) {
       gridCommand.columnName = gridCell.columnName;
@@ -217,10 +244,11 @@ export default function Grid({ path }: GridProps) {
                   {gridCellContent(
                     gridCell,
                     gridVersion,
-                    (gridCustom) => handleCustomClick(gridCell, gridCustom),
+                    (gridCustom, pathIndex) => handleCustomClick(gridCell, gridCustom, pathIndex),
                     handleTextChange,
                     handleSelectMultiChange,
                     isSelectedMulti,
+                    grid?.state?.pathSegments ?? [],
                   )}
                 </td>
               ))}

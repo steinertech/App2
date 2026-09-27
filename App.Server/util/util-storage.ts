@@ -20,8 +20,9 @@ export async function storageDownload() {
   return presignedUrl;
 }
 
-export async function storageFiles(request: Request): Promise<StorageFileDto[]> {
-  const prefix = await sectorKey(request, false);
+/** Lists the direct children of folder path (e.g. "a/b/", or "" for the root) below the sector key. path must end with "/" unless empty. */
+export async function storageFiles(request: Request, path: string = ''): Promise<StorageFileDto[]> {
+  const prefix = (await sectorKey(request, false)) + path;
 
   // Folded mode returns only the direct children of prefix: files in blobs, sub-folders (with trailing slash) in folders.
   const blobPaths: string[] = [];

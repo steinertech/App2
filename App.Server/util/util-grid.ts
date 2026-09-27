@@ -1,4 +1,4 @@
-import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPlaneDto, GridRowDto, GridSortDto } from '../dto/web/grid-dto.js';
+import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPlaneDto, GridRowDto, GridSortDto, gridStatePath } from '../dto/web/grid-dto.js';
 import { titleCase } from './util-main.js';
 import { projectsLoad, projectsLoadByNames, projectsUpdate, projectsInsert, projectsDeleteByNames } from './util-project.js';
 import { usersLoad, userProject } from './util-user.js';
@@ -340,24 +340,93 @@ async function gridLoadUser(request: Request, gridDto: GridDto): Promise<GridDto
 }
 
 async function gridLoadStorage(request: Request, gridDto: GridDto): Promise<GridDto> {
-  const files = await storageFiles(request);
+  if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === 'Select') {
+    const rowIndex = gridDto.command.rowIndex;
+    if (rowIndex !== undefined) {
+      const fileName = gridDto.state?.rowKeys?.[rowIndex];
+      if (fileName !== undefined && fileName.endsWith('/')) {
+        // Folder (blob folder paths end with "/"): navigate into it by appending its name to pathSegments.
+        const folderName = fileName.split('/').filter(Boolean).pop();
+        if (folderName !== undefined) {
+          const pathSegments = [...(gridDto.state?.pathSegments ?? []), { name: folderName, text: folderName }];
+          gridDto.state = { ...gridDto.state, pathSegments };
+        }
+      } else if (fileName !== undefined) {
+        // TODO: Implement Select button click for fileName.
+        console.log('Storage Select rowKey:', fileName);
+      }
+    }
+  }
+
+  if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === 'Up') {
+    const pathSegments = (gridDto.state?.pathSegments ?? []).slice(0, -1);
+    gridDto.state = { ...gridDto.state, pathSegments };
+  }
+
+  if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === 'Path') {
+    const pathIndex = gridDto.command.pathIndex;
+    if (pathIndex !== undefined) {
+      // Navigate to the clicked breadcrumb segment by keeping it and every segment before it (pathIndex -1 is Root: keeps none).
+      const pathSegments = (gridDto.state?.pathSegments ?? []).slice(0, pathIndex + 1);
+      gridDto.state = { ...gridDto.state, pathSegments };
+    }
+  }
+
+  const files =await storageFiles(request, gridStatePath(gridDto.state));
 
   const headerRow: GridRowDto = {
-    cells: (STORAGE_FILE_COLUMNS.columns ?? []).map((column) => gridHeaderCell(column.columnName, gridDto.state?.sort)),
+    cells: [
+      ...(STORAGE_FILE_COLUMNS.columns ?? []).map((column) => gridHeaderCell(column.columnName, gridDto.state?.sort)),
+      { cellEnum: GridCellEnum.Header, text: 'Command' },
+    ],
   };
   const fileRows: GridRowDto[] = files.map((file, rowIndex) => ({
-    cells: (STORAGE_FILE_COLUMNS.columns ?? []).map(
-      (column): GridCellDto => ({
-        cellEnum: GridCellEnum.Edit,
-        text: String(file[column.columnName as keyof StorageFileDto]),
+    cells: [
+      ...(STORAGE_FILE_COLUMNS.columns ?? []).map(
+        (column): GridCellDto => ({
+          cellEnum: GridCellEnum.Edit,
+          text: String(file[column.columnName as keyof StorageFileDto]),
+          rowIndex,
+          columnName: column.columnName,
+        }),
+      ),
+      {
+        cellEnum: GridCellEnum.Custom,
+        customs: [{ text: 'Select', name: 'Select', customEnum: GridCustomEnum.Button, rowIndex } satisfies GridCustomDto],
         rowIndex,
-        columnName: column.columnName,
-      }),
-    ),
+      },
+    ],
   }));
-  const findRow = gridFindRow([...(STORAGE_FILE_COLUMNS.columns ?? []).map((column) => column.columnName)]);
 
-  return { ...gridDto, text: 'Storage Data', rows: [headerRow, findRow, ...fileRows] };
+  const rowKeys: string[] = files.map((file) => file.fileName ?? '');
+  const findRow = gridFindRow([...(STORAGE_FILE_COLUMNS.columns ?? []).map((column) => column.columnName), undefined]);
+
+  // Path breadcrumb and Up button are only shown below the root folder.
+  const pathRows: GridRowDto[] =
+    (gridDto.state?.pathSegments ?? []).length > 0
+      ? [
+          {
+            cells: [
+              {
+                cellEnum: GridCellEnum.Custom,
+                customs: [
+                  { name: 'Path', customEnum: GridCustomEnum.Path } satisfies GridCustomDto,
+                  { text: 'Up', name: 'Up', customEnum: GridCustomEnum.Button } satisfies GridCustomDto,
+                ],
+              },
+            ],
+          },
+        ]
+      : [];
+
+  return {
+    ...gridDto,
+    text: 'Storage Data',
+    rows: [...pathRows, headerRow, findRow, ...fileRows],
+    state: { ...gridDto.state, rowKeys },
+    // Command is transient: clear it so it isn't re-processed on a later request.
+    command: undefined,
+  };
 }
 
 type GridLoader = (request: Request, gridDto: GridDto) => Promise<GridDto>;

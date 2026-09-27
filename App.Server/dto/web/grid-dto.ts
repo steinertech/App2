@@ -11,6 +11,9 @@ export enum GridCustomEnum {
   None = 0,
   Button = 1,
   Label = 2,
+  Upload = 3,
+  /** Breadcrumb of GridStateDto.pathSegments; clicking a segment sends CustomButtonClick with pathIndex. */
+  Path = 4,
 }
 
 export enum GridCommandEnum {
@@ -34,6 +37,8 @@ export interface GridCommandDto {
   columnName?: string;
   rowIndex?: number;
   customName?: string;
+  /** Index into GridStateDto.pathSegments of the clicked GridCustomEnum.Path segment, or -1 for the Root item. */
+  pathIndex?: number;
 }
 
 export interface GridCellDto {
@@ -80,6 +85,15 @@ export interface GridStateDto {
   sort?: GridSortDto;
   pathSegments?: GridPathSegmentDto[];
   rowKeys?: string[];
+}
+
+/** Returns the GridStateDto.pathSegments names joined with "/" plus a trailing "/" (e.g. "a/b/"), or "" if there are no segments. */
+export function gridStatePath(state: GridStateDto | undefined): string {
+  return (state?.pathSegments ?? [])
+    .map((pathSegment) => pathSegment.name)
+    .filter((name): name is string => name !== undefined)
+    .map((name) => `${name}/`)
+    .join('');
 }
 
 export interface GridDto {
