@@ -401,28 +401,27 @@ async function gridLoadStorage(request: Request, gridDto: GridDto): Promise<Grid
   const rowKeys: string[] = files.map((file) => file.fileName ?? '');
   const findRow = gridFindRow([...(STORAGE_FILE_COLUMNS.columns ?? []).map((column) => column.columnName), undefined]);
 
-  // Path breadcrumb and Up button are only shown below the root folder.
-  const pathRows: GridRowDto[] =
+  // Path breadcrumb and Up button are only shown below the root folder; Upload button is always shown.
+  const pathCustoms: GridCustomDto[] =
     (gridDto.state?.pathSegments ?? []).length > 0
       ? [
-          {
-            cells: [
-              {
-                cellEnum: GridCellEnum.Custom,
-                customs: [
-                  { name: 'Path', customEnum: GridCustomEnum.Path } satisfies GridCustomDto,
-                  { text: 'Up', name: 'Up', customEnum: GridCustomEnum.Button } satisfies GridCustomDto,
-                ],
-              },
-            ],
-          },
+          { name: 'Path', customEnum: GridCustomEnum.Path },
+          { text: 'Up', name: 'Up', customEnum: GridCustomEnum.Button },
         ]
       : [];
+  const toolbarRow: GridRowDto = {
+    cells: [
+      {
+        cellEnum: GridCellEnum.Custom,
+        customs: [...pathCustoms, { text: 'Upload', name: 'Upload', customEnum: GridCustomEnum.ButtonUpload }],
+      },
+    ],
+  };
 
   return {
     ...gridDto,
     text: 'Storage Data',
-    rows: [...pathRows, headerRow, findRow, ...fileRows],
+    rows: [toolbarRow, headerRow, findRow, ...fileRows],
     state: { ...gridDto.state, rowKeys },
     // Command is transient: clear it so it isn't re-processed on a later request.
     command: undefined,

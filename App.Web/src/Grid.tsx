@@ -1,5 +1,6 @@
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ChangeEvent, type ReactNode } from 'react';
 import Project from './page/Project.tsx';
+import { apiUrl } from './page/App.tsx';
 import { useGridStore } from './GridStore.tsx';
 import { buttonGridClassName, buttonPrimaryClassName } from './style.ts';
 import {
@@ -12,7 +13,9 @@ import {
   type GridDto,
   type GridModifyDto,
   type GridPathSegmentDto,
+  gridStatePath,
 } from '../../App.Server/dto/web/grid-dto.ts';
+import type { StorageUploadCollectionDto } from '../../App.Server/dto/web/storage-upload-dto.ts';
 
 interface GridProps {
   /**
@@ -71,7 +74,7 @@ function gridCustomContent(
       </nav>
     );
   }
-  if (gridCustom.customEnum === GridCustomEnum.Button) {
+  if (gridCustom.customEnum === GridCustomEnum.Button || gridCustom.customEnum === GridCustomEnum.ButtonUpload) {
     return (
       <button key={key} type="button" onClick={() => onCustomClick(gridCustom)} className={buttonGridClassName}>
         {gridCustom.text}
@@ -184,7 +187,47 @@ export default function Grid({ path }: GridProps) {
     });
   };
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const input = event.target;
+    const selectedFiles = Array.from(input.files ?? []);
+    input.value = ''; // Allow selecting the same files again.
+    if (selectedFiles.length === 0) {
+      return;
+    }
+
+    const storageUploadCollectionDto: StorageUploadCollectionDto = {
+      path: gridStatePath(grid?.state),
+      files: selectedFiles.map((file) => ({ fileName: file.name })),
+    };
+    const response = await fetch(`${apiUrl}storage-upload2`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(storageUploadCollectionDto),
+    });
+    const storageUploadCollection = (await response.json()) as StorageUploadCollectionDto;
+
+    // Upload every selected file directly to blob storage via its presigned fileUrl.
+    await Promise.all(
+      (storageUploadCollection.files ?? []).map(async (storageUpload, index) => {
+        const file = selectedFiles[index];
+        if (storageUpload.fileUrl === undefined || file === undefined) {
+          return;
+        }
+        await fetch(storageUpload.fileUrl, { method: 'PUT', body: file });
+      }),
+    );
+
+    await handleReloadClick();
+  };
+
   const handleCustomClick = async (gridCell: GridCellDto, gridCustom: GridCustomDto, pathIndex?: number) => {
+    if (gridCustom.customEnum === GridCustomEnum.ButtonUpload) {
+      fileInputRef.current?.click();
+      return;
+    }
+
     const gridCommand: GridCommandDto = { commandEnum: GridCommandEnum.CustomButtonClick };
     if (gridCustom.rowIndex !== undefined) {
       gridCommand.rowIndex = gridCustom.rowIndex;
@@ -224,6 +267,7 @@ export default function Grid({ path }: GridProps) {
 
   return (
     <div>
+      <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(event) => void handleFileChange(event)} />
       <h1 className="text-4xl font-bold">{grid?.text}</h1>
       <table className="w-full">
         <tbody>

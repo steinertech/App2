@@ -11,7 +11,8 @@ export enum GridCustomEnum {
   None = 0,
   Button = 1,
   Label = 2,
-  Upload = 3,
+  /** Rendered like Button; clicking it sends CustomButtonClick. */
+  ButtonUpload = 3,
   /** Breadcrumb of GridStateDto.pathSegments; clicking a segment sends CustomButtonClick with pathIndex. */
   Path = 4,
 }

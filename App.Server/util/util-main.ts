@@ -15,8 +15,11 @@ export async function sectorKey(request: Request, isProject: boolean = true): Pr
   if (isProject) {
     const dto = await userSession(request);
     if (!dto) throw new Error('User not logged in!');
+    // SessionDto.projectName mirrors UserDto.projectName (copied on login, kept in sync by userProject).
+    if (!dto.projectName) throw new Error('User has no project selected!');
+    return 'Domain' + '/' + domainName(request) + '/' + 'Project' + '/' + dto.projectName + '/';
   }
-  return 'Domain' + '/' + domainName(request) + '/' + (isProject ? 'Project' : 'Global') + '/';
+  return 'Domain' + '/' + domainName(request) + '/' + 'Global' + '/';
 }
 
 export function titleCase(text?: string): string | undefined {

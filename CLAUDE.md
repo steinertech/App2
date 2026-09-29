@@ -66,7 +66,7 @@ All DTOs (`UserDto`, `SessionDto`, `ProjectDto`, ...) are stored in one MongoDB 
 ### sectorKey scoping
 `sectorKey(request, isProject)` in `util-main.ts` builds the key documents are scoped/queried by:
 - `Domain/<domainName>/Global/` when `isProject` is `false` (e.g. users, projects — looked up by domain, no login required)
-- `Domain/<domainName>/Project/<projectName>/` when `isProject` is `true` (e.g. files inside a project) — this branch also asserts the caller has a valid session (throws `'User not logged in!'` if not), so `isProject: true` is how login is enforced for a query.
+- `Domain/<domainName>/Project/<projectName>/` when `isProject` is `true` (e.g. files inside a project) — this branch also asserts the caller has a valid session (throws `'User not logged in!'` if not) and a selected project (`<projectName>` is the session's `projectName`, which mirrors `UserDto.projectName`; throws `'User has no project selected!'` if unset), so `isProject: true` is how login is enforced for a query.
 
 Always build sector keys through `sectorKey(...)` rather than constructing the `Domain/.../Global|Project/` string manually.
 
