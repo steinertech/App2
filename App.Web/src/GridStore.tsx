@@ -104,7 +104,7 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
       body.planeName = planeNameRef.current;
     }
 
-    const response = await fetch(`${apiUrl}grid`, {
+    const response = await fetch(`${apiUrl}grid-load`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body),
