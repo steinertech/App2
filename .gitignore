@@ -1,6 +1,6 @@
 node_modules/
 dist/
 dist-server/
-/.claude/worktrees/
+/.claude/
 .vercel
 .env*

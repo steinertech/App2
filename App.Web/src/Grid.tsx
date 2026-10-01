@@ -1,7 +1,7 @@
 import { useRef, useState, type ChangeEvent, type ReactNode } from 'react';
 import Project from './page/Project.tsx';
 import { apiUrl } from './page/App.tsx';
-import { useGridStore } from './GridStore.tsx';
+import { resolveGrid, useGridStore } from './GridStore.tsx';
 import { buttonGridClassName, buttonPrimaryClassName } from './style.ts';
 import {
   GridCellEnum,
@@ -10,7 +10,6 @@ import {
   type GridCellDto,
   type GridCommandDto,
   type GridCustomDto,
-  type GridDto,
   type GridModifyDto,
   type GridPathSegmentDto,
   gridStatePath,
@@ -24,18 +23,6 @@ interface GridProps {
    * nested under GridDto.planes (e.g. a confirmation dialog opened by a parent grid).
    */
   path: number[];
-}
-
-function resolveGrid(rootGrids: GridDto[] | undefined, path: number[]): GridDto | undefined {
-  const [gridIndex, planesIndex, nestedGridIndex, ...rest] = path;
-  if (gridIndex === undefined) {
-    return undefined;
-  }
-  const grid = rootGrids?.[gridIndex];
-  if (planesIndex === undefined || nestedGridIndex === undefined) {
-    return grid;
-  }
-  return resolveGrid(grid?.planes?.[planesIndex]?.grids, [nestedGridIndex, ...rest]);
 }
 
 function gridCellClassName(gridCell: GridCellDto, rowSelected: boolean): string {
@@ -76,7 +63,13 @@ function gridCustomContent(
   }
   if (gridCustom.customEnum === GridCustomEnum.Button || gridCustom.customEnum === GridCustomEnum.ButtonUpload) {
     return (
-      <button key={key} type="button" onClick={() => onCustomClick(gridCustom)} className={buttonGridClassName}>
+      <button
+        key={key}
+        type="button"
+        disabled={gridCustom.isDisabled === true}
+        onClick={() => onCustomClick(gridCustom)}
+        className={buttonGridClassName}
+      >
         {gridCustom.text}
       </button>
     );
@@ -139,20 +132,21 @@ function gridCellContent(
 }
 
 export default function Grid({ path }: GridProps) {
-  const { gridPlaneDto, gridVersion, sendCommand } = useGridStore();
+  const { gridPlaneDto, gridVersion, sendCommand, sendPatch } = useGridStore();
 
   const grid = resolveGrid(gridPlaneDto.grids, path);
   const gridRows = grid?.rows ?? [];
   const [rowIndexSelected, setRowIndexSelected] = useState(grid?.state?.selected);
   const [modifies, setModifies] = useState<GridModifyDto[]>(grid?.modifies ?? []);
-  const [isSelectedMulti, setIsSelectedMulti] = useState<boolean[]>(grid?.state?.isSelectedMulti ?? []);
+  // Read from the store (not local state) so it follows server changes, e.g. cleared after DeleteMulti.
+  const isSelectedMulti = grid?.state?.isSelectedMulti ?? [];
 
-  const handleSelectMultiChange = (rowIndex: number, checked: boolean) => {
-    setIsSelectedMulti((prev) => {
-      const next = [...prev];
-      next[rowIndex] = checked;
-      return next;
-    });
+  const handleSelectMultiChange = async (rowIndex: number, checked: boolean) => {
+    const next = [...isSelectedMulti];
+    next[rowIndex] = checked;
+
+    const gridCommand: GridCommandDto = { commandEnum: GridCommandEnum.MultiClick, rowIndex };
+    await sendPatch(path, { command: gridCommand, state: { ...grid?.state, isSelectedMulti: next } });
   };
 
   const handleTextChange = (gridCell: GridCellDto, textModified: string) => {
@@ -242,7 +236,7 @@ export default function Grid({ path }: GridProps) {
       gridCommand.customName = gridCustom.name;
     }
 
-    await sendCommand(path, { command: gridCommand, state: { ...grid?.state, isSelectedMulti } });
+    await sendCommand(path, { command: gridCommand });
   };
 
   const handleHeaderClick = async (gridCell: GridCellDto) => {

@@ -24,6 +24,8 @@ export enum GridCommandEnum {
   Reload = 3,
   Save = 4,
   New = 5,
+  /** A GridCellDto.isSelectMulti checkbox changed; rowIndex is the changed row, GridStateDto.isSelectedMulti the new selection. */
+  MultiClick = 6,
 }
 
 export interface GridCustomDto {
@@ -31,6 +33,8 @@ export interface GridCustomDto {
   text?: string;
   name?: string;
   rowIndex?: number;
+  /** If true, render button as disabled */
+  isDisabled?: boolean;
 }
 
 export interface GridCommandDto {
@@ -78,6 +82,12 @@ export interface GridModifyDto {
   isNew?: boolean;
 }
 
+export interface GridPatchDto {
+  name?: string;
+  rowIndex?: number;
+  isDisabled?: boolean;
+}
+
 export interface GridStateDto {
   /** rowIndex of selected row */
   selected?: number;
@@ -104,6 +114,7 @@ export interface GridDto {
   command?: GridCommandDto;
   modifies?: GridModifyDto[];
   planes?: GridPlaneDto[];
+  patches?: GridPatchDto[];
 }
 
 export interface GridPlaneDto {

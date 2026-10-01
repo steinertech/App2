@@ -17,12 +17,27 @@ interface GridStoreValue {
   gridVersion: number;
   load: (planeName: string) => Promise<GridPlaneDto>;
   sendCommand: (path: number[], override: GridOverride) => Promise<GridPlaneDto>;
+  /** Posts the plane with override applied at path to /api/grid-patch and applies the returned GridDto.patches to the loaded grids (rows aren't reloaded). override.state is also kept on the grid at path. */
+  sendPatch: (path: number[], override: GridOverride) => Promise<GridPlaneDto>;
 }
 
 const GridStoreContext = createContext<GridStoreValue | undefined>(undefined);
 
 function samePath(a: number[], b: number[]): boolean {
   return a.length === b.length && a.every((value, index) => value === b[index]);
+}
+
+/** Finds the GridDto at path: [gridIndex] for a root grid, or [gridIndex, planesIndex, gridIndex, ...] for one nested under GridDto.planes. */
+export function resolveGrid(rootGrids: GridDto[] | undefined, path: number[]): GridDto | undefined {
+  const [gridIndex, planesIndex, nestedGridIndex, ...rest] = path;
+  if (gridIndex === undefined) {
+    return undefined;
+  }
+  const grid = rootGrids?.[gridIndex];
+  if (planesIndex === undefined || nestedGridIndex === undefined) {
+    return grid;
+  }
+  return resolveGrid(grid?.planes?.[planesIndex]?.grids, [nestedGridIndex, ...rest]);
 }
 
 /** Rebuilds a GridDto for sending to the server: strips rows (the server always recomputes them) and, recursively, applies any override addressed at this node or one nested under it. */
@@ -39,6 +54,34 @@ function buildOutgoingGrid(existingGrid: GridDto, path: number[], entries: GridO
   }
 
   return grid;
+}
+
+/** Copies isDisabled from every patch in responseGrid.patches onto each GridCustomDto in grid whose name matches, then recurses into planes (the response mirrors the request's structure). */
+function applyPatches(grid: GridDto, responseGrid: GridDto): void {
+  for (const patch of responseGrid.patches ?? []) {
+    for (const row of grid.rows ?? []) {
+      for (const cell of row.cells ?? []) {
+        for (const custom of cell.customs ?? []) {
+          if (custom.name === patch.name) {
+            if (patch.isDisabled !== undefined) {
+              custom.isDisabled = patch.isDisabled;
+            } else {
+              delete custom.isDisabled;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  (grid.planes ?? []).forEach((gridPlane, planesIndex) => {
+    (gridPlane.grids ?? []).forEach((nestedGrid, gridIndex) => {
+      const nestedResponseGrid = responseGrid.planes?.[planesIndex]?.grids?.[gridIndex];
+      if (nestedResponseGrid !== undefined) {
+        applyPatches(nestedGrid, nestedResponseGrid);
+      }
+    });
+  });
 }
 
 export function GridStoreProvider({ children }: { children: ReactNode }) {
@@ -91,7 +134,46 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
     [fetchPlane],
   );
 
-  return <GridStoreContext.Provider value={{ gridPlaneDto, gridVersion, load, sendCommand }}>{children}</GridStoreContext.Provider>;
+  const sendPatch = useCallback(async (path: number[], override: GridOverride): Promise<GridPlaneDto> => {
+    // Keep the new state (e.g. isSelectedMulti) on the loaded grid so later commands like Reload or Save send it too.
+    const targetGrid = resolveGrid(gridPlaneDtoRef.current.grids, path);
+    if (targetGrid !== undefined && override.state !== undefined) {
+      targetGrid.state = { ...targetGrid.state, ...override.state };
+      gridPlaneDtoRef.current = { ...gridPlaneDtoRef.current };
+      setGridPlaneDto(gridPlaneDtoRef.current);
+    }
+
+    const entries: GridOverrideEntry[] = [{ path, override }];
+    const grids: GridDto[] = (gridPlaneDtoRef.current.grids ?? []).map((existingGrid, gridIndex) =>
+      buildOutgoingGrid(existingGrid, [gridIndex], entries),
+    );
+
+    const body: GridPlaneDto = { grids };
+    if (planeNameRef.current !== undefined) {
+      body.planeName = planeNameRef.current;
+    }
+
+    const response = await fetch(`${apiUrl}grid-patch`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = (await response.json()) as GridPlaneDto;
+
+    // Patch the loaded grids in place; gridVersion is left as is so unsaved input text isn't reset.
+    (gridPlaneDtoRef.current.grids ?? []).forEach((grid, gridIndex) => {
+      const responseGrid = data.grids?.[gridIndex];
+      if (responseGrid !== undefined) {
+        applyPatches(grid, responseGrid);
+      }
+    });
+    gridPlaneDtoRef.current = { ...gridPlaneDtoRef.current };
+    setGridPlaneDto(gridPlaneDtoRef.current);
+
+    return data;
+  }, []);
+
+  return <GridStoreContext.Provider value={{ gridPlaneDto, gridVersion, load, sendCommand, sendPatch }}>{children}</GridStoreContext.Provider>;
 }
 
 export function useGridStore(): GridStoreValue {

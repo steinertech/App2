@@ -1,4 +1,4 @@
-import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPlaneDto, GridRowDto, GridSortDto, gridStatePath } from '../dto/web/grid-dto.js';
+import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPatchDto, GridPlaneDto, GridRowDto, GridSortDto, gridStatePath } from '../dto/web/grid-dto.js';
 import { titleCase } from './util-main.js';
 import { projectsLoad, projectsLoadByNames, projectsUpdate, projectsInsert, projectsDeleteByNames } from './util-project.js';
 import { usersLoad, userProject } from './util-user.js';
@@ -124,6 +124,11 @@ function gridCommandSortClick(gridDto: GridDto): void {
   gridDto.state = { ...gridDto.state, sort: { columnName, isSortAsc } };
 }
 
+/** Returns true if one or more GridStateDto.isSelectedMulti entries are true. */
+function gridIsAnySelectedMulti(gridDto: GridDto): boolean {
+  return (gridDto.state?.isSelectedMulti ?? []).some((isSelected) => isSelected === true);
+}
+
 async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<GridDto> {
   if (gridDto.command?.commandEnum === GridCommandEnum.Save) {
     await gridProjectSaveUpdate(request, gridDto);
@@ -146,6 +151,8 @@ async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<Grid
       const projectName = gridDto.state?.rowKeys?.[rowIndex];
       if (projectName !== undefined) {
         await projectsDeleteByNames(request, [projectName]);
+        // Selection is by rowIndex, which no longer matches the remaining rows.
+        gridDto.state = { ...gridDto.state, isSelectedMulti: [] };
       }
     }
   }
@@ -158,6 +165,8 @@ async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<Grid
     if (projectNames.length > 0) {
       await projectsDeleteByNames(request, projectNames);
     }
+    // Selection is by rowIndex, which no longer matches the remaining rows.
+    gridDto.state = { ...gridDto.state, isSelectedMulti: [] };
   }
 
   const projects = await projectsLoad(request);
@@ -198,7 +207,14 @@ async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<Grid
     cells: [
       {
         cellEnum: GridCellEnum.Custom,
-        customs: [{ text: 'Delete', name: 'DeleteMulti', customEnum: GridCustomEnum.Button } satisfies GridCustomDto],
+        customs: [
+          {
+            text: 'Delete',
+            name: 'DeleteMulti',
+            customEnum: GridCustomEnum.Button,
+            isDisabled: !gridIsAnySelectedMulti(gridDto),
+          } satisfies GridCustomDto,
+        ],
       },
     ],
   };
@@ -234,6 +250,10 @@ async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<Grid
   result.command = undefined;
 
   return result;
+}
+
+async function gridProjectPatch(request: Request, gridDto: GridDto): Promise<GridDto> {
+  return { patches: [{ name: 'DeleteMulti', isDisabled: !gridIsAnySelectedMulti(gridDto) } satisfies GridPatchDto] };
 }
 
 async function gridProjectSaveUpdate(request: Request, gridDto: GridDto): Promise<void> {
@@ -445,6 +465,28 @@ export async function gridPlaneLoad(request: Request, gridPlaneDto: GridPlaneDto
       const gridDto: GridDto = incomingGrids[gridIndex] ?? {};
       gridCommandSortClick(gridDto);
       return loader(request, gridDto);
+    }),
+  );
+
+  return { grids };
+}
+
+type GridPatcher = (request: Request, gridDto: GridDto) => Promise<GridDto>;
+
+const PLANE_GRID_PATCHERS: Record<string, GridPatcher[]> = {
+  debug: [gridProjectPatch],
+  project: [gridProjectPatch],
+  storage: [],
+};
+
+export async function gridPlanePatch(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
+  const patchers = gridPlaneDto.planeName !== undefined ? (PLANE_GRID_PATCHERS[gridPlaneDto.planeName] ?? []) : [];
+  const incomingGrids = gridPlaneDto.grids ?? [];
+
+  const grids = await Promise.all(
+    patchers.map((patcher, gridIndex): Promise<GridDto> => {
+      const gridDto: GridDto = incomingGrids[gridIndex] ?? {};
+      return patcher(request, gridDto);
     }),
   );
 
