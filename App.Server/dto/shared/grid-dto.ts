@@ -121,3 +121,11 @@ export interface GridPlaneDto {
   planeName?: string;
   grids?: GridDto[];
 }
+
+/** Returns all GridDtos of the GridPlaneDto and, recursively, of every GridPlaneDto nested under GridDto.planes, as a flat list (depth-first, each grid before its nested grids). */
+export function gridPlaneGrids(plane: GridPlaneDto | undefined): GridDto[] {
+  return (plane?.grids ?? []).flatMap((grid) => [
+    grid,
+    ...(grid.planes ?? []).flatMap((nestedPlane) => gridPlaneGrids(nestedPlane)),
+  ]);
+}

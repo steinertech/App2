@@ -1,4 +1,4 @@
-import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPatchDto, GridPlaneDto, GridRowDto, GridSortDto, gridStatePath } from '../dto/shared/grid-dto.js';
+import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPatchDto, GridPlaneDto, gridPlaneGrids, GridRowDto, GridSortDto, gridStatePath } from '../dto/shared/grid-dto.js';
 import { titleCase } from './util-main.js';
 import { projectsLoad, projectsLoadByNames, projectsUpdate, projectsInsert, projectsDeleteByNames } from './util-project.js';
 import { usersLoad, userProject } from './util-user.js';
@@ -62,52 +62,29 @@ function gridConfirm(text: string): GridDto {
 }
 
 /**
- * Recursively walks gridDto.planes for the GridPlaneDto whose grids contain a GridDto with the given customName
- * command, and removes that GridPlaneDto from its immediate parent's planes list. Returns true if found and removed.
+ * Walks gridDto and every GridDto nested under it (via gridPlaneGrids) for the GridPlaneDto whose grids contain a GridDto
+ * with the given customName command, and removes that GridPlaneDto from its immediate parent's planes list. Returns true if found and removed.
  */
 function gridRemoveCommand(gridDto: GridDto, customName: string): boolean {
-  const planes = gridDto.planes;
-  if (planes === undefined) {
-    return false;
-  }
-
-  for (let planesIndex = 0; planesIndex < planes.length; planesIndex += 1) {
-    const grids = planes[planesIndex].grids ?? [];
-    const isMatch = grids.some(
-      (nestedGridDto) =>
-        nestedGridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && nestedGridDto.command.customName === customName,
-    );
-    if (isMatch) {
+  for (const parentGridDto of gridPlaneGrids({ grids: [gridDto] })) {
+    const planes = parentGridDto.planes ?? [];
+    const planesIndex = planes.findIndex((gridPlane) => (gridPlane.grids ?? []).some((nestedGridDto) => gridIsCommand(nestedGridDto, customName)));
+    if (planesIndex !== -1) {
       planes.splice(planesIndex, 1);
       return true;
-    }
-
-    for (const nestedGridDto of grids) {
-      if (gridRemoveCommand(nestedGridDto, customName)) {
-        return true;
-      }
     }
   }
 
   return false;
 }
 
-/** Recursively walks gridDto and every GridDto nested under gridDto.planes (GridPlaneDto[] -> GridDto[] -> planes -> ...) for the first one whose own command matches customName. */
+/** Walks gridDto and every GridDto nested under it (via gridPlaneGrids) for the first one whose own command matches customName. */
 function gridFindCommand(gridDto: GridDto, customName: string): GridDto | undefined {
-  if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === customName) {
-    return gridDto;
-  }
+  return gridPlaneGrids({ grids: [gridDto] }).find((nestedGridDto) => gridIsCommand(nestedGridDto, customName));
+}
 
-  for (const gridPlane of gridDto.planes ?? []) {
-    for (const nestedGridDto of gridPlane.grids ?? []) {
-      const found = gridFindCommand(nestedGridDto, customName);
-      if (found !== undefined) {
-        return found;
-      }
-    }
-  }
-
-  return undefined;
+function gridIsCommand(gridDto: GridDto, customName: string): boolean {
+  return gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === customName;
 }
 
 function gridCommandSortClick(gridDto: GridDto): void {
