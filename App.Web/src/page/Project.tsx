@@ -27,7 +27,7 @@ export default function Project({ path = [] }: ProjectProps) {
 
     const loadStorage = async () => {
       try {
-        const response = await fetch(`${apiUrl}grid`, {
+        const response = await fetch(`${apiUrl}grid-load`, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ planeName: 'storage', grids: [] } satisfies GridPlaneDto),
