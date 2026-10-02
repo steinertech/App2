@@ -49,7 +49,7 @@ Shared logic lives in `App.Server/util/` (not directly in `api/`):
 - `util-main.ts` — `VERSION_SERVER`, `domainName(request)`, `sectorKey(request, isProject)`, `corsHeaders(request)`
 - `util-db.ts` — the shared MongoDB `client` (via `@vercel/functions` `attachDatabasePool`)
 - `util-user.ts` — user register/login/session/logout
-- `util-storage.ts` — blob upload/download via `@vercel/blob`
+- `util-storage.ts` — blob upload/download via `@vercel/blob` (blob paths are prefixed with `sectorKey(request, true)`)
 
 DTOs (plain interfaces, not classes) live under `App.Server/dto/`, split by whether `App.Web` uses them:
 - `App.Server/dto/shared/` — DTOs used by both `App.Server` and `App.Web` (must have no Node-only fields such as `ObjectId`). `App.Web` and `App.Server` share the same git repo, so these are imported directly by `App.Web` via a relative path (`import type { GridDto } from '../../../App.Server/dto/shared/grid-dto.ts'`) instead of being duplicated.
@@ -64,9 +64,13 @@ The app version is stored in two places: `VERSION_CLIENT` in `App.Web/src/util/u
 All persisted DTOs (`UserDto`, `SessionDto`, `ProjectDto` — the ones with `_id`/`type` fields; not e.g. `GridConfigDto` or `StorageFileDto`) are stored in one MongoDB collection (`'myCollection'`), disambiguated by a `type` field (e.g. `type: 'UserDto'`) and scoped by a `sectorKey` field. Adding a new entity means adding a new DTO interface plus a `type` discriminator, not a new collection.
 
 ### sectorKey scoping
-`sectorKey(request, isProject)` in `util-main.ts` builds the key documents are scoped/queried by:
+`sectorKey(request, isProject)` in `util-main.ts` builds the key used for both persistence layers:
+- **MongoDB** — stored in each document's `sectorKey` field and used as a query filter (`util-user.ts`, `util-project.ts`; currently always `isProject: false`).
+- **Blob storage** — used as the path prefix for every blob (`util-storage.ts` builds `sectorKey(request, true) + path`), so files live under `Domain/<domainName>/Project/<projectName>/...`.
+
+The key takes one of two forms:
 - `Domain/<domainName>/Global/` when `isProject` is `false` (e.g. users, projects — looked up by domain, no login required)
-- `Domain/<domainName>/Project/<projectName>/` when `isProject` is `true` (e.g. files inside a project) — this branch also asserts the caller has a valid session (throws `'User not logged in!'` if not) and a selected project (`<projectName>` is the session's `projectName`, which mirrors `UserDto.projectName`; throws `'User has no project selected!'` if unset), so `isProject: true` is how login is enforced for a query.
+- `Domain/<domainName>/Project/<projectName>/` when `isProject` is `true` (e.g. blob files inside a project) — this branch also asserts the caller has a valid session (throws `'User not logged in!'` if not) and a selected project (`<projectName>` is the session's `projectName`, which mirrors `UserDto.projectName`; throws `'User has no project selected!'` if unset), so `isProject: true` is how login is enforced for a query or blob access.
 
 Always build sector keys through `sectorKey(...)` rather than constructing the `Domain/.../Global|Project/` string manually.
 
