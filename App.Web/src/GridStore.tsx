@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react';
 import { apiUrl } from './page/App.tsx';
-import type { GridDto, GridPlaneDto } from '../../App.Server/dto/web/grid-dto.ts';
+import type { GridDto, GridPlaneDto } from '../../App.Server/dto/shared/grid-dto.ts';
 
 export type { GridPlaneDto };
 

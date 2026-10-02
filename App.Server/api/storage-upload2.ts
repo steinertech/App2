@@ -1,6 +1,6 @@
 import { storageUploadUrls } from '../util/util-storage.js';
 import { corsHeaders } from '../util/util-main.js';
-import { StorageUploadCollectionDto } from '../dto/web/storage-upload-dto.js';
+import { StorageUploadCollectionDto } from '../dto/shared/storage-upload-dto.js';
 
 export default {
   async fetch(request: Request): Promise<Response> {

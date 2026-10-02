@@ -13,8 +13,8 @@ import {
   type GridModifyDto,
   type GridPathSegmentDto,
   gridStatePath,
-} from '../../App.Server/dto/web/grid-dto.ts';
-import type { StorageUploadCollectionDto } from '../../App.Server/dto/web/storage-upload-dto.ts';
+} from '../../App.Server/dto/shared/grid-dto.ts';
+import type { StorageUploadCollectionDto } from '../../App.Server/dto/shared/storage-upload-dto.ts';
 
 interface GridProps {
   /**

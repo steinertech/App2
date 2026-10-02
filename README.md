@@ -3,8 +3,8 @@ SPA Application
 
 # Folder Structure
 - App.Server/api/ (API Endpoints)
-- App.Server/dto/web/ (DTO objects shared with App.Web)
-- App.Server/dto/server/ (DTO objects with Node-only fields, e.g. ObjectId)
+- App.Server/dto/shared/ (DTO objects shared with App.Web)
+- App.Server/dto/ (DTO objects used by App.Server only)
 - App.Server/util/ (Base functionality like app version and access to db and storage)
 - App.Web/public/ (Static content)
 - App.Web/src/page (Pages with a route path)

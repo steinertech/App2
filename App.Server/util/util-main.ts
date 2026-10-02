@@ -1,5 +1,5 @@
 import { userSession } from './util-user.js';
-import { GridStateDto } from '../dto/web/grid-dto.js';
+import { GridStateDto } from '../dto/shared/grid-dto.js';
 
 export const VERSION_SERVER = '1.18';
 

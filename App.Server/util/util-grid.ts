@@ -1,12 +1,12 @@
-import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPatchDto, GridPlaneDto, GridRowDto, GridSortDto, gridStatePath } from '../dto/web/grid-dto.js';
+import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPatchDto, GridPlaneDto, GridRowDto, GridSortDto, gridStatePath } from '../dto/shared/grid-dto.js';
 import { titleCase } from './util-main.js';
 import { projectsLoad, projectsLoadByNames, projectsUpdate, projectsInsert, projectsDeleteByNames } from './util-project.js';
 import { usersLoad, userProject } from './util-user.js';
 import { storageFiles } from './util-storage.js';
-import { StorageFileDto } from '../dto/web/storage-file-dto.js';
-import { ProjectDto } from '../dto/server/project-dto.js';
-import { UserDto } from '../dto/server/user-dto.js';
-import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/server/grid-config-dto.js';
+import { StorageFileDto } from '../dto/storage-file-dto.js';
+import { ProjectDto } from '../dto/project-dto.js';
+import { UserDto } from '../dto/user-dto.js';
+import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
 
 const STORAGE_FILE_COLUMNS: GridConfigDto = {
   columns: (['fileName', 'fileNameOnly', 'isFolder'] as const satisfies readonly (keyof StorageFileDto)[]).map(
