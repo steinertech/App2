@@ -9,8 +9,12 @@ export default {
 
     const session = await userSession(request);
 
-    return new Response(JSON.stringify(session ? { ...session, domainName: domainName(request) } : null), {
-      headers: { 'content-type': 'application/json', ...corsHeaders(request) },
-    });
+    // Only expose what App.Web needs; never echo sessionId (it's an HttpOnly cookie).
+    return new Response(
+      JSON.stringify(
+        session ? { email: session.email, projectName: session.projectName, domainName: domainName(request) } : null,
+      ),
+      { headers: { 'content-type': 'application/json', ...corsHeaders(request) } },
+    );
   },
 };

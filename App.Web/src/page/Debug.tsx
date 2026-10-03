@@ -46,7 +46,7 @@ export default function Debug() {
     }
   };
 
-  const handleSessionIdClick = async () => {
+  const handleSessionClick = async () => {
     try {
       const response = await fetch(`${apiUrl}user-session`, {
         credentials: 'include',
@@ -93,8 +93,8 @@ export default function Debug() {
           {downloadUrl}
         </a>
       )}
-      <button onClick={handleSessionIdClick} className={`${buttonPrimaryClassName} mt-2`}>
-        SessionId
+      <button onClick={handleSessionClick} className={`${buttonPrimaryClassName} mt-2`}>
+        Session
       </button>
       <button onClick={handleGridClick} className={`${buttonPrimaryClassName} mt-2`}>
         Grid
