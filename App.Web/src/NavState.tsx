@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import { apiFetch, getIsProgress, PROGRESS_EVENT } from './util/util-main.ts';
 import { UserRequestEnum, type UserRequestDto } from '../../App.Server/dto/shared/user-request-dto.ts';
 
-const REFRESH_EVENT = 'user-session-refresh';
+const REFRESH_EVENT = 'nav-state-refresh';
 
-export function refreshUserSession() {
+export function refreshNavState() {
   window.dispatchEvent(new Event(REFRESH_EVENT));
 }
 
@@ -17,7 +17,7 @@ export function userRequest(dto: UserRequestDto) {
   });
 }
 
-export default function UserSession() {
+export default function NavState() {
   const [domainName, setDomainName] = useState('');
   const [email, setEmail] = useState('');
   const [projectName, setProjectName] = useState('');

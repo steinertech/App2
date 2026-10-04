@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { userRequest } from '../UserSession.tsx';
+import { userRequest } from '../NavState.tsx';
 import { getIsProgress, setIsProgress } from '../util/util-main.ts';
 import { UserRequestEnum } from '../../../App.Server/dto/shared/user-request-dto.ts';
 import Grid from '../Grid.tsx';

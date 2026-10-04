@@ -75,11 +75,11 @@ The key takes one of two forms:
 Always build sector keys through `sectorKey(...)` rather than constructing the `Domain/.../Global|Project/` string manually.
 
 ### Session handling
-All user calls go through a single endpoint, `api/user.ts` (`/api/user`): App.Web always sends a `POST` with a `UserRequestDto` whose `requestEnum` (`UserRequestEnum` in `dto/shared/user-request-dto.ts`: `SignUp`, `SignIn`, `SignOut`, `Session`) selects the operation; `None` or an unknown value returns 400. App.Web calls it through `userRequest(dto)` in `UserSession.tsx`. Responses (`UserResponseDto`) never include `sessionId`.
+All user calls go through a single endpoint, `api/user.ts` (`/api/user`): App.Web always sends a `POST` with a `UserRequestDto` whose `requestEnum` (`UserRequestEnum` in `dto/shared/user-request-dto.ts`: `SignUp`, `SignIn`, `SignOut`, `Session`) selects the operation; `None` or an unknown value returns 400. App.Web calls it through `userRequest(dto)` in `NavState.tsx`. Responses (`UserResponseDto`) never include `sessionId`.
 
 SignIn (`UserRequestEnum.SignIn` → `userSignIn`) sets an httpOnly `sessionId` cookie. `userSession(request)` (in `util-user.ts`) reads that cookie and looks up the matching `SessionDto` with `isSignIn: true`. `userSignOut` flips `isSignIn` to `false` rather than deleting the session document.
 
 ### App.Web routing and page structure
-`App.Web/src/main.tsx` defines all routes with `react-router-dom`'s `<Routes>`/`<Route>`, wrapped in a shared `<Layout>` (`Nav` + `UserSession` bar + `<Outlet>`). Any component mounted at a route `path` lives in `App.Web/src/page/`; shared/non-routed components (`Layout.tsx`, `Nav.tsx`, `Grid.tsx`, `UserSession.tsx`) stay directly in `App.Web/src/`. `apiUrl` (the `/api/` prefix used for all backend calls) is exported from `src/page/App.tsx`.
+`App.Web/src/main.tsx` defines all routes with `react-router-dom`'s `<Routes>`/`<Route>`, wrapped in a shared `<Layout>` (`Nav` + `NavState` bar + `<Outlet>`). Any component mounted at a route `path` lives in `App.Web/src/page/`; shared/non-routed components (`Layout.tsx`, `Nav.tsx`, `Grid.tsx`, `NavState.tsx`) stay directly in `App.Web/src/`. `apiUrl` (the `/api/` prefix used for all backend calls) is exported from `src/page/App.tsx`.
 
-`UserSession.tsx` polls `/api/user` (`UserRequestEnum.Session`) on mount and exposes `refreshUserSession()`, which dispatches a window event other components (e.g. after sign-in/sign-out) use to force it to re-fetch.
+`NavState.tsx` polls `/api/user` (`UserRequestEnum.Session`) on mount and exposes `refreshNavState()`, which dispatches a window event other components (e.g. after sign-in/sign-out) use to force it to re-fetch.

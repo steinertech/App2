@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { refreshUserSession, userRequest } from '../UserSession.tsx';
+import { refreshNavState, userRequest } from '../NavState.tsx';
 import { UserRequestEnum } from '../../../App.Server/dto/shared/user-request-dto.ts';
 import { container } from '../style.ts';
 
@@ -12,7 +12,7 @@ export default function UserSignOut() {
         const response = await userRequest({ requestEnum: UserRequestEnum.SignOut });
         if (response.ok) {
           setResult('You successfully signed out');
-          refreshUserSession();
+          refreshNavState();
         } else {
           setResult('Error fetching user-sign-out');
         }

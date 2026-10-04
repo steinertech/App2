@@ -6,7 +6,7 @@ export const PROGRESS_EVENT = 'progress';
 
 let isProgress = 0;
 
-/** Progress counter; the progress bar at the bottom of UserSession animates while it is > 0. */
+/** Progress counter; the progress bar at the bottom of NavState animates while it is > 0. */
 export function getIsProgress() {
   return isProgress;
 }

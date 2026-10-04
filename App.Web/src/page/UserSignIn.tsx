@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { refreshUserSession, userRequest } from '../UserSession.tsx';
+import { refreshNavState, userRequest } from '../NavState.tsx';
 import { UserRequestEnum } from '../../../App.Server/dto/shared/user-request-dto.ts';
 import { buttonPrimaryClassName, container, textInputClassName } from '../style.ts';
 
@@ -14,7 +14,7 @@ export default function UserSignIn() {
       const data = await response.json();
       setResult(JSON.stringify(data, null, 2));
       if (response.ok) {
-        refreshUserSession();
+        refreshNavState();
       }
     } catch {
       setResult('Error fetching user-sign-in');

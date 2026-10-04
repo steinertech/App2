@@ -1,6 +1,6 @@
 import { Outlet } from 'react-router-dom';
 import Nav from './Nav.tsx';
-import UserSession from './UserSession.tsx';
+import NavState from './NavState.tsx';
 import { GridStoreProvider } from './GridStore.tsx';
 
 export default function Layout() {
@@ -8,7 +8,7 @@ export default function Layout() {
     <GridStoreProvider>
       <div className="flex h-screen flex-col">
         <Nav />
-        <UserSession />
+        <NavState />
         <Outlet />
       </div>
     </GridStoreProvider>
