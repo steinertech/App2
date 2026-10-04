@@ -1,5 +1,5 @@
 import { apiUrl } from '../page/App.tsx';
-import { ALERT_HEADER, type AlertDto, type AlertEnum } from '../../../App.Server/dto/shared/alert-dto.ts';
+import { ALERT_HEADER, type AlertDto, AlertEnum } from '../../../App.Server/dto/shared/alert-dto.ts';
 
 export const VERSION_CLIENT = '1.18';
 
@@ -19,16 +19,30 @@ export function setIsProgress(value: number) {
 
 /**
  * Calls backend endpoint `/api/<path>`; isProgress is increased by 1 for the duration of the call.
- * Alert messages sent by the backend (ALERT_HEADER) are added to the alert list.
+ * Alert messages sent by the backend (ALERT_HEADER) are added to the alert list, plus an Error alert if the status is not ok
+ * or no response arrives at all (the error is rethrown).
  */
 export async function apiFetch(path: string, init?: RequestInit) {
   setIsProgress(isProgress + 1);
   try {
-    const response = await fetch(`${apiUrl}${path}`, init);
+    let response: Response;
+    try {
+      response = await fetch(`${apiUrl}${path}`, init);
+    } catch (error) {
+      // No response at all (e.g. network down). An intentionally aborted call is not an error.
+      if (!(error instanceof DOMException && error.name === 'AbortError')) {
+        addAlert(AlertEnum.Error, `Request ${path} failed (no response from server)`);
+      }
+      throw error;
+    }
     const alertHeader = response.headers.get(ALERT_HEADER);
-    if (alertHeader) {
-      const alertDtoList: AlertDto[] = JSON.parse(decodeURIComponent(alertHeader));
-      alertDtoList.forEach((alertDto) => addAlert(alertDto.alertEnum, alertDto.text));
+    const alertDtoList: AlertDto[] = alertHeader ? JSON.parse(decodeURIComponent(alertHeader)) : [];
+    alertDtoList.forEach((alertDto) => addAlert(alertDto.alertEnum, alertDto.text));
+    // Generic Error alert, unless the backend already sent a more specific one.
+    if (!response.ok && !alertDtoList.some((alertDto) => alertDto.alertEnum === AlertEnum.Error)) {
+      // statusText is empty over HTTP/2, so it's only appended when present.
+      const status = [response.status, response.statusText].filter(Boolean).join(' ');
+      addAlert(AlertEnum.Error, `Request ${path} failed (${status})`);
     }
     return response;
   } finally {
