@@ -229,7 +229,8 @@ async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<Grid
   return result;
 }
 
-async function gridProjectPatch(request: Request, gridDto: GridDto): Promise<GridDto> {
+/** Enables the DeleteMulti button if one or more rows are selected. */
+async function gridPatchDeleteMulti(request: Request, gridDto: GridDto): Promise<GridDto> {
   return { patches: [{ name: 'DeleteMulti', isDisabled: !gridIsAnySelectedMulti(gridDto) } satisfies GridPatchDto] };
 }
 
@@ -336,7 +337,18 @@ async function gridLoadUser(request: Request, gridDto: GridDto): Promise<GridDto
   return { ...gridDto, text: 'User Data', rows: [headerRow, findRow, ...rows] };
 }
 
+/** Returns the GridStateDto.rowKeys of the rows whose GridStateDto.isSelectedMulti entry is true. */
+function gridSelectedMultiRowKeys(gridDto: GridDto): string[] {
+  const rowKeys = gridDto.state?.rowKeys ?? [];
+  return (gridDto.state?.isSelectedMulti ?? [])
+    .map((isSelected, rowIndex) => (isSelected ? rowKeys[rowIndex] : undefined))
+    .filter((rowKey): rowKey is string => rowKey !== undefined);
+}
+
 async function gridLoadStorage(request: Request, gridDto: GridDto): Promise<GridDto> {
+  // Selection is by rowIndex: remember it by rowKey so it can be mapped onto the reloaded rows (deleted files or another folder drop out).
+  const selectedMultiRowKeys = new Set(gridSelectedMultiRowKeys(gridDto));
+
   if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === 'Select') {
     const rowIndex = gridDto.command.rowIndex;
     if (rowIndex !== undefined) {
@@ -356,7 +368,7 @@ async function gridLoadStorage(request: Request, gridDto: GridDto): Promise<Grid
   }
 
   // Dialogs (Delete confirmation or New Folder, opened by the buttons below) live at gridDto.planes[0].grids[0].
-  // A New Folder dialog carries GridStateDto.custom.path, a Delete confirmation GridStateDto.custom.rowKey.
+  // A New Folder dialog carries GridStateDto.custom.path, a Delete confirmation GridStateDto.custom.rowKeys.
   const confirmGridDto = gridDto.planes?.[0]?.grids?.[0];
   const newFolderPath = confirmGridDto?.state?.custom?.path;
   if (confirmGridDto !== undefined && typeof newFolderPath === 'string') {
@@ -374,16 +386,16 @@ async function gridLoadStorage(request: Request, gridDto: GridDto): Promise<Grid
     }
   } else if (confirmGridDto !== undefined) {
     if (gridIsCommand(confirmGridDto, 'Yes')) {
-      const rowKey = confirmGridDto.state?.custom?.rowKey;
-      if (typeof rowKey === 'string') {
-        await gridStorageDelete(request, rowKey);
+      const rowKeys = confirmGridDto.state?.custom?.rowKeys;
+      if (Array.isArray(rowKeys)) {
+        await gridStorageDelete(request, rowKeys);
       }
     }
     if (gridIsCommand(confirmGridDto, 'Yes') || gridIsCommand(confirmGridDto, 'Cancel')) {
       gridDto.planes = undefined;
     } else {
       // Rows aren't sent back by the client: rebuild them so the dialog stays visible across other commands.
-      gridDto.planes = [{ grids: [{ ...gridStorageDeleteConfirm(confirmGridDto.state?.custom?.rowKey), command: undefined }] }];
+      gridDto.planes = [{ grids: [{ ...gridStorageDeleteConfirm(confirmGridDto.state?.custom?.rowKeys), command: undefined }] }];
     }
   }
 
@@ -391,8 +403,12 @@ async function gridLoadStorage(request: Request, gridDto: GridDto): Promise<Grid
     const rowIndex = gridDto.command.rowIndex;
     const rowKey = rowIndex !== undefined ? gridDto.state?.rowKeys?.[rowIndex] : undefined;
     if (rowKey !== undefined) {
-      gridDto.planes = [{ grids: [gridStorageDeleteConfirm(rowKey)] }];
+      gridDto.planes = [{ grids: [gridStorageDeleteConfirm([rowKey])] }];
     }
+  }
+
+  if (gridIsCommand(gridDto, 'DeleteMulti') && selectedMultiRowKeys.size > 0) {
+    gridDto.planes = [{ grids: [gridStorageDeleteConfirm([...selectedMultiRowKeys])] }];
   }
 
   if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === 'NewFolder') {
@@ -417,7 +433,7 @@ async function gridLoadStorage(request: Request, gridDto: GridDto): Promise<Grid
     await gridStorageSaveInsert(request, gridDto);
   }
 
-  const files =await storageFiles(request, gridStatePath(gridDto.state));
+  const files = await storageFiles(request, gridStatePath(gridDto.state));
 
   const headerRow: GridRowDto = {
     cells: [
@@ -428,11 +444,12 @@ async function gridLoadStorage(request: Request, gridDto: GridDto): Promise<Grid
   const fileRows: GridRowDto[] = files.map((file, rowIndex) => ({
     cells: [
       ...(STORAGE_FILE_COLUMNS.columns ?? []).map(
-        (column): GridCellDto => ({
+        (column, columnIndex): GridCellDto => ({
           cellEnum: GridCellEnum.Edit,
           text: String(file[column.columnName as keyof StorageFileDto]),
           rowIndex,
           columnName: column.columnName,
+          isSelectMulti: columnIndex === 0 ? true : undefined,
         }),
       ),
       {
@@ -447,6 +464,7 @@ async function gridLoadStorage(request: Request, gridDto: GridDto): Promise<Grid
   }));
 
   const rowKeys: string[] = files.map((file) => file.fileName ?? '');
+  const isSelectedMulti = rowKeys.map((rowKey) => selectedMultiRowKeys.has(rowKey));
   const findRow = gridFindRow([...(STORAGE_FILE_COLUMNS.columns ?? []).map((column) => column.columnName), undefined]);
 
   // Path breadcrumb and Up button are only shown below the root folder; Upload button is always shown.
@@ -465,6 +483,12 @@ async function gridLoadStorage(request: Request, gridDto: GridDto): Promise<Grid
           ...pathCustoms,
           { text: 'New Folder', name: 'NewFolder', customEnum: GridCustomEnum.Button },
           { text: 'Upload', name: 'Upload', customEnum: GridCustomEnum.ButtonUpload },
+          {
+            text: 'Delete',
+            name: 'DeleteMulti',
+            customEnum: GridCustomEnum.Button,
+            isDisabled: !isSelectedMulti.some((isSelected) => isSelected),
+          },
         ],
       },
     ],
@@ -474,7 +498,7 @@ async function gridLoadStorage(request: Request, gridDto: GridDto): Promise<Grid
     ...gridDto,
     text: 'Storage Data',
     rows: [toolbarRow, headerRow, findRow, ...fileRows],
-    state: { ...gridDto.state, rowKeys },
+    state: { ...gridDto.state, rowKeys, isSelectedMulti },
   };
 
   if (gridDto.command?.commandEnum === GridCommandEnum.New) {
@@ -503,10 +527,12 @@ async function gridStorageSaveInsert(request: Request, gridDto: GridDto): Promis
   }
 }
 
-/** Returns the "Delete item?" confirmation GridDto (Yes and Cancel buttons) carrying rowKey (a full blob pathname) in GridStateDto.custom. */
-function gridStorageDeleteConfirm(rowKey: unknown): GridDto {
+/** Returns the "Delete item?" confirmation GridDto (Yes and Cancel buttons) carrying rowKeys (full blob pathnames) in GridStateDto.custom. */
+function gridStorageDeleteConfirm(rowKeys: unknown): GridDto {
+  const count = Array.isArray(rowKeys) ? rowKeys.length : 0;
+  const text = count === 1 ? 'Delete item?' : `Delete ${count} items?`;
   const textRow: GridRowDto = {
-    cells: [{ cellEnum: GridCellEnum.Custom, customs: [{ customEnum: GridCustomEnum.Label, text: 'Delete item?' }] }],
+    cells: [{ cellEnum: GridCellEnum.Custom, customs: [{ customEnum: GridCustomEnum.Label, text }] }],
   };
   const buttonRow: GridRowDto = {
     cells: [
@@ -519,7 +545,7 @@ function gridStorageDeleteConfirm(rowKey: unknown): GridDto {
       },
     ],
   };
-  return { text: 'Confirmation', rows: [textRow, buttonRow], state: { custom: { rowKey } } };
+  return { text: 'Confirmation', rows: [textRow, buttonRow], state: { custom: { rowKeys } } };
 }
 
 /** Returns the "New Folder" dialog GridDto (Folder Name label and text box, Yes and Cancel buttons) carrying path (gridStatePath of the storage grid) in GridStateDto.custom. */
@@ -549,13 +575,16 @@ function gridStorageNewFolder(path: string, folderName?: string): GridDto {
   return { text: 'New Folder', rows: [nameRow, buttonRow], state: { custom: { path } } };
 }
 
-/** Deletes rowKey (a full blob pathname; folders end with "/"). rowKey comes back from the client, so it must lie below the caller's sector key. */
-async function gridStorageDelete(request: Request, rowKey: string): Promise<void> {
+/** Deletes rowKeys (full blob pathnames; folders end with "/"). rowKeys come back from the client, so each must lie below the caller's sector key. */
+async function gridStorageDelete(request: Request, rowKeys: unknown[]): Promise<void> {
   const prefix = await sectorKey(request, true);
-  if (!rowKey.startsWith(prefix) || rowKey === prefix) {
-    throw new Error('Invalid file name!');
-  }
-  await storageDelete(request, '', [rowKey.slice(prefix.length)]);
+  const fileOrFolderNames = rowKeys.map((rowKey) => {
+    if (typeof rowKey !== 'string' || !rowKey.startsWith(prefix) || rowKey === prefix) {
+      throw new Error('Invalid file name!');
+    }
+    return rowKey.slice(prefix.length);
+  });
+  await storageDelete(request, '', fileOrFolderNames);
 }
 
 /** Appends one empty, editable new row to gridDto. */
@@ -604,9 +633,9 @@ export async function gridPlaneLoad(request: Request, gridPlaneDto: GridPlaneDto
 type GridPatcher = (request: Request, gridDto: GridDto) => Promise<GridDto>;
 
 const PLANE_GRID_PATCHERS: Record<string, GridPatcher[]> = {
-  debug: [gridProjectPatch],
-  project: [gridProjectPatch],
-  storage: [],
+  debug: [gridPatchDeleteMulti],
+  project: [gridPatchDeleteMulti],
+  storage: [gridPatchDeleteMulti],
 };
 
 export async function gridPlanePatch(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
