@@ -1,2 +1,11 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
+
+@theme {
+  --animate-progress: progress 1.2s ease-in-out infinite;
+
+  @keyframes progress {
+    0% { left: -33%; }
+    100% { left: 100%; }
+  }
+}

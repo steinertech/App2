@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { userRequest } from '../UserSession.tsx';
+import { getIsProgress, setIsProgress, userRequest } from '../UserSession.tsx';
 import { UserRequestEnum } from '../../../App.Server/dto/shared/user-request-dto.ts';
 import Grid from '../Grid.tsx';
 import { useGridStore } from '../GridStore.tsx';
@@ -33,6 +33,10 @@ export default function Debug() {
     }
   };
 
+  const handleProgressClick = () => {
+    setIsProgress(getIsProgress() === 0 ? 1 : 0);
+  };
+
   return (
     <div className={container}>
       <h1>Debug</h1>
@@ -50,6 +54,9 @@ export default function Debug() {
       </button>
       <button onClick={handleGridClick} className={`${buttonPrimaryClassName} mt-2`}>
         Grid
+      </button>
+      <button onClick={handleProgressClick} className={`${buttonPrimaryClassName} mt-2`}>
+        Progress
       </button>
       <label className="mt-4 whitespace-pre-wrap">{result}</label>
       <div className="mt-4">
