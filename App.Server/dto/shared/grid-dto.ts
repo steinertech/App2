@@ -6,6 +6,8 @@ export enum GridCellEnum {
   Custom = 3,
   Search = 4,
   Empty = 5,
+  /** Renders GridCellDto.text as plain (read-only) text. */
+  Label = 6,
 }
 
 export enum GridCustomEnum {

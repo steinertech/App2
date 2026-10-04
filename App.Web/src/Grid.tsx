@@ -126,6 +126,8 @@ function gridCellContent(
   } else if (gridCell.cellEnum === GridCellEnum.Header) {
     const arrow = gridCell.isSortAsc === true ? ' ↑' : gridCell.isSortAsc === false ? ' ↓' : '';
     content = `${gridCell.text ?? ''}${arrow}`;
+  } else if (gridCell.cellEnum === GridCellEnum.Label) {
+    content = gridCell.text;
   } else {
     content = gridCell.text;
   }

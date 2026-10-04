@@ -15,6 +15,8 @@ const STORAGE_FILE_COLUMNS: GridConfigDto = {
     { columnName: 'isFolder' satisfies keyof StorageFileDto, typeEnum: GridConfigTypeEnum.Text },
   ],
 };
+/** Storage columns whose values are rendered read-only (GridCellEnum.Label) instead of as text boxes. */
+const STORAGE_FILE_LABEL_COLUMNS = new Set<string | undefined>(['size', 'isFolder'] satisfies (keyof StorageFileDto)[]);
 const PROJECT_COLUMNS: GridConfigDto = {
   columns: (['name', 'description'] as const satisfies readonly (keyof ProjectDto)[]).map(
     (columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text }),
@@ -447,7 +449,7 @@ async function gridLoadStorage(request: Request, gridDto: GridDto): Promise<Grid
     cells: [
       ...(STORAGE_FILE_COLUMNS.columns ?? []).map(
         (column, columnIndex): GridCellDto => ({
-          cellEnum: GridCellEnum.Edit,
+          cellEnum: STORAGE_FILE_LABEL_COLUMNS.has(column.columnName) ? GridCellEnum.Label : GridCellEnum.Edit,
           text: gridStorageCellText(file, column.columnName as keyof StorageFileDto),
           rowIndex,
           columnName: column.columnName,
