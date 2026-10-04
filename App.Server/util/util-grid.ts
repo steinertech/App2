@@ -436,16 +436,19 @@ async function gridLoadStorage(request: Request, gridDto: GridDto): Promise<Grid
   return result;
 }
 
-/** Creates one folder (in the current path) per new row whose fileNameOnly cell was filled in. */
+/**
+ * Creates one entry (in the current path) per new row whose fileNameOnly cell was filled in.
+ * A name ending with "/" (e.g. "Docs/") creates a folder, any other name (e.g. "My.txt") an empty file.
+ */
 async function gridStorageSaveInsert(request: Request, gridDto: GridDto): Promise<void> {
   const path = gridStatePath(gridDto.state);
-  const folderNames = (gridDto.modifies ?? [])
+  const fileNames = (gridDto.modifies ?? [])
     .filter((modify) => modify.isNew && modify.cellEnum === GridCellEnum.Edit && modify.columnName === 'fileNameOnly')
     .map((modify) => modify.textModified?.trim())
-    .filter((folderName): folderName is string => folderName !== undefined && folderName !== '');
+    .filter((fileName): fileName is string => fileName !== undefined && fileName !== '');
 
-  for (const folderName of folderNames) {
-    await storageNew(request, `${path}${folderName}/`);
+  for (const fileName of fileNames) {
+    await storageNew(request, `${path}${fileName}`);
   }
 }
 
