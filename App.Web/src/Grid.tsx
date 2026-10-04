@@ -1,5 +1,4 @@
 import { useRef, useState, type ChangeEvent, type ReactNode } from 'react';
-import Project from './page/Project.tsx';
 import { apiUrl } from './page/App.tsx';
 import { resolveGrid, useGridStore } from './GridStore.tsx';
 import { buttonGridClassName, buttonPrimaryClassName } from './style.ts';
@@ -10,6 +9,8 @@ import {
   type GridCellDto,
   type GridCommandDto,
   type GridCustomDto,
+  type GridCustomModifyDto,
+  type GridDto,
   type GridModifyDto,
   type GridPathSegmentDto,
   gridStatePath,
@@ -41,9 +42,21 @@ function gridCellClassName(gridCell: GridCellDto, rowSelected: boolean): string 
 function gridCustomContent(
   gridCustom: GridCustomDto,
   key: number,
+  gridVersion: number,
   onCustomClick: (gridCustom: GridCustomDto, pathIndex?: number) => void,
+  onCustomTextChange: (gridCustom: GridCustomDto, textModified: string) => void,
   pathSegments: GridPathSegmentDto[],
 ): ReactNode {
+  if (gridCustom.customEnum === GridCustomEnum.Edit) {
+    return (
+      <input
+        key={`${key}-${gridVersion}`}
+        type="text"
+        defaultValue={gridCustom.text}
+        onChange={(event) => onCustomTextChange(gridCustom, event.target.value)}
+      />
+    );
+  }
   if (gridCustom.customEnum === GridCustomEnum.Path) {
     return (
       <nav key={key} className="inline-flex items-center gap-1">
@@ -84,6 +97,7 @@ function gridCellContent(
   gridCell: GridCellDto,
   gridVersion: number,
   onCustomClick: (gridCustom: GridCustomDto, pathIndex?: number) => void,
+  onCustomTextChange: (gridCustom: GridCustomDto, textModified: string) => void,
   onTextChange: (gridCell: GridCellDto, textModified: string) => void,
   onSelectMultiChange: (rowIndex: number, checked: boolean) => void,
   isSelectedMulti: boolean[],
@@ -91,7 +105,9 @@ function gridCellContent(
 ): ReactNode {
   let content: ReactNode;
   if (gridCell.cellEnum === GridCellEnum.Custom) {
-    content = (gridCell.customs ?? []).map((gridCustom, index) => gridCustomContent(gridCustom, index, onCustomClick, pathSegments));
+    content = (gridCell.customs ?? []).map((gridCustom, index) =>
+      gridCustomContent(gridCustom, index, gridVersion, onCustomClick, onCustomTextChange, pathSegments),
+    );
   } else if (gridCell.cellEnum === GridCellEnum.Empty) {
     content = 'Empty';
   } else if (gridCell.cellEnum === GridCellEnum.Edit) {
@@ -138,6 +154,7 @@ export default function Grid({ path }: GridProps) {
   const gridRows = grid?.rows ?? [];
   const [rowIndexSelected, setRowIndexSelected] = useState(grid?.state?.selected);
   const [modifies, setModifies] = useState<GridModifyDto[]>(grid?.modifies ?? []);
+  const [customModifies, setCustomModifies] = useState<GridCustomModifyDto[]>(grid?.customModifies ?? []);
   // Read from the store (not local state) so it follows server changes, e.g. cleared after DeleteMulti.
   const isSelectedMulti = grid?.state?.isSelectedMulti ?? [];
 
@@ -179,6 +196,37 @@ export default function Grid({ path }: GridProps) {
 
       return [...filtered, modify];
     });
+  };
+
+  const handleCustomTextChange = (gridCustom: GridCustomDto, textModified: string) => {
+    setCustomModifies((prev) => {
+      const filtered = prev.filter(
+        (customModify) => !(customModify.customName === gridCustom.name && customModify.rowIndex === gridCustom.rowIndex),
+      );
+
+      if ((gridCustom.text ?? '') === textModified) {
+        return filtered;
+      }
+
+      const customModify: GridCustomModifyDto = { textModified };
+      if (gridCustom.name !== undefined) {
+        customModify.customName = gridCustom.name;
+      }
+      if (gridCustom.rowIndex !== undefined) {
+        customModify.rowIndex = gridCustom.rowIndex;
+      }
+      if (gridCustom.text !== undefined) {
+        customModify.text = gridCustom.text;
+      }
+
+      return [...filtered, customModify];
+    });
+  };
+
+  /** Sends a command with the current customModifies. Afterwards the GridCustomEnum.Edit inputs are re-rendered from GridCustomDto.text (gridVersion changes), so customModifies is cleared. */
+  const sendGridCommand = async (override: GridDto) => {
+    await sendCommand(path, { ...override, customModifies });
+    setCustomModifies([]);
   };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -236,7 +284,7 @@ export default function Grid({ path }: GridProps) {
       gridCommand.customName = gridCustom.name;
     }
 
-    await sendCommand(path, { command: gridCommand });
+    await sendGridCommand({ command: gridCommand });
   };
 
   const handleHeaderClick = async (gridCell: GridCellDto) => {
@@ -244,21 +292,21 @@ export default function Grid({ path }: GridProps) {
       return;
     }
     const gridCommand: GridCommandDto = { commandEnum: GridCommandEnum.SortClick, columnName: gridCell.columnName };
-    await sendCommand(path, { command: gridCommand });
+    await sendGridCommand({ command: gridCommand });
   };
 
   const handleReloadClick = async () => {
-    await sendCommand(path, { command: { commandEnum: GridCommandEnum.Reload } });
+    await sendGridCommand({ command: { commandEnum: GridCommandEnum.Reload } });
   };
 
   const handleSaveClick = async () => {
-    await sendCommand(path, { command: { commandEnum: GridCommandEnum.Save }, modifies });
+    await sendGridCommand({ command: { commandEnum: GridCommandEnum.Save }, modifies });
     // Saved: clear modifies so the next Save doesn't send (and e.g. insert) them again.
     setModifies([]);
   };
 
   const handleNewClick = async () => {
-    await sendCommand(path, { command: { commandEnum: GridCommandEnum.New }, modifies });
+    await sendGridCommand({ command: { commandEnum: GridCommandEnum.New }, modifies });
   };
 
   return (
@@ -285,6 +333,7 @@ export default function Grid({ path }: GridProps) {
                     gridCell,
                     gridVersion,
                     (gridCustom, pathIndex) => handleCustomClick(gridCell, gridCustom, pathIndex),
+                    handleCustomTextChange,
                     handleTextChange,
                     handleSelectMultiChange,
                     isSelectedMulti,
@@ -305,11 +354,6 @@ export default function Grid({ path }: GridProps) {
       <button type="button" onClick={() => void handleNewClick()} className={`${buttonPrimaryClassName} mt-2 ml-2`}>
         New
       </button>
-      {grid?.planes !== undefined && grid.planes.length > 0 && (
-        <div className="mt-4 border-l-2 border-gray-300 pl-4">
-          <Project path={[...path, 0]} />
-        </div>
-      )}
     </div>
   );
 }

@@ -1,5 +1,4 @@
 import { userSession } from './util-user.js';
-import { GridStateDto } from '../dto/shared/grid-dto.js';
 
 export const VERSION_SERVER = '1.18';
 
@@ -29,10 +28,6 @@ export function titleCase(text?: string): string | undefined {
     .split(' ')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
-}
-
-export function gridPath(state: GridStateDto): string {
-  return (state.pathSegments ?? []).map((pathSegment) => pathSegment.name ?? '').join('');
 }
 
 export function corsHeaders(request: Request): Record<string, string> {

@@ -1,8 +1,8 @@
 import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPatchDto, GridPlaneDto, gridPlaneGrids, GridRowDto, GridSortDto, gridStatePath } from '../dto/shared/grid-dto.js';
-import { titleCase } from './util-main.js';
+import { sectorKey, titleCase } from './util-main.js';
 import { projectsLoad, projectsLoadByNames, projectsUpdate, projectsInsert, projectsDeleteByNames } from './util-project.js';
 import { usersLoad, userProject } from './util-user.js';
-import { storageFiles, storageNew } from './util-storage.js';
+import { storageDelete, storageFiles, storageNew } from './util-storage.js';
 import { StorageFileDto } from '../dto/storage-file-dto.js';
 import { ProjectDto } from '../dto/project-dto.js';
 import { UserDto } from '../dto/user-dto.js';
@@ -355,6 +355,50 @@ async function gridLoadStorage(request: Request, gridDto: GridDto): Promise<Grid
     }
   }
 
+  // Dialogs (Delete confirmation or New Folder, opened by the buttons below) live at gridDto.planes[0].grids[0].
+  // A New Folder dialog carries GridStateDto.custom.path, a Delete confirmation GridStateDto.custom.rowKey.
+  const confirmGridDto = gridDto.planes?.[0]?.grids?.[0];
+  const newFolderPath = confirmGridDto?.state?.custom?.path;
+  if (confirmGridDto !== undefined && typeof newFolderPath === 'string') {
+    const folderName = (confirmGridDto.customModifies ?? [])
+      .find((customModify) => customModify.customName === 'FolderName')
+      ?.textModified?.trim();
+    if (gridIsCommand(confirmGridDto, 'Yes') && folderName !== undefined && folderName !== '') {
+      await storageNew(request, `${newFolderPath}${folderName}/`);
+    }
+    if (gridIsCommand(confirmGridDto, 'Yes') || gridIsCommand(confirmGridDto, 'Cancel')) {
+      gridDto.planes = undefined;
+    } else {
+      // Rows aren't sent back by the client: rebuild them (keeping the entered name) so the dialog stays visible across other commands.
+      gridDto.planes = [{ grids: [gridStorageNewFolder(newFolderPath, folderName)] }];
+    }
+  } else if (confirmGridDto !== undefined) {
+    if (gridIsCommand(confirmGridDto, 'Yes')) {
+      const rowKey = confirmGridDto.state?.custom?.rowKey;
+      if (typeof rowKey === 'string') {
+        await gridStorageDelete(request, rowKey);
+      }
+    }
+    if (gridIsCommand(confirmGridDto, 'Yes') || gridIsCommand(confirmGridDto, 'Cancel')) {
+      gridDto.planes = undefined;
+    } else {
+      // Rows aren't sent back by the client: rebuild them so the dialog stays visible across other commands.
+      gridDto.planes = [{ grids: [{ ...gridStorageDeleteConfirm(confirmGridDto.state?.custom?.rowKey), command: undefined }] }];
+    }
+  }
+
+  if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === 'Delete') {
+    const rowIndex = gridDto.command.rowIndex;
+    const rowKey = rowIndex !== undefined ? gridDto.state?.rowKeys?.[rowIndex] : undefined;
+    if (rowKey !== undefined) {
+      gridDto.planes = [{ grids: [gridStorageDeleteConfirm(rowKey)] }];
+    }
+  }
+
+  if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === 'NewFolder') {
+    gridDto.planes = [{ grids: [gridStorageNewFolder(gridStatePath(gridDto.state))] }];
+  }
+
   if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === 'Up') {
     const pathSegments = (gridDto.state?.pathSegments ?? []).slice(0, -1);
     gridDto.state = { ...gridDto.state, pathSegments };
@@ -393,7 +437,10 @@ async function gridLoadStorage(request: Request, gridDto: GridDto): Promise<Grid
       ),
       {
         cellEnum: GridCellEnum.Custom,
-        customs: [{ text: 'Select', name: 'Select', customEnum: GridCustomEnum.Button, rowIndex } satisfies GridCustomDto],
+        customs: [
+          { text: 'Select', name: 'Select', customEnum: GridCustomEnum.Button, rowIndex } satisfies GridCustomDto,
+          { text: 'Delete', name: 'Delete', customEnum: GridCustomEnum.Button, rowIndex } satisfies GridCustomDto,
+        ],
         rowIndex,
       },
     ],
@@ -414,7 +461,11 @@ async function gridLoadStorage(request: Request, gridDto: GridDto): Promise<Grid
     cells: [
       {
         cellEnum: GridCellEnum.Custom,
-        customs: [...pathCustoms, { text: 'Upload', name: 'Upload', customEnum: GridCustomEnum.ButtonUpload }],
+        customs: [
+          ...pathCustoms,
+          { text: 'New Folder', name: 'NewFolder', customEnum: GridCustomEnum.Button },
+          { text: 'Upload', name: 'Upload', customEnum: GridCustomEnum.ButtonUpload },
+        ],
       },
     ],
   };
@@ -450,6 +501,61 @@ async function gridStorageSaveInsert(request: Request, gridDto: GridDto): Promis
   for (const fileName of fileNames) {
     await storageNew(request, `${path}${fileName}`);
   }
+}
+
+/** Returns the "Delete item?" confirmation GridDto (Yes and Cancel buttons) carrying rowKey (a full blob pathname) in GridStateDto.custom. */
+function gridStorageDeleteConfirm(rowKey: unknown): GridDto {
+  const textRow: GridRowDto = {
+    cells: [{ cellEnum: GridCellEnum.Custom, customs: [{ customEnum: GridCustomEnum.Label, text: 'Delete item?' }] }],
+  };
+  const buttonRow: GridRowDto = {
+    cells: [
+      {
+        cellEnum: GridCellEnum.Custom,
+        customs: [
+          { customEnum: GridCustomEnum.Button, text: 'Yes', name: 'Yes' },
+          { customEnum: GridCustomEnum.Button, text: 'Cancel', name: 'Cancel' },
+        ],
+      },
+    ],
+  };
+  return { text: 'Confirmation', rows: [textRow, buttonRow], state: { custom: { rowKey } } };
+}
+
+/** Returns the "New Folder" dialog GridDto (Folder Name label and text box, Yes and Cancel buttons) carrying path (gridStatePath of the storage grid) in GridStateDto.custom. */
+function gridStorageNewFolder(path: string, folderName?: string): GridDto {
+  const nameRow: GridRowDto = {
+    cells: [
+      {
+        cellEnum: GridCellEnum.Custom,
+        customs: [
+          { customEnum: GridCustomEnum.Label, text: 'Folder Name' },
+          { customEnum: GridCustomEnum.Edit, name: 'FolderName', text: folderName ?? '' },
+        ],
+      },
+    ],
+  };
+  const buttonRow: GridRowDto = {
+    cells: [
+      {
+        cellEnum: GridCellEnum.Custom,
+        customs: [
+          { customEnum: GridCustomEnum.Button, text: 'Yes', name: 'Yes' },
+          { customEnum: GridCustomEnum.Button, text: 'Cancel', name: 'Cancel' },
+        ],
+      },
+    ],
+  };
+  return { text: 'New Folder', rows: [nameRow, buttonRow], state: { custom: { path } } };
+}
+
+/** Deletes rowKey (a full blob pathname; folders end with "/"). rowKey comes back from the client, so it must lie below the caller's sector key. */
+async function gridStorageDelete(request: Request, rowKey: string): Promise<void> {
+  const prefix = await sectorKey(request, true);
+  if (!rowKey.startsWith(prefix) || rowKey === prefix) {
+    throw new Error('Invalid file name!');
+  }
+  await storageDelete(request, '', [rowKey.slice(prefix.length)]);
 }
 
 /** Appends one empty, editable new row to gridDto. */

@@ -1,30 +1,18 @@
 import { useEffect, useState } from 'react';
 import Grid from '../Grid.tsx';
-import { useGridStore, type GridPlaneDto } from '../GridStore.tsx';
+import { resolveGrid, useGridStore, type GridPlaneDto } from '../GridStore.tsx';
 import { container } from '../style.ts';
 import { apiUrl } from './App.tsx';
 
-interface ProjectProps {
-  /** Address of this Project's grid pair within the recursive GridPlaneDto tree: [] at the root, or a path ending at a GridDto.planes entry when rendered recursively from Grid. */
-  path?: number[];
-}
-
-export default function Project({ path = [] }: ProjectProps) {
-  const { load } = useGridStore();
-  const isRoot = path.length === 0;
+export default function Project() {
+  const { gridPlaneDto, load } = useGridStore();
   const [storageJson, setStorageJson] = useState('');
 
   useEffect(() => {
-    if (isRoot) {
-      void load('project');
-    }
-  }, [load, isRoot]);
+    void load('project');
+  }, [load]);
 
   useEffect(() => {
-    if (!isRoot) {
-      return;
-    }
-
     const loadStorage = async () => {
       try {
         const response = await fetch(`${apiUrl}grid-load`, {
@@ -40,23 +28,24 @@ export default function Project({ path = [] }: ProjectProps) {
     };
 
     void loadStorage();
-  }, [isRoot]);
+  }, []);
 
-  const grids = (
-    <>
-      <Grid path={[...path, 0]} />
-      <Grid path={[...path, 1]} />
-    </>
-  );
-
-  if (!isRoot) {
-    return grids;
-  }
+  // Confirmation dialog, opened by the server at GridPlaneDto.grids[0].planes[0].grids[0].
+  const confirmPath = [0, 0, 0];
+  const isConfirm = resolveGrid(gridPlaneDto.grids, confirmPath) !== undefined;
 
   return (
     <div className={container}>
       <h1>Project</h1>
-      {grids}
+      <Grid path={[0]} />
+      <Grid path={[1]} />
+      {isConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 p-4" role="dialog" aria-modal="true">
+          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+            <Grid path={confirmPath} />
+          </div>
+        </div>
+      )}
       <p className="mt-4 break-words">{storageJson}</p>
     </div>
   );

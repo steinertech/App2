@@ -1,4 +1,4 @@
-import { put, head, issueSignedToken, presignUrl, list, createFolder, BlobNotFoundError } from '@vercel/blob';
+import { put, head, issueSignedToken, presignUrl, list, createFolder, BlobNotFoundError, del } from '@vercel/blob';
 import { sectorKey } from './util-main.js';
 import { StorageFileDto } from '../dto/storage-file-dto.js';
 
@@ -116,6 +116,37 @@ export async function storageNew(request: Request, path: string): Promise<void> 
 
   for (const folderPath of folderPaths) {
     await createFolder(folderPath, { access: 'private' });
+  }
+}
+
+/**
+ * Deletes every fileOrFolderNames entry of folder path (e.g. "a/b/", or "" for the root) below the sector key.
+ * - Folder name (ends with "/", e.g. "Docs/"): deletes the folder recursively, including its folder marker blob and everything below it.
+ * - File name (e.g. "my.txt"): deletes the file.
+ */
+export async function storageDelete(request: Request, path: string = '', fileOrFolderNames: string[]): Promise<void> {
+  const prefix = (await sectorKey(request, true)) + path;
+
+  const pathnames: string[] = [];
+  for (const fileOrFolderName of fileOrFolderNames.filter(Boolean)) {
+    if (!fileOrFolderName.endsWith('/')) {
+      pathnames.push(prefix + fileOrFolderName);
+      continue;
+    }
+
+    // Expanded mode (no folded) lists every blob below the folder, folder marker blobs of it and its sub-folders included.
+    let cursor: string | undefined;
+    do {
+      const result = await list({ prefix: prefix + fileOrFolderName, cursor });
+      pathnames.push(...result.blobs.map((blob) => blob.pathname));
+      cursor = result.hasMore ? result.cursor : undefined;
+    } while (cursor);
+  }
+
+  // Delete in chunks to keep each delete request small.
+  const chunkSize = 1000;
+  for (let index = 0; index < pathnames.length; index += chunkSize) {
+    await del(pathnames.slice(index, index + chunkSize));
   }
 }
 

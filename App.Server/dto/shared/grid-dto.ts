@@ -2,6 +2,7 @@ export enum GridCellEnum {
   None = 0,
   Edit = 1,
   Header = 2,
+  /** Renders GridCellDto.customs; each GridCustomDto.customEnum (GridCustomEnum) picks its widget. */
   Custom = 3,
   Search = 4,
   Empty = 5,
@@ -15,6 +16,8 @@ export enum GridCustomEnum {
   ButtonUpload = 3,
   /** Breadcrumb of GridStateDto.pathSegments; clicking a segment sends CustomButtonClick with pathIndex. */
   Path = 4,
+  /** Text box with initial value GridCustomDto.text; while its value differs from text, it has a GridDto.customModifies entry. */
+  Edit = 5,
 }
 
 export enum GridCommandEnum {
@@ -82,6 +85,15 @@ export interface GridModifyDto {
   isNew?: boolean;
 }
 
+/** Text of a GridCustomEnum.Edit changed by the user, identified by customName (GridCustomDto.name) and rowIndex. */
+export interface GridCustomModifyDto {
+  customName?: string;
+  rowIndex?: number;
+  /** Original GridCustomDto.text */
+  text?: string;
+  textModified?: string;
+}
+
 export interface GridPatchDto {
   name?: string;
   rowIndex?: number;
@@ -96,6 +108,8 @@ export interface GridStateDto {
   sort?: GridSortDto;
   pathSegments?: GridPathSegmentDto[];
   rowKeys?: string[];
+  /** Custom JSON data (e.g. a pending action), sent back to the server unchanged with every request. Values must be JSON serializable. */
+  custom?: Record<string, unknown>;
 }
 
 /** Returns the GridStateDto.pathSegments names joined with "/" plus a trailing "/" (e.g. "a/b/"), or "" if there are no segments. */
@@ -113,6 +127,7 @@ export interface GridDto {
   state?: GridStateDto;
   command?: GridCommandDto;
   modifies?: GridModifyDto[];
+  customModifies?: GridCustomModifyDto[];
   planes?: GridPlaneDto[];
   patches?: GridPatchDto[];
 }
