@@ -245,7 +245,7 @@ export default function Grid({ path }: GridProps) {
       path: gridStatePath(grid?.state),
       files: selectedFiles.map((file) => ({ fileName: file.name })),
     };
-    const response = await fetch(`${apiUrl}storage-upload2`, {
+    const response = await fetch(`${apiUrl}storage-upload`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(storageUploadCollectionDto),
