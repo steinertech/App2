@@ -14,7 +14,7 @@ SPA Application
 - Domain/my.com/Global/ (User, Project)
 - Domain/my.com/Project/mystore1/ (File)
 
-Note: Flag IsProject if true, access with login only.
+Note: Flag IsProject if true, access with sign-in only.
 
 # GridPlane
 ![GridPlane](GridPlane.png)

@@ -3,28 +3,28 @@ import { refreshUserSession, userRequest } from '../UserSession.tsx';
 import { UserRequestEnum } from '../../../App.Server/dto/shared/user-request-dto.ts';
 import { container } from '../style.ts';
 
-export default function UserLogout() {
+export default function UserSignOut() {
   const [result, setResult] = useState('');
 
   useEffect(() => {
     (async () => {
       try {
-        const response = await userRequest({ requestEnum: UserRequestEnum.Logout });
+        const response = await userRequest({ requestEnum: UserRequestEnum.SignOut });
         if (response.ok) {
-          setResult('You successfully logged out');
+          setResult('You successfully signed out');
           refreshUserSession();
         } else {
-          setResult('Error fetching user-logout');
+          setResult('Error fetching user-sign-out');
         }
       } catch {
-        setResult('Error fetching user-logout');
+        setResult('Error fetching user-sign-out');
       }
     })();
   }, []);
 
   return (
     <div className={container}>
-      <h1>User Logout</h1>
+      <h1>User Sign Out</h1>
       <label>{result}</label>
     </div>
   );

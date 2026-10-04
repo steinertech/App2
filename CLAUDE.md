@@ -48,7 +48,7 @@ Every file in `App.Server/api/` is a standalone Vercel function, mapped by filen
 Shared logic lives in `App.Server/util/` (not directly in `api/`):
 - `util-main.ts` — `VERSION_SERVER`, `domainName(request)`, `sectorKey(request, isProject)`, `corsHeaders(request, method)`, `jsonResponse(...)`, `apiHandler(method, handler)`
 - `util-db.ts` — the shared MongoDB `client` (via `@vercel/functions` `attachDatabasePool`)
-- `util-user.ts` — user register/login/session/logout
+- `util-user.ts` — user sign-up/sign-in/session/sign-out
 - `util-storage.ts` — blob upload/download via `@vercel/blob` (blob paths are prefixed with `sectorKey(request, true)`)
 
 DTOs (plain interfaces, not classes) live under `App.Server/dto/`, split by whether `App.Web` uses them:
@@ -69,17 +69,17 @@ All persisted DTOs (`UserDto`, `SessionDto`, `ProjectDto` — the ones with `_id
 - **Blob storage** — used as the path prefix for every blob (`util-storage.ts` builds `sectorKey(request, true) + path`), so files live under `Domain/<domainName>/Project/<projectName>/...`.
 
 The key takes one of two forms:
-- `Domain/<domainName>/Global/` when `isProject` is `false` (e.g. users, projects — looked up by domain, no login required)
-- `Domain/<domainName>/Project/<projectName>/` when `isProject` is `true` (e.g. blob files inside a project) — this branch also asserts the caller has a valid session (throws `'User not logged in!'` if not) and a selected project (`<projectName>` is the session's `projectName`, which mirrors `UserDto.projectName`; throws `'User has no project selected!'` if unset), so `isProject: true` is how login is enforced for a query or blob access.
+- `Domain/<domainName>/Global/` when `isProject` is `false` (e.g. users, projects — looked up by domain, no sign-in required)
+- `Domain/<domainName>/Project/<projectName>/` when `isProject` is `true` (e.g. blob files inside a project) — this branch also asserts the caller has a valid session (throws `'User not signed in!'` if not) and a selected project (`<projectName>` is the session's `projectName`, which mirrors `UserDto.projectName`; throws `'User has no project selected!'` if unset), so `isProject: true` is how sign-in is enforced for a query or blob access.
 
 Always build sector keys through `sectorKey(...)` rather than constructing the `Domain/.../Global|Project/` string manually.
 
 ### Session handling
-All user calls go through a single endpoint, `api/user.ts` (`/api/user`): App.Web always sends a `POST` with a `UserRequestDto` whose `requestEnum` (`UserRequestEnum` in `dto/shared/user-request-dto.ts`: `Register`, `Login`, `Logout`, `Session`) selects the operation; `None` or an unknown value returns 400. App.Web calls it through `userRequest(dto)` in `UserSession.tsx`. Responses (`UserResponseDto`) never include `sessionId`.
+All user calls go through a single endpoint, `api/user.ts` (`/api/user`): App.Web always sends a `POST` with a `UserRequestDto` whose `requestEnum` (`UserRequestEnum` in `dto/shared/user-request-dto.ts`: `SignUp`, `SignIn`, `SignOut`, `Session`) selects the operation; `None` or an unknown value returns 400. App.Web calls it through `userRequest(dto)` in `UserSession.tsx`. Responses (`UserResponseDto`) never include `sessionId`.
 
-Login (`UserRequestEnum.Login` → `userLogin`) sets an httpOnly `sessionId` cookie. `userSession(request)` (in `util-user.ts`) reads that cookie and looks up the matching `SessionDto` with `isLogin: true`. `userLogout` flips `isLogin` to `false` rather than deleting the session document.
+SignIn (`UserRequestEnum.SignIn` → `userSignIn`) sets an httpOnly `sessionId` cookie. `userSession(request)` (in `util-user.ts`) reads that cookie and looks up the matching `SessionDto` with `isSignIn: true`. `userSignOut` flips `isSignIn` to `false` rather than deleting the session document.
 
 ### App.Web routing and page structure
 `App.Web/src/main.tsx` defines all routes with `react-router-dom`'s `<Routes>`/`<Route>`, wrapped in a shared `<Layout>` (`Nav` + `UserSession` bar + `<Outlet>`). Any component mounted at a route `path` lives in `App.Web/src/page/`; shared/non-routed components (`Layout.tsx`, `Nav.tsx`, `Grid.tsx`, `UserSession.tsx`) stay directly in `App.Web/src/`. `apiUrl` (the `/api/` prefix used for all backend calls) is exported from `src/page/App.tsx`.
 
-`UserSession.tsx` polls `/api/user` (`UserRequestEnum.Session`) on mount and exposes `refreshUserSession()`, which dispatches a window event other components (e.g. after login/logout) use to force it to re-fetch.
+`UserSession.tsx` polls `/api/user` (`UserRequestEnum.Session`) on mount and exposes `refreshUserSession()`, which dispatches a window event other components (e.g. after sign-in/sign-out) use to force it to re-fetch.

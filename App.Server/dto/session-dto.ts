@@ -7,6 +7,6 @@ export interface SessionDto {
   projectName?: string;
   sectorKey?: string;
   type?: string;
-  isLogin?: boolean;
+  isSignIn?: boolean;
   sessionId?: string;
 }

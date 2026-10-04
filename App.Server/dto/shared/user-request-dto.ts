@@ -1,8 +1,8 @@
 export enum UserRequestEnum {
   None = 0,
-  Register = 1,
-  Login = 2,
-  Logout = 3,
+  SignUp = 1,
+  SignIn = 2,
+  SignOut = 3,
   Session = 4,
 }
 
