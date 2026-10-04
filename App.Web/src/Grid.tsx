@@ -30,7 +30,7 @@ function gridCellClassName(gridCell: GridCellDto, rowSelected: boolean): string 
   if (gridCell.cellEnum === GridCellEnum.Header) {
     return 'font-bold text-white bg-blue-600';
   }
-  if (gridCell.cellEnum === GridCellEnum.Search) {
+  if (gridCell.cellEnum === GridCellEnum.Search || gridCell.cellEnum === GridCellEnum.Empty) {
     return 'bg-blue-50';
   }
   if (rowSelected) {
@@ -109,7 +109,7 @@ function gridCellContent(
       gridCustomContent(gridCustom, index, gridVersion, onCustomClick, onCustomTextChange, pathSegments),
     );
   } else if (gridCell.cellEnum === GridCellEnum.Empty) {
-    content = 'Empty';
+    content = null;
   } else if (gridCell.cellEnum === GridCellEnum.Edit) {
     content = (
       <input
