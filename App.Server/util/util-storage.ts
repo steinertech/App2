@@ -31,6 +31,33 @@ export async function storageUploadUrls(request: Request, path: string = '', fil
   );
 }
 
+/** Returns one presigned GET url per fileNames entry (full blob pathnames, e.g. StorageFileDto.fileName). Each must lie below the sector key. Urls are valid for 5 minutes. */
+export async function storageDownloadUrls(request: Request, fileNames: string[]): Promise<string[]> {
+  const prefix = await sectorKey(request, true);
+  const validUntil = Date.now() + 5 * 60 * 1000;
+
+  return Promise.all(
+    fileNames.map(async (pathname) => {
+      // fileNames may come back from the client, so don't presign a blob outside the caller's sector key.
+      if (!pathname.startsWith(prefix) || pathname === prefix || pathname.endsWith('/')) {
+        throw new Error('Invalid file name!');
+      }
+      const signedToken = await issueSignedToken({
+        pathname,
+        operations: ['get'],
+        validUntil,
+      });
+      const { presignedUrl } = await presignUrl(signedToken, {
+        operation: 'get',
+        pathname,
+        access: 'private',
+        validUntil,
+      });
+      return presignedUrl;
+    }),
+  );
+}
+
 /** Lists the direct children of folder path (e.g. "a/b/", or "" for the root) below the sector key. path must end with "/" unless empty. */
 export async function storageFiles(request: Request, path: string = ''): Promise<StorageFileDto[]> {
   const prefix = (await sectorKey(request, true)) + path;

@@ -20,6 +20,8 @@ export enum GridCustomEnum {
   Path = 4,
   /** Text box with initial value GridCustomDto.text; while its value differs from text, it has a GridDto.customModifies entry. */
   Edit = 5,
+  /** Image with url GridCustomDto.imageUrl; GridCustomDto.text is its alt text. */
+  Image = 6,
 }
 
 export enum GridCommandEnum {
@@ -40,6 +42,8 @@ export interface GridCustomDto {
   rowIndex?: number;
   /** If true, render button as disabled */
   isDisabled?: boolean;
+  /** Url of a GridCustomEnum.Image */
+  imageUrl?: string;
 }
 
 export interface GridCommandDto {

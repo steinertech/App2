@@ -18,6 +18,8 @@ export default function Storage() {
     <div className={container}>
       <h1>Storage</h1>
       <Grid path={[0]} />
+      {/* Image Preview of the selected row, only returned by the server for a .jpg or .png file. */}
+      {gridPlaneDto.grids?.[1] !== undefined && <Grid path={[1]} />}
       {isModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 p-4" role="dialog" aria-modal="true">
           <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">

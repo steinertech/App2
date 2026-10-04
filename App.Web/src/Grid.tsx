@@ -90,6 +90,9 @@ function gridCustomContent(
   if (gridCustom.customEnum === GridCustomEnum.Label) {
     return <span key={key}>{gridCustom.text}</span>;
   }
+  if (gridCustom.customEnum === GridCustomEnum.Image) {
+    return <img key={key} src={gridCustom.imageUrl} alt={gridCustom.text ?? ''} className="max-w-full" />;
+  }
   return null;
 }
 

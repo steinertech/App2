@@ -3,7 +3,7 @@ import { AlertEnum } from '../dto/shared/alert-dto.js';
 import { alertAdd, sectorKey, titleCase } from './util-main.js';
 import { projectsLoad, projectsLoadByNames, projectsUpdate, projectsInsert, projectsDeleteByNames } from './util-project.js';
 import { usersLoad, userProject } from './util-user.js';
-import { storageDelete, storageFiles, storageNew, storageRename } from './util-storage.js';
+import { storageDelete, storageDownloadUrls, storageFiles, storageNew, storageRename } from './util-storage.js';
 import { StorageFileDto } from '../dto/storage-file-dto.js';
 import { ProjectDto } from '../dto/project-dto.js';
 import { UserDto } from '../dto/user-dto.js';
@@ -673,8 +673,33 @@ const PLANE_GRID_LOADERS: Record<string, GridLoader[]> = {
   storage: [gridLoadStorage],
 };
 
+/** Returns grids (as loaded by PLANE_GRID_LOADERS) plus any grid that depends on another grid of the plane, e.g. a detail grid of the selected row. */
+type GridPlaneLoader = (request: Request, grids: GridDto[]) => Promise<GridDto[]>;
+
+const PLANE_LOADERS: Record<string, GridPlaneLoader> = {
+  storage: gridLoadStoragePreview,
+};
+
+/** Adds the "Image Preview" grid (GridPlaneDto.grids[1]) if the selected row of the storage grid (grids[0]) is a .jpg or .png file. */
+async function gridLoadStoragePreview(request: Request, grids: GridDto[]): Promise<GridDto[]> {
+  const storageGridDto = grids[0];
+  const selected = storageGridDto?.state?.selected;
+  const rowKey = selected !== undefined ? storageGridDto?.state?.rowKeys?.[selected] : undefined;
+  if (storageGridDto === undefined || rowKey === undefined || !/\.(jpg|png)$/i.test(rowKey)) {
+    return grids;
+  }
+
+  const [imageUrl] = await storageDownloadUrls(request, [rowKey]);
+  const previewGridDto: GridDto = {
+    setting: { title: 'Image Preview' },
+    rows: [{ cells: [{ cellEnum: GridCellEnum.Custom, customs: [{ customEnum: GridCustomEnum.Image, imageUrl, text: rowKey.split('/').pop() }] }] }],
+  };
+  return [storageGridDto, previewGridDto];
+}
+
 export async function gridPlaneLoad(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
   const loaders = gridPlaneDto.planeName !== undefined ? (PLANE_GRID_LOADERS[gridPlaneDto.planeName] ?? []) : [];
+  const planeLoader = gridPlaneDto.planeName !== undefined ? PLANE_LOADERS[gridPlaneDto.planeName] : undefined;
   const incomingGrids = gridPlaneDto.grids ?? [];
 
   const grids = await Promise.all(
@@ -685,7 +710,7 @@ export async function gridPlaneLoad(request: Request, gridPlaneDto: GridPlaneDto
     }),
   );
 
-  return { grids };
+  return { grids: planeLoader !== undefined ? await planeLoader(request, grids) : grids };
 }
 
 type GridPatcher = (request: Request, gridDto: GridDto) => Promise<GridDto>;
