@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { apiUrl } from './App.tsx';
+import { userRequest } from '../UserSession.tsx';
+import { UserRequestEnum } from '../../../App.Server/dto/shared/user-request-dto.ts';
 import Grid from '../Grid.tsx';
 import { useGridStore } from '../GridStore.tsx';
 import { buttonPrimaryClassName, container, textInputClassName } from '../style.ts';
@@ -15,9 +16,7 @@ export default function Debug() {
 
   const handleSessionClick = async () => {
     try {
-      const response = await fetch(`${apiUrl}user-session`, {
-        credentials: 'include',
-      });
+      const response = await userRequest({ requestEnum: UserRequestEnum.Session });
       const data = await response.json();
       setResult(JSON.stringify(data, null, 2));
     } catch {

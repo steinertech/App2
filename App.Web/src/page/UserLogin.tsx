@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { apiUrl } from './App.tsx';
-import { refreshUserSession } from '../UserSession.tsx';
+import { refreshUserSession, userRequest } from '../UserSession.tsx';
+import { UserRequestEnum } from '../../../App.Server/dto/shared/user-request-dto.ts';
 import { buttonPrimaryClassName, container, textInputClassName } from '../style.ts';
 
 export default function UserLogin() {
@@ -10,12 +10,7 @@ export default function UserLogin() {
 
   const handleLoginClick = async () => {
     try {
-      const response = await fetch(`${apiUrl}user-login`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email, password }),
-      });
+      const response = await userRequest({ requestEnum: UserRequestEnum.Login, email, password });
       const data = await response.json();
       setResult(JSON.stringify(data, null, 2));
       if (response.ok) {

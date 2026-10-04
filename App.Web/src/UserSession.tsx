@@ -1,10 +1,20 @@
 import { useEffect, useState } from 'react';
 import { apiUrl } from './page/App.tsx';
+import { UserRequestEnum, type UserRequestDto } from '../../App.Server/dto/shared/user-request-dto.ts';
 
 const REFRESH_EVENT = 'user-session-refresh';
 
 export function refreshUserSession() {
   window.dispatchEvent(new Event(REFRESH_EVENT));
+}
+
+export function userRequest(dto: UserRequestDto) {
+  return fetch(`${apiUrl}user`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(dto),
+  });
 }
 
 export default function UserSession() {
@@ -15,7 +25,7 @@ export default function UserSession() {
   useEffect(() => {
     const fetchSession = async () => {
       try {
-        const response = await fetch(`${apiUrl}user-session`, { credentials: 'include' });
+        const response = await userRequest({ requestEnum: UserRequestEnum.Session });
         const data = await response.json();
         setDomainName(data?.domainName ?? '');
         setEmail(data?.email ?? '');

@@ -40,7 +40,7 @@ There is no test suite or linter configured in this repository.
 Vite only builds `App.Web`; `App.Server` has no build step.
 
 ### App.Server endpoint pattern
-Every file in `App.Server/api/` is a standalone Vercel function exporting `{ fetch(request: Request) }`, mapped by filename to `/api/<filename>` (e.g. `api/user-login.ts` → `/api/user-login`). Each handler:
+Every file in `App.Server/api/` is a standalone Vercel function exporting `{ fetch(request: Request) }`, mapped by filename to `/api/<filename>` (e.g. `api/user.ts` → `/api/user`). Each handler:
 1. Handles `OPTIONS` by returning 204 with `corsHeaders(request)`.
 2. Delegates business logic to a function in `App.Server/util/`.
 3. Returns a JSON `Response` with `corsHeaders(request)` merged into the headers.
@@ -75,9 +75,11 @@ The key takes one of two forms:
 Always build sector keys through `sectorKey(...)` rather than constructing the `Domain/.../Global|Project/` string manually.
 
 ### Session handling
-Login (`api/user-login.ts` → `userLogin`) sets an httpOnly `sessionId` cookie. `userSession(request)` (in `util-user.ts`) reads that cookie and looks up the matching `SessionDto` with `isLogin: true`. `userLogout` flips `isLogin` to `false` rather than deleting the session document.
+All user calls go through a single endpoint, `api/user.ts` (`/api/user`): App.Web always sends a `POST` with a `UserRequestDto` whose `requestEnum` (`UserRequestEnum` in `dto/shared/user-request-dto.ts`: `Register`, `Login`, `Logout`, `Session`) selects the operation; `None` or an unknown value returns 400. App.Web calls it through `userRequest(dto)` in `UserSession.tsx`. Responses (`UserResponseDto`) never include `sessionId`.
+
+Login (`UserRequestEnum.Login` → `userLogin`) sets an httpOnly `sessionId` cookie. `userSession(request)` (in `util-user.ts`) reads that cookie and looks up the matching `SessionDto` with `isLogin: true`. `userLogout` flips `isLogin` to `false` rather than deleting the session document.
 
 ### App.Web routing and page structure
 `App.Web/src/main.tsx` defines all routes with `react-router-dom`'s `<Routes>`/`<Route>`, wrapped in a shared `<Layout>` (`Nav` + `UserSession` bar + `<Outlet>`). Any component mounted at a route `path` lives in `App.Web/src/page/`; shared/non-routed components (`Layout.tsx`, `Nav.tsx`, `Grid.tsx`, `UserSession.tsx`) stay directly in `App.Web/src/`. `apiUrl` (the `/api/` prefix used for all backend calls) is exported from `src/page/App.tsx`.
 
-`UserSession.tsx` polls `/api/user-session` on mount and exposes `refreshUserSession()`, which dispatches a window event other components (e.g. after login/logout) use to force it to re-fetch.
+`UserSession.tsx` polls `/api/user` (`UserRequestEnum.Session`) on mount and exposes `refreshUserSession()`, which dispatches a window event other components (e.g. after login/logout) use to force it to re-fetch.

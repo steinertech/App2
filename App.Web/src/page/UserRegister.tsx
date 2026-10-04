@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { apiUrl } from './App.tsx';
+import { userRequest } from '../UserSession.tsx';
+import { UserRequestEnum } from '../../../App.Server/dto/shared/user-request-dto.ts';
 import { buttonPrimaryClassName, container, textInputClassName } from '../style.ts';
 
 export default function UserRegister() {
@@ -9,11 +10,7 @@ export default function UserRegister() {
 
   const handleRegisterClick = async () => {
     try {
-      const response = await fetch(`${apiUrl}user-register`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+      const response = await userRequest({ requestEnum: UserRequestEnum.Register, email, password });
       const data = await response.json();
       setResult(JSON.stringify(data, null, 2));
     } catch {
