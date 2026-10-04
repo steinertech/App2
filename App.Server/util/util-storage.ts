@@ -2,11 +2,11 @@ import { put, head, issueSignedToken, presignUrl, list, createFolder, BlobNotFou
 import { sectorKey } from './util-main.js';
 import { StorageFileDto } from '../dto/storage-file-dto.js';
 
-/** Returns one presigned PUT url per fileNames entry, for uploading into folder path (e.g. "a/b/", or "" for the root) below the sector key. Urls are valid for 5 minutes and accept files up to 1 MB. */
+/** Returns one presigned PUT url per fileNames entry, for uploading into folder path (e.g. "a/b/", or "" for the root) below the sector key. Urls are valid for 5 minutes and accept files up to 5 MB. */
 export async function storageUploadUrls(request: Request, path: string = '', fileNames: string[]): Promise<string[]> {
   const prefix = (await sectorKey(request, true)) + path;
   const validUntil = Date.now() + 5 * 60 * 1000;
-  const maximumSizeInBytes = 1024 * 1024;
+  const maximumSizeInBytes = 5 * 1024 * 1024;
 
   return Promise.all(
     fileNames.map(async (fileName) => {
