@@ -2,24 +2,6 @@ import { put, head, issueSignedToken, presignUrl, list, createFolder, BlobNotFou
 import { sectorKey } from './util-main.js';
 import { StorageFileDto } from '../dto/storage-file-dto.js';
 
-export async function storageUpload() {
-  const blob = await put('Domain/localhost/Global/a/b/c/d/readme.txt', 'Hello World!', { access: 'private', allowOverwrite: true });
-  return blob;
-}
-
-export async function storageDownload() {
-  const signedToken = await issueSignedToken({
-    pathname: 'my/readme.txt',
-    operations: ['get'],
-  });
-  const { presignedUrl } = await presignUrl(signedToken, {
-    operation: 'get',
-    pathname: 'my/readme.txt',
-    access: 'private',
-  });
-  return presignedUrl;
-}
-
 /** Returns one presigned PUT url per fileNames entry, for uploading into folder path (e.g. "a/b/", or "" for the root) below the sector key. Urls are valid for 5 minutes and accept files up to 1 MB. */
 export async function storageUploadUrls(request: Request, path: string = '', fileNames: string[]): Promise<string[]> {
   const prefix = (await sectorKey(request, true)) + path;

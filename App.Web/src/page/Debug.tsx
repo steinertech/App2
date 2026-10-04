@@ -7,32 +7,11 @@ import { buttonPrimaryClassName, container, textInputClassName } from '../style.
 export default function Debug() {
   const [email, setEmail] = useState('');
   const [result, setResult] = useState('');
-  const [downloadUrl, setDownloadUrl] = useState('');
   const { load } = useGridStore();
 
   useEffect(() => {
     void load('debug');
   }, [load]);
-
-  const handleUploadClick = async () => {
-    try {
-      const response = await fetch(`${apiUrl}storage-upload`);
-      const data = await response.json();
-      setResult(JSON.stringify(data, null, 2));
-    } catch {
-      setResult('Error fetching upload');
-    }
-  };
-
-  const handleDownloadClick = async () => {
-    try {
-      const response = await fetch(`${apiUrl}storage-download`);
-      const data = await response.json();
-      setDownloadUrl(data.url);
-    } catch {
-      setResult('Error fetching download');
-    }
-  };
 
   const handleSessionClick = async () => {
     try {
@@ -79,18 +58,7 @@ export default function Debug() {
           className={`${textInputClassName} ml-2`}
         />
       </label>
-      <button onClick={handleUploadClick} className={buttonPrimaryClassName}>
-        Upload
-      </button>
-      <button onClick={handleDownloadClick} className={`${buttonPrimaryClassName} mt-2`}>
-        Download
-      </button>
-      {downloadUrl && (
-        <a href={downloadUrl} target="_blank" rel="noreferrer" className="mt-2">
-          {downloadUrl}
-        </a>
-      )}
-      <button onClick={handleSessionClick} className={`${buttonPrimaryClassName} mt-2`}>
+      <button onClick={handleSessionClick} className={buttonPrimaryClassName}>
         Session
       </button>
       <button onClick={handleGridClick} className={`${buttonPrimaryClassName} mt-2`}>
