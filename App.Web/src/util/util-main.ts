@@ -1,5 +1,6 @@
 import { apiUrl } from '../page/App.tsx';
 import { ALERT_HEADER, type AlertDto, AlertEnum } from '../../../App.Server/dto/shared/alert-dto.ts';
+import { REDIRECT_HEADER } from '../../../App.Server/dto/shared/redirect-dto.ts';
 
 export const VERSION_CLIENT = '1.18';
 
@@ -20,7 +21,7 @@ export function setIsProgress(value: number) {
 /**
  * Calls backend endpoint `/api/<path>`; isProgress is increased by 1 for the duration of the call.
  * Alert messages sent by the backend (ALERT_HEADER) are added to the alert list, plus an Error alert if the status is not ok
- * or no response arrives at all (the error is rethrown).
+ * or no response arrives at all (the error is rethrown). A redirect url sent by the backend (REDIRECT_HEADER) is passed to redirect().
  */
 export async function apiFetch(path: string, init?: RequestInit) {
   setIsProgress(isProgress + 1);
@@ -44,6 +45,10 @@ export async function apiFetch(path: string, init?: RequestInit) {
       const status = [response.status, response.statusText].filter(Boolean).join(' ');
       addAlert(AlertEnum.Error, `Request ${path} failed (${status})`);
     }
+    const redirectHeader = response.headers.get(REDIRECT_HEADER);
+    if (redirectHeader !== null) {
+      redirect(decodeURIComponent(redirectHeader));
+    }
     return response;
   } finally {
     setIsProgress(isProgress - 1);
@@ -62,6 +67,13 @@ export function getAlertList() {
 export function addAlert(alertEnum: AlertEnum, text: string) {
   alertList = [...alertList, { alertEnum, text }];
   window.dispatchEvent(new Event(ALERT_EVENT));
+}
+
+export const REDIRECT_EVENT = 'redirect';
+
+/** Navigates to `url` (language neutral path such as '/'); NavState listens for REDIRECT_EVENT and adds the current language prefix. */
+export function redirect(url: string) {
+  window.dispatchEvent(new CustomEvent<string>(REDIRECT_EVENT, { detail: url }));
 }
 
 /** Removes the top alert message, so the next one is shown. */

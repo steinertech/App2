@@ -1,5 +1,15 @@
 import { useEffect, useState } from 'react';
-import { ALERT_EVENT, apiFetch, getAlertList, getIsProgress, PROGRESS_EVENT, removeAlert } from './util/util-main.ts';
+import { useLocation, useNavigate } from 'react-router-dom';
+import {
+  ALERT_EVENT,
+  apiFetch,
+  getAlertList,
+  getIsProgress,
+  PROGRESS_EVENT,
+  REDIRECT_EVENT,
+  removeAlert,
+} from './util/util-main.ts';
+import { languageFromPathname, withLanguagePrefix } from './util/util-i18n.ts';
 import { UserRequestEnum, type UserRequestDto } from '../../App.Server/dto/shared/user-request-dto.ts';
 import { AlertEnum } from '../../App.Server/dto/shared/alert-dto.ts';
 
@@ -63,6 +73,15 @@ export default function NavState() {
     window.addEventListener(ALERT_EVENT, updateAlertList);
     return () => window.removeEventListener(ALERT_EVENT, updateAlertList);
   }, []);
+
+  const navigate = useNavigate();
+  const language = languageFromPathname(useLocation().pathname);
+
+  useEffect(() => {
+    const handleRedirect = (event: Event) => navigate(withLanguagePrefix((event as CustomEvent<string>).detail, language));
+    window.addEventListener(REDIRECT_EVENT, handleRedirect);
+    return () => window.removeEventListener(REDIRECT_EVENT, handleRedirect);
+  }, [navigate, language]);
 
   const alert = alertList[0];
 

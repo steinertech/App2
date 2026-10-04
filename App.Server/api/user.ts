@@ -1,5 +1,5 @@
 import { signIn, signOut, signUp, userSession } from '../util/util-user.js';
-import { alertAdd, apiHandler, domainName, jsonResponse } from '../util/util-main.js';
+import { alertAdd, apiHandler, domainName, jsonResponse, redirectSet } from '../util/util-main.js';
 import { UserRequestEnum } from '../dto/shared/user-request-dto.js';
 import { AlertEnum } from '../dto/shared/alert-dto.js';
 import type { UserRequestDto, UserResponseDto } from '../dto/shared/user-request-dto.js';
@@ -21,6 +21,7 @@ export default apiHandler('POST', async (request) => {
       if (!sessionId) {
         return json({ success: false }, 401);
       }
+      redirectSet(request, '/');
       return json({ success: true }, 200, {
         'set-cookie': `sessionId=${sessionId}; HttpOnly; Path=/; Secure; SameSite=None`,
       });

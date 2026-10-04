@@ -1,5 +1,6 @@
 import { userSession } from './util-user.js';
 import { ALERT_HEADER, type AlertDto, type AlertEnum } from '../dto/shared/alert-dto.js';
+import { REDIRECT_HEADER } from '../dto/shared/redirect-dto.js';
 
 export const VERSION_SERVER = '1.18';
 
@@ -39,7 +40,7 @@ export function corsHeaders(request: Request, method: ApiMethod): Record<string,
     'Access-Control-Allow-Credentials': 'true',
     'Access-Control-Allow-Methods': `OPTIONS, ${method}`,
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Expose-Headers': ALERT_HEADER,
+    'Access-Control-Expose-Headers': `${ALERT_HEADER}, ${REDIRECT_HEADER}`,
   };
 }
 
@@ -52,6 +53,16 @@ export function alertAdd(request: Request, alertEnum: AlertEnum, text: string) {
   alertListByRequest.set(request, alertList);
 }
 
+const redirectUrlByRequest = new WeakMap<Request, string>();
+
+/**
+ * Sets the ONE url App.Web navigates to after this request (a later call overwrites an earlier one); apiHandler sends it.
+ * `url` is a language neutral App.Web path such as '/' (App.Web adds the current language prefix).
+ */
+export function redirectSet(request: Request, url: string) {
+  redirectUrlByRequest.set(request, url);
+}
+
 export function jsonResponse(body: unknown, status = 200, headers: Record<string, string> = {}): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -61,7 +72,8 @@ export function jsonResponse(body: unknown, status = 200, headers: Record<string
 
 /**
  * Wraps an api/ endpoint: answers OPTIONS with 204, rejects every method other than `method` with 405,
- * merges corsHeaders into the handler's response and sends alerts queued via alertAdd in the ALERT_HEADER.
+ * merges corsHeaders into the handler's response, sends alerts queued via alertAdd in the ALERT_HEADER
+ * and the url set via redirectSet in the REDIRECT_HEADER.
  * Export the result as the file's default.
  */
 export function apiHandler(method: ApiMethod, handler: (request: Request) => Response | Promise<Response>) {
@@ -81,6 +93,10 @@ export function apiHandler(method: ApiMethod, handler: (request: Request) => Res
       const alertList = alertListByRequest.get(request);
       if (alertList?.length) {
         response.headers.set(ALERT_HEADER, encodeURIComponent(JSON.stringify(alertList)));
+      }
+      const redirectUrl = redirectUrlByRequest.get(request);
+      if (redirectUrl !== undefined) {
+        response.headers.set(REDIRECT_HEADER, encodeURIComponent(redirectUrl));
       }
       return response;
     },

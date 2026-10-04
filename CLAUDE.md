@@ -77,6 +77,9 @@ Always build sector keys through `sectorKey(...)` rather than constructing the `
 ### Alert messages
 Any backend code with access to the `request` can call `alertAdd(request, AlertEnum.Success | Info | Warning | Error, text)` (`util-main.ts`; `AlertEnum`/`AlertDto` in `dto/shared/alert-dto.ts`). `apiHandler` sends the queued alerts in the `x-alert-list` response header (`ALERT_HEADER`, URI-encoded JSON `AlertDto[]`), so response bodies are unaffected. On App.Web, `apiFetch` (`src/util/util-main.ts`) reads that header and calls `addAlert(...)`; `NavState` shows the top alert with a close button (`removeAlert()`) and a count of open alerts. Frontend-only alerts can be added with `addAlert(...)` directly.
 
+### Redirect url
+The same way, backend code can call `redirectSet(request, url)` (`util-main.ts`) to make App.Web navigate after the call. Only ONE url per request (a later call overwrites an earlier one); `url` is a language neutral App.Web path such as `'/'`. `apiHandler` sends it in the `x-redirect-url` response header (`REDIRECT_HEADER` in `dto/shared/redirect-dto.ts`, URI-encoded). `apiFetch` reads it and calls `redirect(url)`, which dispatches a window event; `NavState` (inside the router) navigates there, adding the current language prefix (`/de`). Used e.g. after a successful SignIn to go to the Home page.
+
 ### Session handling
 All user calls go through a single endpoint, `api/user.ts` (`/api/user`): App.Web always sends a `POST` with a `UserRequestDto` whose `requestEnum` (`UserRequestEnum` in `dto/shared/user-request-dto.ts`: `SignUp`, `SignIn`, `SignOut`, `Session`) selects the operation; `None` or an unknown value returns 400. App.Web calls it through `userRequest(dto)` in `NavState.tsx`. Responses (`UserResponseDto`) never include `sessionId`.
 
