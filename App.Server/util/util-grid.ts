@@ -2,7 +2,7 @@ import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEn
 import { titleCase } from './util-main.js';
 import { projectsLoad, projectsLoadByNames, projectsUpdate, projectsInsert, projectsDeleteByNames } from './util-project.js';
 import { usersLoad, userProject } from './util-user.js';
-import { storageFiles } from './util-storage.js';
+import { storageFiles, storageNew } from './util-storage.js';
 import { StorageFileDto } from '../dto/storage-file-dto.js';
 import { ProjectDto } from '../dto/project-dto.js';
 import { UserDto } from '../dto/user-dto.js';
@@ -369,6 +369,10 @@ async function gridLoadStorage(request: Request, gridDto: GridDto): Promise<Grid
     }
   }
 
+  if (gridDto.command?.commandEnum === GridCommandEnum.Save) {
+    await gridStorageSaveInsert(request, gridDto);
+  }
+
   const files =await storageFiles(request, gridStatePath(gridDto.state));
 
   const headerRow: GridRowDto = {
@@ -415,14 +419,54 @@ async function gridLoadStorage(request: Request, gridDto: GridDto): Promise<Grid
     ],
   };
 
-  return {
+  const result: GridDto = {
     ...gridDto,
     text: 'Storage Data',
     rows: [toolbarRow, headerRow, findRow, ...fileRows],
     state: { ...gridDto.state, rowKeys },
-    // Command is transient: clear it so it isn't re-processed on a later request.
-    command: undefined,
   };
+
+  if (gridDto.command?.commandEnum === GridCommandEnum.New) {
+    gridStorageNew(result);
+  }
+
+  // Command is transient: clear it so it isn't re-processed on a later request.
+  result.command = undefined;
+
+  return result;
+}
+
+/** Creates one folder (in the current path) per new row whose fileNameOnly cell was filled in. */
+async function gridStorageSaveInsert(request: Request, gridDto: GridDto): Promise<void> {
+  const path = gridStatePath(gridDto.state);
+  const folderNames = (gridDto.modifies ?? [])
+    .filter((modify) => modify.isNew && modify.cellEnum === GridCellEnum.Edit && modify.columnName === 'fileNameOnly')
+    .map((modify) => modify.textModified?.trim())
+    .filter((folderName): folderName is string => folderName !== undefined && folderName !== '');
+
+  for (const folderName of folderNames) {
+    await storageNew(request, `${path}${folderName}/`);
+  }
+}
+
+/** Appends one empty, editable new row to gridDto. */
+function gridStorageNew(gridDto: GridDto): void {
+  const rows = gridDto.rows ?? [];
+  const rowIndex = rows.length;
+
+  const newRow: GridRowDto = {
+    cells: (STORAGE_FILE_COLUMNS.columns ?? []).map(
+      (column): GridCellDto => ({
+        cellEnum: GridCellEnum.Edit,
+        columnName: column.columnName,
+        placeHolder: 'New',
+        rowIndex,
+        isNew: true,
+      }),
+    ),
+  };
+
+  gridDto.rows = [...rows, newRow];
 }
 
 type GridLoader = (request: Request, gridDto: GridDto) => Promise<GridDto>;

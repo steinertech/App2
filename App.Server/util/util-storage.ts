@@ -1,4 +1,4 @@
-import { put, issueSignedToken, presignUrl, list } from '@vercel/blob';
+import { put, head, issueSignedToken, presignUrl, list, createFolder, BlobNotFoundError } from '@vercel/blob';
 import { sectorKey } from './util-main.js';
 import { StorageFileDto } from '../dto/storage-file-dto.js';
 
@@ -79,4 +79,53 @@ export async function storageFiles(request: Request, path: string = ''): Promise
     }));
 
   return [...folders, ...files];
+}
+
+/**
+ * Creates path below the sector key.
+ * - Folder path (ends with "/", e.g. "a/b/"): creates one folder per segment (here "a/" and "a/b/"). Throws if any of them already exists.
+ * - File path (e.g. "a/b/my.txt"): creates the empty file "my.txt" in folder "a/b/". Throws if the file already exists.
+ */
+export async function storageNew(request: Request, path: string): Promise<void> {
+  const prefix = await sectorKey(request, true);
+
+  const segments = path.split('/').filter(Boolean);
+  if (segments.length === 0) {
+    throw new Error('Path is empty!');
+  }
+
+  if (!path.endsWith('/')) {
+    const filePath = prefix + segments.join('/');
+    if (await storageFileExists(filePath)) {
+      throw new Error('File already exists!');
+    }
+    await put(filePath, '', { access: 'private', addRandomSuffix: false });
+    return;
+  }
+
+  // One folder marker blob (pathname with trailing slash) per level, so each folder exists on its own.
+  const folderPaths = segments.map((_, index) => prefix + segments.slice(0, index + 1).join('/') + '/');
+
+  // Check every segment before creating any, so an error doesn't leave a partially created path behind.
+  // A folder exists if anything (its marker blob or any child) is stored below it.
+  const existList = await Promise.all(folderPaths.map(async (folderPath) => (await list({ prefix: folderPath, limit: 1 })).blobs.length > 0));
+  if (existList.some(Boolean)) {
+    throw new Error('Folder already exists!');
+  }
+
+  for (const folderPath of folderPaths) {
+    await createFolder(folderPath, { access: 'private' });
+  }
+}
+
+async function storageFileExists(pathname: string): Promise<boolean> {
+  try {
+    await head(pathname);
+    return true;
+  } catch (error) {
+    if (error instanceof BlobNotFoundError) {
+      return false;
+    }
+    throw error;
+  }
 }
