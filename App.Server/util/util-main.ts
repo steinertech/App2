@@ -30,11 +30,43 @@ export function titleCase(text?: string): string | undefined {
     .join(' ');
 }
 
-export function corsHeaders(request: Request): Record<string, string> {
+export type ApiMethod = 'GET' | 'POST';
+
+export function corsHeaders(request: Request, method: ApiMethod): Record<string, string> {
   return {
     'Access-Control-Allow-Origin': request.headers.get('origin') ?? '*',
     'Access-Control-Allow-Credentials': 'true',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Methods': `OPTIONS, ${method}`,
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  };
+}
+
+export function jsonResponse(body: unknown, status = 200, headers: Record<string, string> = {}): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'content-type': 'application/json', ...headers },
+  });
+}
+
+/**
+ * Wraps an api/ endpoint: answers OPTIONS with 204, rejects every method other than `method` with 405,
+ * and merges corsHeaders into the handler's response. Export the result as the file's default.
+ */
+export function apiHandler(method: ApiMethod, handler: (request: Request) => Response | Promise<Response>) {
+  return {
+    async fetch(request: Request): Promise<Response> {
+      const cors = corsHeaders(request, method);
+      if (request.method === 'OPTIONS') {
+        return new Response(null, { status: 204, headers: cors });
+      }
+      if (request.method !== method) {
+        return new Response(null, { status: 405, headers: { allow: `OPTIONS, ${method}`, ...cors } });
+      }
+      const response = await handler(request);
+      for (const [name, value] of Object.entries(cors)) {
+        response.headers.set(name, value);
+      }
+      return response;
+    },
   };
 }

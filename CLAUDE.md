@@ -40,13 +40,13 @@ There is no test suite or linter configured in this repository.
 Vite only builds `App.Web`; `App.Server` has no build step.
 
 ### App.Server endpoint pattern
-Every file in `App.Server/api/` is a standalone Vercel function exporting `{ fetch(request: Request) }`, mapped by filename to `/api/<filename>` (e.g. `api/user.ts` → `/api/user`). Each handler:
-1. Handles `OPTIONS` by returning 204 with `corsHeaders(request)`.
-2. Delegates business logic to a function in `App.Server/util/`.
-3. Returns a JSON `Response` with `corsHeaders(request)` merged into the headers.
+Every file in `App.Server/api/` is a standalone Vercel function, mapped by filename to `/api/<filename>` (e.g. `api/user.ts` → `/api/user`). Each file's default export is `apiHandler(method, handler)` from `util-main.ts` (it returns the `{ fetch(request) }` object Vercel expects):
+1. `method` is the single HTTP method the endpoint accepts: `'POST'` for every endpoint except `api/version.ts` and `api/index.ts` (the plain-text page at the server root), which are `'GET'`. `apiHandler` answers `OPTIONS` with 204, rejects any other method with 405 (plus an `Allow` header), and merges `corsHeaders(request, method)` into every response — handlers never deal with OPTIONS or CORS themselves.
+2. `handler` delegates business logic to a function in `App.Server/util/`.
+3. `handler` returns its result via `jsonResponse(body, status?, headers?)`.
 
 Shared logic lives in `App.Server/util/` (not directly in `api/`):
-- `util-main.ts` — `VERSION_SERVER`, `domainName(request)`, `sectorKey(request, isProject)`, `corsHeaders(request)`
+- `util-main.ts` — `VERSION_SERVER`, `domainName(request)`, `sectorKey(request, isProject)`, `corsHeaders(request, method)`, `jsonResponse(...)`, `apiHandler(method, handler)`
 - `util-db.ts` — the shared MongoDB `client` (via `@vercel/functions` `attachDatabasePool`)
 - `util-user.ts` — user register/login/session/logout
 - `util-storage.ts` — blob upload/download via `@vercel/blob` (blob paths are prefixed with `sectorKey(request, true)`)

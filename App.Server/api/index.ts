@@ -1,13 +1,3 @@
-import { VERSION_SERVER, corsHeaders } from '../util/util-main.js';
+import { VERSION_SERVER, apiHandler } from '../util/util-main.js';
 
-export default {
-  fetch(request: Request): Response {
-    if (request.method === 'OPTIONS') {
-      return new Response(null, { status: 204, headers: corsHeaders(request) });
-    }
-
-    return new Response(`App Version ${VERSION_SERVER}`, {
-      headers: corsHeaders(request),
-    });
-  },
-};
+export default apiHandler('GET', () => new Response(`App Version ${VERSION_SERVER}`));
