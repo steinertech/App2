@@ -7,7 +7,7 @@ import { getIsSignIn, SIGN_IN_EVENT } from './NavState.tsx';
 // Sign Up is linked from the Sign In page.
 const linkList: { to: string; key: string; label: string; isSignIn?: boolean }[] = [
   { to: '/', key: 'home', label: 'Home' },
-  { to: '/storage', key: 'storage', label: 'Storage' },
+  { to: '/storage', key: 'storage', label: 'Storage', isSignIn: true },
   { to: '/project', key: 'project', label: 'Project' },
   { to: '/debug', key: 'debug', label: 'Debug' },
   { to: '/sign-out', key: 'sign-out', label: 'Sign Out', isSignIn: true },
