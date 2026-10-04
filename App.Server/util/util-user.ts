@@ -4,7 +4,7 @@ import { UserDto } from '../dto/user-dto.js';
 import { SessionDto } from '../dto/session-dto.js';
 import { domainName, sectorKey } from './util-main.js';
 
-export async function userSignUp(request: Request, email: string, password: string) {
+export async function signUp(request: Request, email: string, password: string) {
   const collection = client.db().collection<UserDto>('myCollection');
 
   await collection.insertOne({
@@ -16,7 +16,7 @@ export async function userSignUp(request: Request, email: string, password: stri
   });
 }
 
-export async function userSignIn(request: Request, email: string, password: string) {
+export async function signIn(request: Request, email: string, password: string) {
   const userCollection = client.db().collection<UserDto>('myCollection');
 
   const user = await userCollection.findOne({
@@ -73,7 +73,7 @@ export async function usersLoad(request: Request): Promise<UserDto[]> {
   return collection.find({ sectorKey: key, type: 'UserDto' }).toArray();
 }
 
-export async function userSignOut(request: Request) {
+export async function signOut(request: Request) {
   const dto = await userSession(request);
   if (dto) {
     dto.isSignIn = false;

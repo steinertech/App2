@@ -1,4 +1,4 @@
-import { userSignIn, userSignOut, userSignUp, userSession } from '../util/util-user.js';
+import { signIn, signOut, signUp, userSession } from '../util/util-user.js';
 import { alertAdd, apiHandler, domainName, jsonResponse } from '../util/util-main.js';
 import { UserRequestEnum } from '../dto/shared/user-request-dto.js';
 import { AlertEnum } from '../dto/shared/alert-dto.js';
@@ -12,12 +12,12 @@ export default apiHandler('POST', async (request) => {
 
   switch (requestEnum) {
     case UserRequestEnum.SignUp: {
-      await userSignUp(request, email ?? '', password ?? '');
+      await signUp(request, email ?? '', password ?? '');
       alertAdd(request, AlertEnum.Success, 'You successfully signed up. Welcome!');
       return json({ success: true });
     }
     case UserRequestEnum.SignIn: {
-      const sessionId = await userSignIn(request, email ?? '', password ?? '');
+      const sessionId = await signIn(request, email ?? '', password ?? '');
       if (!sessionId) {
         return json({ success: false }, 401);
       }
@@ -26,7 +26,7 @@ export default apiHandler('POST', async (request) => {
       });
     }
     case UserRequestEnum.SignOut: {
-      await userSignOut(request);
+      await signOut(request);
       alertAdd(request, AlertEnum.Success, 'You successfully signed out');
       // Never echo the SessionDto (it carries sessionId, which is an HttpOnly cookie).
       return json({ success: true });

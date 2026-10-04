@@ -7,9 +7,9 @@ const links = [
   { to: '/storage', key: 'storage', label: 'Storage' },
   { to: '/project', key: 'project', label: 'Project' },
   { to: '/debug', key: 'debug', label: 'Debug' },
-  { to: '/user-sign-up', key: 'user-sign-up', label: 'Sign Up' },
-  { to: '/user-sign-out', key: 'user-sign-out', label: 'Sign Out' },
-  { to: '/user-sign-in', key: 'user-sign-in', label: 'Sign In' },
+  { to: '/sign-up', key: 'sign-up', label: 'Sign Up' },
+  { to: '/sign-out', key: 'sign-out', label: 'Sign Out' },
+  { to: '/sign-in', key: 'sign-in', label: 'Sign In' },
   { to: '/about', key: 'about', label: 'About' },
 ];
 

@@ -3,7 +3,7 @@ import { refreshNavState, userRequest } from '../NavState.tsx';
 import { UserRequestEnum } from '../../../App.Server/dto/shared/user-request-dto.ts';
 import { container } from '../style.ts';
 
-export default function UserSignOut() {
+export default function SignOut() {
   const [result, setResult] = useState('');
 
   useEffect(() => {
@@ -14,10 +14,10 @@ export default function UserSignOut() {
           // Success message is sent by the backend as an alert (shown in NavState).
           refreshNavState();
         } else {
-          setResult('Error fetching user-sign-out');
+          setResult('Error fetching sign-out');
         }
       } catch {
-        setResult('Error fetching user-sign-out');
+        setResult('Error fetching sign-out');
       }
     })();
   }, []);

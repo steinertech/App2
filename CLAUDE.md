@@ -80,7 +80,7 @@ Any backend code with access to the `request` can call `alertAdd(request, AlertE
 ### Session handling
 All user calls go through a single endpoint, `api/user.ts` (`/api/user`): App.Web always sends a `POST` with a `UserRequestDto` whose `requestEnum` (`UserRequestEnum` in `dto/shared/user-request-dto.ts`: `SignUp`, `SignIn`, `SignOut`, `Session`) selects the operation; `None` or an unknown value returns 400. App.Web calls it through `userRequest(dto)` in `NavState.tsx`. Responses (`UserResponseDto`) never include `sessionId`.
 
-SignIn (`UserRequestEnum.SignIn` → `userSignIn`) sets an httpOnly `sessionId` cookie. `userSession(request)` (in `util-user.ts`) reads that cookie and looks up the matching `SessionDto` with `isSignIn: true`. `userSignOut` flips `isSignIn` to `false` rather than deleting the session document.
+SignIn (`UserRequestEnum.SignIn` → `signIn`) sets an httpOnly `sessionId` cookie. `userSession(request)` (in `util-user.ts`) reads that cookie and looks up the matching `SessionDto` with `isSignIn: true`. `signOut` flips `isSignIn` to `false` rather than deleting the session document.
 
 ### App.Web routing and page structure
 `App.Web/src/main.tsx` defines all routes with `react-router-dom`'s `<Routes>`/`<Route>`, wrapped in a shared `<Layout>` (`Nav` + `NavState` bar + `<Outlet>`). Any component mounted at a route `path` lives in `App.Web/src/page/`; shared/non-routed components (`Layout.tsx`, `Nav.tsx`, `Grid.tsx`, `NavState.tsx`) stay directly in `App.Web/src/`. `apiUrl` (the `/api/` prefix used for all backend calls) is exported from `src/page/App.tsx`.
