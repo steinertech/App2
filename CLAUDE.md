@@ -46,7 +46,7 @@ Every file in `App.Server/api/` is a standalone Vercel function, mapped by filen
 3. `handler` returns its result via `jsonResponse(body, status?, headers?)`.
 
 Shared logic lives in `App.Server/util/` (not directly in `api/`):
-- `util-main.ts` — `VERSION_SERVER`, `domainName(request)`, `sectorKey(request, isProject)`, `corsHeaders(request, method)`, `jsonResponse(...)`, `apiHandler(method, handler)`
+- `util-main.ts` — `VERSION_SERVER`, `domainName(request)`, `sectorKey(request, isProject)`, `corsHeaders(request, method)`, `jsonResponse(...)`, `apiHandler(method, handler)`, `alertAdd(request, alertEnum, text)`
 - `util-db.ts` — the shared MongoDB `client` (via `@vercel/functions` `attachDatabasePool`)
 - `util-user.ts` — user sign-up/sign-in/session/sign-out
 - `util-storage.ts` — blob upload/download via `@vercel/blob` (blob paths are prefixed with `sectorKey(request, true)`)
@@ -73,6 +73,9 @@ The key takes one of two forms:
 - `Domain/<domainName>/Project/<projectName>/` when `isProject` is `true` (e.g. blob files inside a project) — this branch also asserts the caller has a valid session (throws `'User not signed in!'` if not) and a selected project (`<projectName>` is the session's `projectName`, which mirrors `UserDto.projectName`; throws `'User has no project selected!'` if unset), so `isProject: true` is how sign-in is enforced for a query or blob access.
 
 Always build sector keys through `sectorKey(...)` rather than constructing the `Domain/.../Global|Project/` string manually.
+
+### Alert messages
+Any backend code with access to the `request` can call `alertAdd(request, AlertEnum.Success | Info | Warning | Error, text)` (`util-main.ts`; `AlertEnum`/`AlertDto` in `dto/shared/alert-dto.ts`). `apiHandler` sends the queued alerts in the `x-alert-list` response header (`ALERT_HEADER`, URI-encoded JSON `AlertDto[]`), so response bodies are unaffected. On App.Web, `apiFetch` (`src/util/util-main.ts`) reads that header and calls `addAlert(...)`; `NavState` shows the top alert with a close button (`removeAlert()`) and a count of open alerts. Frontend-only alerts can be added with `addAlert(...)` directly.
 
 ### Session handling
 All user calls go through a single endpoint, `api/user.ts` (`/api/user`): App.Web always sends a `POST` with a `UserRequestDto` whose `requestEnum` (`UserRequestEnum` in `dto/shared/user-request-dto.ts`: `SignUp`, `SignIn`, `SignOut`, `Session`) selects the operation; `None` or an unknown value returns 400. App.Web calls it through `userRequest(dto)` in `NavState.tsx`. Responses (`UserResponseDto`) never include `sessionId`.

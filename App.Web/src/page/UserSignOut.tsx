@@ -11,7 +11,7 @@ export default function UserSignOut() {
       try {
         const response = await userRequest({ requestEnum: UserRequestEnum.SignOut });
         if (response.ok) {
-          setResult('You successfully signed out');
+          // Success message is sent by the backend as an alert (shown in NavState).
           refreshNavState();
         } else {
           setResult('Error fetching user-sign-out');

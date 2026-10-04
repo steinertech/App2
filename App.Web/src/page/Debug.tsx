@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { userRequest } from '../NavState.tsx';
-import { getIsProgress, setIsProgress } from '../util/util-main.ts';
+import { addAlert, getIsProgress, setIsProgress } from '../util/util-main.ts';
 import { UserRequestEnum } from '../../../App.Server/dto/shared/user-request-dto.ts';
+import { AlertEnum } from '../../../App.Server/dto/shared/alert-dto.ts';
 import Grid from '../Grid.tsx';
 import { useGridStore } from '../GridStore.tsx';
 import { buttonPrimaryClassName, container, textInputClassName } from '../style.ts';
@@ -58,6 +59,12 @@ export default function Debug() {
       </button>
       <button onClick={handleProgressClick} className={`${buttonPrimaryClassName} mt-2`}>
         Progress
+      </button>
+      <button onClick={() => addAlert(AlertEnum.Success, 'Data has ben saved.')} className={`${buttonPrimaryClassName} mt-2`}>
+        Success
+      </button>
+      <button onClick={() => addAlert(AlertEnum.Error, 'Hello error!')} className={`${buttonPrimaryClassName} mt-2`}>
+        Error
       </button>
       <label className="mt-4 whitespace-pre-wrap">{result}</label>
       <div className="mt-4">

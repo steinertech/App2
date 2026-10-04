@@ -1,5 +1,6 @@
 import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPatchDto, GridPlaneDto, gridPlaneGrids, GridRowDto, GridSortDto, gridStatePath } from '../dto/shared/grid-dto.js';
-import { sectorKey, titleCase } from './util-main.js';
+import { AlertEnum } from '../dto/shared/alert-dto.js';
+import { alertAdd, sectorKey, titleCase } from './util-main.js';
 import { projectsLoad, projectsLoadByNames, projectsUpdate, projectsInsert, projectsDeleteByNames } from './util-project.js';
 import { usersLoad, userProject } from './util-user.js';
 import { storageDelete, storageFiles, storageNew, storageRename } from './util-storage.js';
@@ -122,6 +123,7 @@ async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<Grid
       const projectName = gridDto.state?.rowKeys?.[rowIndex];
       if (projectName !== undefined) {
         await userProject(request, projectName);
+        alertAdd(request, AlertEnum.Success, `You switched to project ${projectName}!`);
       }
     }
   }

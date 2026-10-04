@@ -1,4 +1,5 @@
 import { userSession } from './util-user.js';
+import { ALERT_HEADER, type AlertDto, type AlertEnum } from '../dto/shared/alert-dto.js';
 
 export const VERSION_SERVER = '1.18';
 
@@ -38,7 +39,17 @@ export function corsHeaders(request: Request, method: ApiMethod): Record<string,
     'Access-Control-Allow-Credentials': 'true',
     'Access-Control-Allow-Methods': `OPTIONS, ${method}`,
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Expose-Headers': ALERT_HEADER,
   };
+}
+
+const alertListByRequest = new WeakMap<Request, AlertDto[]>();
+
+/** Queues an alert message; apiHandler sends it to App.Web, which shows it in NavState. Works from any api/ endpoint. */
+export function alertAdd(request: Request, alertEnum: AlertEnum, text: string) {
+  const alertList = alertListByRequest.get(request) ?? [];
+  alertList.push({ alertEnum, text });
+  alertListByRequest.set(request, alertList);
 }
 
 export function jsonResponse(body: unknown, status = 200, headers: Record<string, string> = {}): Response {
@@ -50,7 +61,8 @@ export function jsonResponse(body: unknown, status = 200, headers: Record<string
 
 /**
  * Wraps an api/ endpoint: answers OPTIONS with 204, rejects every method other than `method` with 405,
- * and merges corsHeaders into the handler's response. Export the result as the file's default.
+ * merges corsHeaders into the handler's response and sends alerts queued via alertAdd in the ALERT_HEADER.
+ * Export the result as the file's default.
  */
 export function apiHandler(method: ApiMethod, handler: (request: Request) => Response | Promise<Response>) {
   return {
@@ -65,6 +77,10 @@ export function apiHandler(method: ApiMethod, handler: (request: Request) => Res
       const response = await handler(request);
       for (const [name, value] of Object.entries(cors)) {
         response.headers.set(name, value);
+      }
+      const alertList = alertListByRequest.get(request);
+      if (alertList?.length) {
+        response.headers.set(ALERT_HEADER, encodeURIComponent(JSON.stringify(alertList)));
       }
       return response;
     },
