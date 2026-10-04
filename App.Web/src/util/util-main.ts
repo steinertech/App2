@@ -1,8 +1,24 @@
+import { useEffect, useRef, type DependencyList } from 'react';
 import { apiUrl } from '../page/App.tsx';
 import { ALERT_HEADER, type AlertDto, AlertEnum } from '../../../App.Server/dto/shared/alert-dto.ts';
 import { REDIRECT_HEADER } from '../../../App.Server/dto/shared/redirect-dto.ts';
 
 export const VERSION_CLIENT = '1.18';
+
+/**
+ * Like useEffect, but runs `effect` only once per distinct `deps` values. StrictMode runs every effect twice in dev,
+ * which would send backend calls (e.g. grid-load, sign-out) twice; use this for effects that call the backend.
+ */
+export function useEffectOnce(effect: () => void, deps: DependencyList) {
+  const lastDeps = useRef<DependencyList | undefined>(undefined);
+  useEffect(() => {
+    const prev = lastDeps.current;
+    if (prev && prev.length === deps.length && prev.every((dep, index) => Object.is(dep, deps[index]))) return;
+    lastDeps.current = deps;
+    effect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+}
 
 export const PROGRESS_EVENT = 'progress';
 

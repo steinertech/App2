@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { userRequest } from '../NavState.tsx';
-import { addAlert, getIsProgress, setIsProgress } from '../util/util-main.ts';
+import { addAlert, getIsProgress, setIsProgress, useEffectOnce } from '../util/util-main.ts';
 import { UserRequestEnum } from '../../../App.Server/dto/shared/user-request-dto.ts';
 import { AlertEnum } from '../../../App.Server/dto/shared/alert-dto.ts';
 import Grid from '../Grid.tsx';
@@ -12,7 +12,7 @@ export default function Debug() {
   const [result, setResult] = useState('');
   const { load } = useGridStore();
 
-  useEffect(() => {
+  useEffectOnce(() => {
     void load('debug');
   }, [load]);
 

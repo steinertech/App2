@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { apiFetch, VERSION_CLIENT } from '../util/util-main.ts';
+import { apiFetch, useEffectOnce, VERSION_CLIENT } from '../util/util-main.ts';
 import { container } from '../style.ts';
 import { languageFromPathname } from '../util/util-i18n.ts';
 
@@ -9,7 +9,7 @@ export default function About() {
   const language = languageFromPathname(location.pathname);
   const [result, setResult] = useState('');
 
-  useEffect(() => {
+  useEffectOnce(() => {
     const handleVersionClick = async () => {
       try {
         const response = await apiFetch('version', {

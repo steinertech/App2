@@ -1,16 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { refreshNavState, userRequest } from '../NavState.tsx';
+import { useEffectOnce } from '../util/util-main.ts';
 import { UserRequestEnum } from '../../../App.Server/dto/shared/user-request-dto.ts';
 import { container } from '../style.ts';
 
 export default function SignOut() {
   const [result, setResult] = useState('');
-  const isSignOutSent = useRef(false);
 
-  useEffect(() => {
-    // StrictMode runs effects twice in dev; send the sign-out (and get its alert) only once.
-    if (isSignOutSent.current) return;
-    isSignOutSent.current = true;
+  useEffectOnce(() => {
     (async () => {
       try {
         const response = await userRequest({ requestEnum: UserRequestEnum.SignOut });

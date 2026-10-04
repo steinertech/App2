@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffectOnce } from '../util/util-main.ts';
 import Grid from '../Grid.tsx';
 import { resolveGrid, useGridStore } from '../GridStore.tsx';
 import { container } from '../style.ts';
@@ -6,7 +6,7 @@ import { container } from '../style.ts';
 export default function Project() {
   const { gridPlaneDto, load } = useGridStore();
 
-  useEffect(() => {
+  useEffectOnce(() => {
     void load('project');
   }, [load]);
 
