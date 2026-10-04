@@ -380,7 +380,7 @@ async function gridLoadStorage(request: Request, gridDto: GridDto): Promise<Grid
       .find((customModify) => customModify.customName === 'FolderName')
       ?.textModified?.trim();
     if (gridIsCommand(confirmGridDto, 'Yes') && folderName !== undefined && folderName !== '') {
-      await storageNew(request, `${newFolderPath}${folderName}/`);
+      await storageNew(request, newFolderPath, `${folderName}/`);
     }
     if (gridIsCommand(confirmGridDto, 'Yes') || gridIsCommand(confirmGridDto, 'Cancel')) {
       gridDto.planes = undefined;
@@ -553,7 +553,7 @@ async function gridStorageSaveInsert(request: Request, gridDto: GridDto): Promis
     .filter((fileName): fileName is string => fileName !== undefined && fileName !== '');
 
   for (const fileName of fileNames) {
-    await storageNew(request, `${path}${fileName}`);
+    await storageNew(request, path, fileName);
   }
 }
 

@@ -7,7 +7,7 @@ export default {
       return new Response(null, { status: 204, headers: corsHeaders(request) });
     }
 
-    await storageNew(request, 'a/b/');
+    await storageNew(request, '', 'a/b/');
 
     return new Response(JSON.stringify({ path: 'a/b/' }), {
       headers: { 'content-type': 'application/json', ...corsHeaders(request) },

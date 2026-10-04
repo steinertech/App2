@@ -83,19 +83,19 @@ export async function storageFiles(request: Request, path: string = ''): Promise
 }
 
 /**
- * Creates path below the sector key.
- * - Folder path (ends with "/", e.g. "a/b/"): creates one folder per segment (here "a/" and "a/b/"). Throws if any of them already exists.
- * - File path (e.g. "a/b/my.txt"): creates the empty file "my.txt" in folder "a/b/". Throws if the file already exists.
+ * Creates fileOrFolderName in folder path (e.g. "a/b/", or "" for the root) below the sector key.
+ * - Folder name (ends with "/", e.g. "Docs/" or "Docs/2024/"): creates one folder per segment (here "Docs/" and "Docs/2024/"). Throws if any of them already exists.
+ * - File name (e.g. "my.txt"): creates the empty file "my.txt" in folder path. Throws if the file already exists.
  */
-export async function storageNew(request: Request, path: string): Promise<void> {
-  const prefix = await sectorKey(request, true);
+export async function storageNew(request: Request, path: string = '', fileOrFolderName: string): Promise<void> {
+  const prefix = (await sectorKey(request, true)) + path;
 
-  const segments = path.split('/').filter(Boolean);
+  const segments = fileOrFolderName.split('/').filter(Boolean);
   if (segments.length === 0) {
-    throw new Error('Path is empty!');
+    throw new Error('File or folder name is empty!');
   }
 
-  if (!path.endsWith('/')) {
+  if (!fileOrFolderName.endsWith('/')) {
     const filePath = prefix + segments.join('/');
     if (await storageFileExists(filePath)) {
       throw new Error('File already exists!');
