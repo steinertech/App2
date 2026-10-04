@@ -14,18 +14,6 @@ export default function Debug() {
     void load('debug');
   }, [load]);
 
-  const handleDebugDbClick = async () => {
-    try {
-      const response = await fetch(`${apiUrl}debug-db`, {
-        method: 'POST',
-      });
-      const data = await response.json();
-      setResult(JSON.stringify(data, null, 2));
-    } catch {
-      setResult('Error fetching debug-db');
-    }
-  };
-
   const handleUploadClick = async () => {
     try {
       const response = await fetch(`${apiUrl}storage-upload`);
@@ -91,10 +79,7 @@ export default function Debug() {
           className={`${textInputClassName} ml-2`}
         />
       </label>
-      <button onClick={handleDebugDbClick} className={buttonPrimaryClassName}>
-        DebugDb
-      </button>
-      <button onClick={handleUploadClick} className={`${buttonPrimaryClassName} mt-2`}>
+      <button onClick={handleUploadClick} className={buttonPrimaryClassName}>
         Upload
       </button>
       <button onClick={handleDownloadClick} className={`${buttonPrimaryClassName} mt-2`}>
