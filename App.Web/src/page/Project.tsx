@@ -1,34 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import Grid from '../Grid.tsx';
-import { resolveGrid, useGridStore, type GridPlaneDto } from '../GridStore.tsx';
+import { resolveGrid, useGridStore } from '../GridStore.tsx';
 import { container } from '../style.ts';
-import { apiUrl } from './App.tsx';
 
 export default function Project() {
   const { gridPlaneDto, load } = useGridStore();
-  const [storageJson, setStorageJson] = useState('');
 
   useEffect(() => {
     void load('project');
   }, [load]);
-
-  useEffect(() => {
-    const loadStorage = async () => {
-      try {
-        const response = await fetch(`${apiUrl}grid-load`, {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ planeName: 'storage', grids: [] } satisfies GridPlaneDto),
-        });
-        const data = (await response.json()) as GridPlaneDto;
-        setStorageJson(JSON.stringify(data, null, 2).replace(/\s+/g, ' ').trim());
-      } catch {
-        setStorageJson('Error fetching storage');
-      }
-    };
-
-    void loadStorage();
-  }, []);
 
   // Confirmation dialog, opened by the server at GridPlaneDto.grids[0].planes[0].grids[0].
   const confirmPath = [0, 0, 0];
@@ -46,7 +26,6 @@ export default function Project() {
           </div>
         </div>
       )}
-      <p className="mt-4 break-words">{storageJson}</p>
     </div>
   );
 }
