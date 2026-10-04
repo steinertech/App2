@@ -2,7 +2,7 @@ import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEn
 import { sectorKey, titleCase } from './util-main.js';
 import { projectsLoad, projectsLoadByNames, projectsUpdate, projectsInsert, projectsDeleteByNames } from './util-project.js';
 import { usersLoad, userProject } from './util-user.js';
-import { storageDelete, storageFiles, storageNew } from './util-storage.js';
+import { storageDelete, storageFiles, storageNew, storageRename } from './util-storage.js';
 import { StorageFileDto } from '../dto/storage-file-dto.js';
 import { ProjectDto } from '../dto/project-dto.js';
 import { UserDto } from '../dto/user-dto.js';
@@ -434,6 +434,8 @@ async function gridLoadStorage(request: Request, gridDto: GridDto): Promise<Grid
   }
 
   if (gridDto.command?.commandEnum === GridCommandEnum.Save) {
+    // Rename first: its rowIndex values refer to the listing before any new entry is inserted.
+    await gridStorageSaveRename(request, gridDto);
     await gridStorageSaveInsert(request, gridDto);
   }
 
@@ -552,6 +554,32 @@ async function gridStorageSaveInsert(request: Request, gridDto: GridDto): Promis
 
   for (const fileName of fileNames) {
     await storageNew(request, `${path}${fileName}`);
+  }
+}
+
+/**
+ * Renames (in the current path) every existing file or folder whose fileNameOnly cell was changed.
+ * The entry is looked up by rowIndex in the server's own listing (not in client supplied rowKeys); a modify whose
+ * original text doesn't match that entry (e.g. the listing changed meanwhile) is skipped.
+ */
+async function gridStorageSaveRename(request: Request, gridDto: GridDto): Promise<void> {
+  const path = gridStatePath(gridDto.state);
+  const renameModifies = (gridDto.modifies ?? []).filter(
+    (modify) => !modify.isNew && modify.cellEnum === GridCellEnum.Edit && modify.columnName === 'fileNameOnly' && modify.rowIndex !== undefined,
+  );
+  if (renameModifies.length === 0) {
+    return;
+  }
+
+  const files = await storageFiles(request, path);
+  for (const modify of renameModifies) {
+    const file = files[modify.rowIndex as number];
+    const fileNameOnlyModified = modify.textModified?.trim();
+    if (file?.fileNameOnly === undefined || file.fileNameOnly !== modify.text || !fileNameOnlyModified) {
+      continue;
+    }
+    const fileOrFolderName = file.isFolder ? `${file.fileNameOnly}/` : file.fileNameOnly;
+    await storageRename(request, path, fileOrFolderName, fileNameOnlyModified);
   }
 }
 

@@ -1,4 +1,4 @@
-import { put, head, issueSignedToken, presignUrl, list, createFolder, BlobNotFoundError, del } from '@vercel/blob';
+import { put, head, issueSignedToken, presignUrl, list, createFolder, BlobNotFoundError, del, rename } from '@vercel/blob';
 import { sectorKey } from './util-main.js';
 import { StorageFileDto } from '../dto/storage-file-dto.js';
 
@@ -148,6 +148,76 @@ export async function storageDelete(request: Request, path: string = '', fileOrF
   const chunkSize = 1000;
   for (let index = 0; index < pathnames.length; index += chunkSize) {
     await del(pathnames.slice(index, index + chunkSize));
+  }
+}
+
+/**
+ * Renames one fileOrFolderName of folder path (e.g. "a/b/", or "" for the root) below the sector key to fileOrFolderNameModified (same folder).
+ * - Folder name (ends with "/", e.g. "Docs/"): renames the folder marker blob and every blob below it. A trailing "/" on fileOrFolderNameModified is optional.
+ * - File name (e.g. "my.txt"): renames the file.
+ * Throws if fileOrFolderNameModified is empty, contains "/", or already exists.
+ */
+export async function storageRename(request: Request, path: string = '', fileOrFolderName: string, fileOrFolderNameModified: string): Promise<void> {
+  const prefix = (await sectorKey(request, true)) + path;
+
+  const isFolder = fileOrFolderName.endsWith('/');
+  const name = fileOrFolderName.replace(/\/$/, '');
+  const nameModified = fileOrFolderNameModified.trim().replace(/\/$/, '');
+  if (name === '' || name.includes('/')) {
+    throw new Error('Invalid file name!');
+  }
+  if (nameModified === '' || nameModified.includes('/')) {
+    throw new Error('Invalid new file name!');
+  }
+  if (nameModified === name) {
+    return;
+  }
+
+  if (!isFolder) {
+    if (await storageFileExists(prefix + nameModified)) {
+      throw new Error('File already exists!');
+    }
+    await rename(prefix + name, prefix + nameModified, { access: 'private', addRandomSuffix: false });
+    return;
+  }
+
+  const folderPath = `${prefix}${name}/`;
+  const folderPathModified = `${prefix}${nameModified}/`;
+  if ((await list({ prefix: folderPathModified, limit: 1 })).blobs.length > 0) {
+    throw new Error('Folder already exists!');
+  }
+
+  // Expanded mode (no folded) lists every blob below the folder, folder marker blobs of it and its sub-folders included.
+  const pathnames: string[] = [];
+  let cursor: string | undefined;
+  do {
+    const result = await list({ prefix: folderPath, cursor });
+    pathnames.push(...result.blobs.map((blob) => blob.pathname));
+    cursor = result.hasMore ? result.cursor : undefined;
+  } while (cursor);
+
+  // rename() rejects pathnames ending with "/" ("Missing filename in pathname"), so folder marker blobs (of the folder and its
+  // sub-folders) are recreated with createFolder() and the old ones deleted, while file blobs are renamed.
+  const folderMarkerPathnames = pathnames.filter((pathname) => pathname.endsWith('/'));
+  const filePathnames = pathnames.filter((pathname) => !pathname.endsWith('/'));
+  const pathnameModified = (pathname: string) => folderPathModified + pathname.slice(folderPath.length);
+
+  for (const pathname of folderMarkerPathnames) {
+    await createFolder(pathnameModified(pathname), { access: 'private' });
+  }
+
+  // Rename in small parallel chunks to limit concurrent requests.
+  const chunkSize = 10;
+  for (let index = 0; index < filePathnames.length; index += chunkSize) {
+    await Promise.all(
+      filePathnames
+        .slice(index, index + chunkSize)
+        .map((pathname) => rename(pathname, pathnameModified(pathname), { access: 'private', addRandomSuffix: false })),
+    );
+  }
+
+  if (folderMarkerPathnames.length > 0) {
+    await del(folderMarkerPathnames);
   }
 }
 
