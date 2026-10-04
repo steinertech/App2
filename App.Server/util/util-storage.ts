@@ -54,12 +54,12 @@ export async function storageFiles(request: Request, path: string = ''): Promise
   const prefix = (await sectorKey(request, true)) + path;
 
   // Folded mode returns only the direct children of prefix: files in blobs, sub-folders (with trailing slash) in folders.
-  const blobPaths: string[] = [];
+  const blobs: { pathname: string; size: number }[] = [];
   const folderPaths: string[] = [];
   let cursor: string | undefined;
   do {
     const result = await list({ prefix, cursor, mode: 'folded' });
-    blobPaths.push(...result.blobs.map((blob) => blob.pathname));
+    blobs.push(...result.blobs);
     folderPaths.push(...result.folders);
     cursor = result.hasMore ? result.cursor : undefined;
   } while (cursor);
@@ -70,12 +70,13 @@ export async function storageFiles(request: Request, path: string = ''): Promise
     isFolder: true,
   }));
 
-  const files: StorageFileDto[] = blobPaths
-    .filter((pathname) => pathname !== prefix) // Skip the folder marker blob of prefix itself.
-    .map((pathname) => ({
-      fileName: pathname,
-      fileNameOnly: pathname.split('/').pop() ?? pathname,
+  const files: StorageFileDto[] = blobs
+    .filter((blob) => blob.pathname !== prefix) // Skip the folder marker blob of prefix itself.
+    .map((blob) => ({
+      fileName: blob.pathname,
+      fileNameOnly: blob.pathname.split('/').pop() ?? blob.pathname,
       isFolder: false,
+      size: blob.size,
     }));
 
   return [...folders, ...files];

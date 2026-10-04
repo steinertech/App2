@@ -9,9 +9,12 @@ import { UserDto } from '../dto/user-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
 
 const STORAGE_FILE_COLUMNS: GridConfigDto = {
-  columns: (['fileName', 'fileNameOnly', 'isFolder'] as const satisfies readonly (keyof StorageFileDto)[]).map(
-    (columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text }),
-  ),
+  columns: [
+    ...(['fileName', 'fileNameOnly', 'isFolder'] as const satisfies readonly (keyof StorageFileDto)[]).map(
+      (columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text }),
+    ),
+    { columnName: 'size' satisfies keyof StorageFileDto, typeEnum: GridConfigTypeEnum.Number },
+  ],
 };
 const PROJECT_COLUMNS: GridConfigDto = {
   columns: (['name', 'description'] as const satisfies readonly (keyof ProjectDto)[]).map(
@@ -446,7 +449,7 @@ async function gridLoadStorage(request: Request, gridDto: GridDto): Promise<Grid
       ...(STORAGE_FILE_COLUMNS.columns ?? []).map(
         (column, columnIndex): GridCellDto => ({
           cellEnum: GridCellEnum.Edit,
-          text: String(file[column.columnName as keyof StorageFileDto]),
+          text: gridStorageCellText(file, column.columnName as keyof StorageFileDto),
           rowIndex,
           columnName: column.columnName,
           isSelectMulti: columnIndex === 0 ? true : undefined,
@@ -509,6 +512,30 @@ async function gridLoadStorage(request: Request, gridDto: GridDto): Promise<Grid
   result.command = undefined;
 
   return result;
+}
+
+/** Returns the text of the cell in column columnName for file. Folders have no size: their Size cell is empty instead of "undefined". */
+function gridStorageCellText(file: StorageFileDto, columnName: keyof StorageFileDto): string {
+  const value = file[columnName];
+  if (value === undefined) {
+    return '';
+  }
+  return columnName === 'size' ? gridFormatSize(value as number) : String(value);
+}
+
+/** Formats size (in bytes) as B, KB, MB or GB (1 KB = 1024 B), e.g. 512 → "512 B", 1536 → "1.5 KB". */
+function gridFormatSize(size: number): string {
+  const units = ['KB', 'MB', 'GB'];
+  if (size < 1024) {
+    return `${size} B`;
+  }
+  let value = size;
+  let unitIndex = -1;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex++;
+  }
+  return `${value.toFixed(1)} ${units[unitIndex]}`;
 }
 
 /**
