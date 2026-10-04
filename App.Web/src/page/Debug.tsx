@@ -34,18 +34,6 @@ export default function Debug() {
     }
   };
 
-  const handleDebugClick = async () => {
-    try {
-      const response = await fetch(`${apiUrl}debug`, {
-        credentials: 'include',
-      });
-      const data = await response.json();
-      setResult(JSON.stringify(data, null, 2));
-    } catch {
-      setResult('Error fetching debug');
-    }
-  };
-
   return (
     <div className={container}>
       <h1>Debug</h1>
@@ -63,9 +51,6 @@ export default function Debug() {
       </button>
       <button onClick={handleGridClick} className={`${buttonPrimaryClassName} mt-2`}>
         Grid
-      </button>
-      <button onClick={handleDebugClick} className={`${buttonPrimaryClassName} mt-2`}>
-        Debug
       </button>
       <label className="mt-4 whitespace-pre-wrap">{result}</label>
       <div className="mt-4">
