@@ -307,6 +307,16 @@ export default function Grid({ path }: GridProps) {
     await sendGridCommand({ command: { commandEnum: GridCommandEnum.Reload } });
   };
 
+  const handleRowSelect = async (rowIndex: number) => {
+    if (rowIndex === rowIndexSelected) {
+      return;
+    }
+    setRowIndexSelected(rowIndex);
+    if (grid?.setting?.isSelectReload === true) {
+      await sendGridCommand({ command: { commandEnum: GridCommandEnum.Reload, rowIndex }, state: { ...grid.state, selected: rowIndex } });
+    }
+  };
+
   const handleSaveClick = async () => {
     await sendGridCommand({ command: { commandEnum: GridCommandEnum.Save }, modifies });
     // Saved: clear modifies so the next Save doesn't send (and e.g. insert) them again.
@@ -320,7 +330,7 @@ export default function Grid({ path }: GridProps) {
   return (
     <div>
       <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(event) => void handleFileChange(event)} />
-      <h1 className="text-4xl font-bold">{grid?.text}</h1>
+      <h1 className="text-4xl font-bold">{grid?.setting?.title}</h1>
       <table className="w-full">
         <tbody>
           {gridRows.map((gridRow, rowIndex) => (
@@ -333,7 +343,7 @@ export default function Grid({ path }: GridProps) {
                     if (gridCell.cellEnum === GridCellEnum.Header) {
                       void handleHeaderClick(gridCell);
                     } else if (gridCell.rowIndex !== undefined) {
-                      setRowIndexSelected(gridCell.rowIndex);
+                      void handleRowSelect(gridCell.rowIndex);
                     }
                   }}
                 >

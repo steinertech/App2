@@ -123,10 +123,18 @@ export function gridStatePath(state: GridStateDto | undefined): string {
     .join('');
 }
 
+export interface GridSettingDto {
+  /** Heading shown above the grid. */
+  title?: string;
+  /** If true, selecting a row sends GridCommandEnum.Reload (with GridStateDto.selected set) to the backend, e.g. to load detail data for the selected row. */
+  isSelectReload?: boolean;
+}
+
 export interface GridDto {
-  text?: string;
   rows?: GridRowDto[];
   state?: GridStateDto;
+  /** Not sent back to the server (stripped by App.Web), so the backend must set it on every response. */
+  setting?: GridSettingDto;
   command?: GridCommandDto;
   modifies?: GridModifyDto[];
   customModifies?: GridCustomModifyDto[];

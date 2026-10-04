@@ -40,11 +40,13 @@ export function resolveGrid(rootGrids: GridDto[] | undefined, path: number[]): G
   return resolveGrid(grid?.planes?.[planesIndex]?.grids, [nestedGridIndex, ...rest]);
 }
 
-/** Rebuilds a GridDto for sending to the server: strips rows (the server always recomputes them) and, recursively, applies any override addressed at this node or one nested under it. */
+/** Rebuilds a GridDto for sending to the server: strips rows, setting and patches (the server always recomputes them) and, recursively, applies any override addressed at this node or one nested under it. */
 function buildOutgoingGrid(existingGrid: GridDto, path: number[], entries: GridOverrideEntry[]): GridDto {
   const entry = entries.find((candidate) => samePath(candidate.path, path));
   const grid: GridDto = { ...existingGrid, ...entry?.override };
   delete grid.rows;
+  delete grid.setting;
+  delete grid.patches;
 
   if (grid.planes !== undefined) {
     grid.planes = grid.planes.map((gridPlane, planesIndex) => ({

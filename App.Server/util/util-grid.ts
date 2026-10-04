@@ -206,7 +206,7 @@ async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<Grid
 
   const result: GridDto = {
     ...gridDto,
-    text: `Project Data (${time})`,
+    setting: { title: `Project Data (${time})` },
     rows: [deleteMultiRow, headerRow, findRow, ...rows],
     state: { ...gridDto.state, rowKeys },
   };
@@ -220,7 +220,7 @@ async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<Grid
   }
 
   if (gridRemoveCommand(gridDto, 'Cancel')) {
-    result.text = 'Hello World (Cancel)';
+    result.setting = { ...result.setting, title: 'Hello World (Cancel)' };
   }
 
   const confirmTwoGridDto = gridFindCommand(gridDto, 'ConfirmTwo');
@@ -340,7 +340,7 @@ async function gridLoadUser(request: Request, gridDto: GridDto): Promise<GridDto
   }));
   const findRow = gridFindRow([...(USER_COLUMNS.columns ?? []).map((column) => column.columnName)]);
 
-  return { ...gridDto, text: 'User Data', rows: [headerRow, findRow, ...rows] };
+  return { ...gridDto, setting: { title: 'User Data' }, rows: [headerRow, findRow, ...rows] };
 }
 
 /** Returns the GridStateDto.rowKeys of the rows whose GridStateDto.isSelectedMulti entry is true. */
@@ -504,9 +504,9 @@ async function gridLoadStorage(request: Request, gridDto: GridDto): Promise<Grid
 
   const result: GridDto = {
     ...gridDto,
-    text: 'Storage Data',
     rows: [toolbarRow, headerRow, findRow, ...fileRows],
     state: { ...gridDto.state, rowKeys, isSelectedMulti },
+    setting: { title: 'Storage Data', isSelectReload: true },
   };
 
   if (gridDto.command?.commandEnum === GridCommandEnum.New) {
@@ -603,7 +603,7 @@ function gridStorageDeleteConfirm(rowKeys: unknown): GridDto {
       },
     ],
   };
-  return { text: 'Confirmation', rows: [textRow, buttonRow], state: { custom: { rowKeys } } };
+  return { setting: { title: 'Confirmation' }, rows: [textRow, buttonRow], state: { custom: { rowKeys } } };
 }
 
 /** Returns the "New Folder" dialog GridDto (Folder Name label and text box, Yes and Cancel buttons) carrying path (gridStatePath of the storage grid) in GridStateDto.custom. */
@@ -630,7 +630,7 @@ function gridStorageNewFolder(path: string, folderName?: string): GridDto {
       },
     ],
   };
-  return { text: 'New Folder', rows: [nameRow, buttonRow], state: { custom: { path } } };
+  return { setting: { title: 'New Folder' }, rows: [nameRow, buttonRow], state: { custom: { path } } };
 }
 
 /** Deletes rowKeys (full blob pathnames; folders end with "/"). rowKeys come back from the client, so each must lie below the caller's sector key. */
