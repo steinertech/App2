@@ -19,8 +19,10 @@ export default apiHandler('POST', async (request) => {
     case UserRequestEnum.SignIn: {
       const sessionId = await signIn(request, email ?? '', password ?? '');
       if (!sessionId) {
+        alertAdd(request, AlertEnum.Error, 'Invalid email or password');
         return json({ success: false }, 401);
       }
+      alertAdd(request, AlertEnum.Success, 'You successfully signed in.');
       redirectSet(request, '/');
       return json({ success: true }, 200, {
         'set-cookie': `sessionId=${sessionId}; HttpOnly; Path=/; Secure; SameSite=None`,

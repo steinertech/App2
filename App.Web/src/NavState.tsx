@@ -22,6 +22,21 @@ const alertClassName: Record<AlertEnum, string> = {
   [AlertEnum.Error]: 'border-red-300 bg-red-100 text-red-800',
 };
 
+export const SIGN_IN_EVENT = 'sign-in-state';
+
+let isSignIn = false;
+
+/** True while the session (fetched by NavState) has a signed in user; SIGN_IN_EVENT is dispatched on change. */
+export function getIsSignIn() {
+  return isSignIn;
+}
+
+function setIsSignIn(value: boolean) {
+  if (isSignIn === value) return;
+  isSignIn = value;
+  window.dispatchEvent(new Event(SIGN_IN_EVENT));
+}
+
 export function refreshNavState() {
   window.dispatchEvent(new Event(REFRESH_EVENT));
 }
@@ -50,10 +65,12 @@ export default function NavState() {
         setDomainName(data?.domainName ?? '');
         setEmail(data?.email ?? '');
         setProjectName(data?.projectName ?? '');
+        setIsSignIn(!!data?.email);
       } catch {
         setDomainName('');
         setEmail('');
         setProjectName('');
+        setIsSignIn(false);
       }
     };
 

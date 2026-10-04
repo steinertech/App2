@@ -1,15 +1,17 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { languageFromPathname, stripLanguagePrefix, withLanguagePrefix, type Language } from './util/util-i18n.ts';
+import { getIsSignIn, SIGN_IN_EVENT } from './NavState.tsx';
 
-const links = [
+// isSignIn: link is only shown if the user is signed in (true) or not signed in (false); undefined means always shown.
+// Sign Up is linked from the Sign In page.
+const linkList: { to: string; key: string; label: string; isSignIn?: boolean }[] = [
   { to: '/', key: 'home', label: 'Home' },
   { to: '/storage', key: 'storage', label: 'Storage' },
   { to: '/project', key: 'project', label: 'Project' },
   { to: '/debug', key: 'debug', label: 'Debug' },
-  { to: '/sign-up', key: 'sign-up', label: 'Sign Up' },
-  { to: '/sign-out', key: 'sign-out', label: 'Sign Out' },
-  { to: '/sign-in', key: 'sign-in', label: 'Sign In' },
+  { to: '/sign-out', key: 'sign-out', label: 'Sign Out', isSignIn: true },
+  { to: '/sign-in', key: 'sign-in', label: 'Sign In', isSignIn: false },
   { to: '/about', key: 'about', label: 'About' },
 ];
 
@@ -31,6 +33,15 @@ export default function Nav() {
   const location = useLocation();
   const language = languageFromPathname(location.pathname);
   const currentPath = stripLanguagePrefix(location.pathname);
+  const [isSignIn, setIsSignIn] = useState(getIsSignIn);
+
+  useEffect(() => {
+    const updateIsSignIn = () => setIsSignIn(getIsSignIn());
+    window.addEventListener(SIGN_IN_EVENT, updateIsSignIn);
+    return () => window.removeEventListener(SIGN_IN_EVENT, updateIsSignIn);
+  }, []);
+
+  const links = linkList.filter((link) => link.isSignIn === undefined || link.isSignIn === isSignIn);
 
   return (
     <nav className="bg-slate-900 text-white">
