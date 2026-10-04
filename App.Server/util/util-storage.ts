@@ -31,17 +31,18 @@ export async function storageUploadUrls(request: Request, path: string = '', fil
   );
 }
 
-/** Returns one presigned GET url per fileNames entry (full blob pathnames, e.g. StorageFileDto.fileName). Each must lie below the sector key. Urls are valid for 5 minutes. */
+/** Returns one presigned GET url per fileNames entry (paths relative to the sector key, e.g. StorageFileDto.fileName "a/b/my.txt"). Urls are valid for 5 minutes. */
 export async function storageDownloadUrls(request: Request, fileNames: string[]): Promise<string[]> {
   const prefix = await sectorKey(request, true);
   const validUntil = Date.now() + 5 * 60 * 1000;
 
   return Promise.all(
-    fileNames.map(async (pathname) => {
-      // fileNames may come back from the client, so don't presign a blob outside the caller's sector key.
-      if (!pathname.startsWith(prefix) || pathname === prefix || pathname.endsWith('/')) {
+    fileNames.map(async (fileName) => {
+      // fileNames may come back from the client: prepending the sector key keeps the blob inside the caller's sector.
+      if (fileName === '' || fileName.startsWith('/') || fileName.endsWith('/')) {
         throw new Error('Invalid file name!');
       }
+      const pathname = prefix + fileName;
       const signedToken = await issueSignedToken({
         pathname,
         operations: ['get'],
@@ -60,7 +61,8 @@ export async function storageDownloadUrls(request: Request, fileNames: string[])
 
 /** Lists the direct children of folder path (e.g. "a/b/", or "" for the root) below the sector key. path must end with "/" unless empty. */
 export async function storageFiles(request: Request, path: string = ''): Promise<StorageFileDto[]> {
-  const prefix = (await sectorKey(request, true)) + path;
+  const key = await sectorKey(request, true);
+  const prefix = key + path;
 
   // Folded mode returns only the direct children of prefix: files in blobs, sub-folders (with trailing slash) in folders.
   const blobs: { pathname: string; size: number }[] = [];
@@ -74,7 +76,7 @@ export async function storageFiles(request: Request, path: string = ''): Promise
   } while (cursor);
 
   const folders: StorageFileDto[] = folderPaths.map((folderPath) => ({
-    fileName: folderPath,
+    fileName: folderPath.slice(key.length),
     fileNameOnly: folderPath.split('/').filter(Boolean).pop() ?? folderPath,
     isFolder: true,
   }));
@@ -82,7 +84,7 @@ export async function storageFiles(request: Request, path: string = ''): Promise
   const files: StorageFileDto[] = blobs
     .filter((blob) => blob.pathname !== prefix) // Skip the folder marker blob of prefix itself.
     .map((blob) => ({
-      fileName: blob.pathname,
+      fileName: blob.pathname.slice(key.length),
       fileNameOnly: blob.pathname.split('/').pop() ?? blob.pathname,
       isFolder: false,
       size: blob.size,

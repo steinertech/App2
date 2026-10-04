@@ -1,6 +1,6 @@
 import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPatchDto, GridPlaneDto, gridPlaneGrids, GridRowDto, GridSortDto, gridStatePath } from '../dto/shared/grid-dto.js';
 import { AlertEnum } from '../dto/shared/alert-dto.js';
-import { alertAdd, sectorKey, titleCase } from './util-main.js';
+import { alertAdd, titleCase } from './util-main.js';
 import { projectsLoad, projectsLoadByNames, projectsUpdate, projectsInsert, projectsDeleteByNames } from './util-project.js';
 import { usersLoad, userProject } from './util-user.js';
 import { storageDelete, storageDownloadUrls, storageFiles, storageNew, storageRename } from './util-storage.js';
@@ -360,7 +360,7 @@ async function gridLoadStorage(request: Request, gridDto: GridDto): Promise<Grid
     if (rowIndex !== undefined) {
       const fileName = gridDto.state?.rowKeys?.[rowIndex];
       if (fileName !== undefined && fileName.endsWith('/')) {
-        // Folder (blob folder paths end with "/"): navigate into it by appending its name to pathSegments.
+        // Folder (folder paths end with "/"): navigate into it by appending its name to pathSegments.
         const folderName = fileName.split('/').filter(Boolean).pop();
         if (folderName !== undefined) {
           const pathSegments = [...(gridDto.state?.pathSegments ?? []), { name: folderName, text: folderName }];
@@ -585,7 +585,7 @@ async function gridStorageSaveRename(request: Request, gridDto: GridDto): Promis
   }
 }
 
-/** Returns the "Delete item?" confirmation GridDto (Yes and Cancel buttons) carrying rowKeys (full blob pathnames) in GridStateDto.custom. */
+/** Returns the "Delete item?" confirmation GridDto (Yes and Cancel buttons) carrying rowKeys (paths relative to the sector key) in GridStateDto.custom. */
 function gridStorageDeleteConfirm(rowKeys: unknown): GridDto {
   const count = Array.isArray(rowKeys) ? rowKeys.length : 0;
   const text = count === 1 ? 'Delete item?' : `Delete ${count} items?`;
@@ -633,14 +633,13 @@ function gridStorageNewFolder(path: string, folderName?: string): GridDto {
   return { setting: { title: 'New Folder' }, rows: [nameRow, buttonRow], state: { custom: { path } } };
 }
 
-/** Deletes rowKeys (full blob pathnames; folders end with "/"). rowKeys come back from the client, so each must lie below the caller's sector key. */
+/** Deletes rowKeys (paths relative to the sector key; folders end with "/"). rowKeys come back from the client; storageDelete prepends the caller's sector key. */
 async function gridStorageDelete(request: Request, rowKeys: unknown[]): Promise<void> {
-  const prefix = await sectorKey(request, true);
   const fileOrFolderNames = rowKeys.map((rowKey) => {
-    if (typeof rowKey !== 'string' || !rowKey.startsWith(prefix) || rowKey === prefix) {
+    if (typeof rowKey !== 'string' || rowKey === '' || rowKey.startsWith('/')) {
       throw new Error('Invalid file name!');
     }
-    return rowKey.slice(prefix.length);
+    return rowKey;
   });
   await storageDelete(request, '', fileOrFolderNames);
 }
