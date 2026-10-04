@@ -1,5 +1,5 @@
 import { useRef, useState, type ChangeEvent, type ReactNode } from 'react';
-import { apiUrl } from './page/App.tsx';
+import { apiFetch, getIsProgress, setIsProgress } from './util/util-main.ts';
 import { resolveGrid, useGridStore } from './GridStore.tsx';
 import { buttonGridClassName, buttonPrimaryClassName } from './style.ts';
 import {
@@ -241,29 +241,35 @@ export default function Grid({ path }: GridProps) {
       return;
     }
 
-    const storageUploadCollectionDto: StorageUploadCollectionDto = {
-      path: gridStatePath(grid?.state),
-      files: selectedFiles.map((file) => ({ fileName: file.name })),
-    };
-    const response = await fetch(`${apiUrl}storage-upload`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(storageUploadCollectionDto),
-    });
-    const storageUploadCollection = (await response.json()) as StorageUploadCollectionDto;
+    // Keep the progress bar shown until every file is uploaded to blob storage (not an /api call, so not counted by apiFetch).
+    setIsProgress(getIsProgress() + 1);
+    try {
+      const storageUploadCollectionDto: StorageUploadCollectionDto = {
+        path: gridStatePath(grid?.state),
+        files: selectedFiles.map((file) => ({ fileName: file.name })),
+      };
+      const response = await apiFetch('storage-upload', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(storageUploadCollectionDto),
+      });
+      const storageUploadCollection = (await response.json()) as StorageUploadCollectionDto;
 
-    // Upload every selected file directly to blob storage via its presigned fileUrl.
-    await Promise.all(
-      (storageUploadCollection.files ?? []).map(async (storageUpload, index) => {
-        const file = selectedFiles[index];
-        if (storageUpload.fileUrl === undefined || file === undefined) {
-          return;
-        }
-        await fetch(storageUpload.fileUrl, { method: 'PUT', body: file });
-      }),
-    );
+      // Upload every selected file directly to blob storage via its presigned fileUrl.
+      await Promise.all(
+        (storageUploadCollection.files ?? []).map(async (storageUpload, index) => {
+          const file = selectedFiles[index];
+          if (storageUpload.fileUrl === undefined || file === undefined) {
+            return;
+          }
+          await fetch(storageUpload.fileUrl, { method: 'PUT', body: file });
+        }),
+      );
 
-    await handleReloadClick();
+      await handleReloadClick();
+    } finally {
+      setIsProgress(getIsProgress() - 1);
+    }
   };
 
   const handleCustomClick = async (gridCell: GridCellDto, gridCustom: GridCustomDto, pathIndex?: number) => {

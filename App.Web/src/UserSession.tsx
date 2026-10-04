@@ -1,28 +1,15 @@
 import { useEffect, useState } from 'react';
-import { apiUrl } from './page/App.tsx';
+import { apiFetch, getIsProgress, PROGRESS_EVENT } from './util/util-main.ts';
 import { UserRequestEnum, type UserRequestDto } from '../../App.Server/dto/shared/user-request-dto.ts';
 
 const REFRESH_EVENT = 'user-session-refresh';
-const PROGRESS_EVENT = 'user-session-progress';
-
-let isProgress = 0;
 
 export function refreshUserSession() {
   window.dispatchEvent(new Event(REFRESH_EVENT));
 }
 
-/** Progress counter; the progress bar at the bottom of UserSession animates while it is > 0. */
-export function getIsProgress() {
-  return isProgress;
-}
-
-export function setIsProgress(value: number) {
-  isProgress = value;
-  window.dispatchEvent(new Event(PROGRESS_EVENT));
-}
-
 export function userRequest(dto: UserRequestDto) {
-  return fetch(`${apiUrl}user`, {
+  return apiFetch('user', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     credentials: 'include',
@@ -34,7 +21,7 @@ export default function UserSession() {
   const [domainName, setDomainName] = useState('');
   const [email, setEmail] = useState('');
   const [projectName, setProjectName] = useState('');
-  const [progress, setProgress] = useState(isProgress);
+  const [progress, setProgress] = useState(getIsProgress);
 
   useEffect(() => {
     const fetchSession = async () => {
@@ -57,7 +44,7 @@ export default function UserSession() {
   }, []);
 
   useEffect(() => {
-    const updateProgress = () => setProgress(isProgress);
+    const updateProgress = () => setProgress(getIsProgress());
     window.addEventListener(PROGRESS_EVENT, updateProgress);
     return () => window.removeEventListener(PROGRESS_EVENT, updateProgress);
   }, []);

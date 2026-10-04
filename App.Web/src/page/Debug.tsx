@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { getIsProgress, setIsProgress, userRequest } from '../UserSession.tsx';
+import { userRequest } from '../UserSession.tsx';
+import { getIsProgress, setIsProgress } from '../util/util-main.ts';
 import { UserRequestEnum } from '../../../App.Server/dto/shared/user-request-dto.ts';
 import Grid from '../Grid.tsx';
 import { useGridStore } from '../GridStore.tsx';

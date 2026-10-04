@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react';
-import { apiUrl } from './page/App.tsx';
+import { apiFetch } from './util/util-main.ts';
 import type { GridDto, GridPlaneDto } from '../../App.Server/dto/shared/grid-dto.ts';
 
 export type { GridPlaneDto };
@@ -104,7 +104,7 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
       body.planeName = planeNameRef.current;
     }
 
-    const response = await fetch(`${apiUrl}grid-load`, {
+    const response = await apiFetch('grid-load', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body),
@@ -153,7 +153,7 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
       body.planeName = planeNameRef.current;
     }
 
-    const response = await fetch(`${apiUrl}grid-patch`, {
+    const response = await apiFetch('grid-patch', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body),
