@@ -10,10 +10,9 @@ import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/g
 
 const STORAGE_FILE_COLUMNS: GridConfigDto = {
   columns: [
-    ...(['fileName', 'fileNameOnly', 'isFolder'] as const satisfies readonly (keyof StorageFileDto)[]).map(
-      (columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text }),
-    ),
+    { columnName: 'fileNameOnly' satisfies keyof StorageFileDto, text: 'File Name', typeEnum: GridConfigTypeEnum.Text },
     { columnName: 'size' satisfies keyof StorageFileDto, typeEnum: GridConfigTypeEnum.Number },
+    { columnName: 'isFolder' satisfies keyof StorageFileDto, typeEnum: GridConfigTypeEnum.Text },
   ],
 };
 const PROJECT_COLUMNS: GridConfigDto = {
@@ -37,8 +36,8 @@ function gridFindRow(columnNames: (string | undefined)[]): GridRowDto {
   };
 }
 
-function gridHeaderCell(column: string | undefined, sort?: GridSortDto): GridCellDto {
-  const cell: GridCellDto = { cellEnum: GridCellEnum.Header, text: titleCase(column), columnName: column };
+function gridHeaderCell(column: string | undefined, sort?: GridSortDto, text?: string): GridCellDto {
+  const cell: GridCellDto = { cellEnum: GridCellEnum.Header, text: text ?? titleCase(column), columnName: column };
   if (sort && sort.columnName === column) {
     cell.isSortAsc = sort.isSortAsc;
   }
@@ -440,7 +439,7 @@ async function gridLoadStorage(request: Request, gridDto: GridDto): Promise<Grid
 
   const headerRow: GridRowDto = {
     cells: [
-      ...(STORAGE_FILE_COLUMNS.columns ?? []).map((column) => gridHeaderCell(column.columnName, gridDto.state?.sort)),
+      ...(STORAGE_FILE_COLUMNS.columns ?? []).map((column) => gridHeaderCell(column.columnName, gridDto.state?.sort, column.text)),
       { cellEnum: GridCellEnum.Header, text: 'Command' },
     ],
   };

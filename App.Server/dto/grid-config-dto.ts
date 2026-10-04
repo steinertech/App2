@@ -6,6 +6,8 @@ export enum GridConfigTypeEnum {
 
 export interface GridConfigColumnDto {
   columnName?: string;
+  /** Header text. Defaults to titleCase(columnName). */
+  text?: string;
   typeEnum?: GridConfigTypeEnum;
 }
 
