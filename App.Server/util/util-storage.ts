@@ -99,7 +99,8 @@ export async function storageNew(request: Request, path: string): Promise<void> 
     if (await storageFileExists(filePath)) {
       throw new Error('File already exists!');
     }
-    await put(filePath, '', { access: 'private', addRandomSuffix: false });
+    // Empty Buffer instead of '': put() rejects falsy bodies with "body is required".
+    await put(filePath, Buffer.alloc(0), { access: 'private', addRandomSuffix: false });
     return;
   }
 

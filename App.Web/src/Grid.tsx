@@ -253,6 +253,8 @@ export default function Grid({ path }: GridProps) {
 
   const handleSaveClick = async () => {
     await sendCommand(path, { command: { commandEnum: GridCommandEnum.Save }, modifies });
+    // Saved: clear modifies so the next Save doesn't send (and e.g. insert) them again.
+    setModifies([]);
   };
 
   const handleNewClick = async () => {
