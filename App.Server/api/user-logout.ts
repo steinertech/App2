@@ -7,9 +7,10 @@ export default {
       return new Response(null, { status: 204, headers: corsHeaders(request) });
     }
 
-    const session = await userLogout(request);
+    await userLogout(request);
 
-    return new Response(JSON.stringify(session), {
+    // Never echo the SessionDto (it carries sessionId, which is an HttpOnly cookie).
+    return new Response(JSON.stringify({ success: true }), {
       headers: { 'content-type': 'application/json', ...corsHeaders(request) },
     });
   },
