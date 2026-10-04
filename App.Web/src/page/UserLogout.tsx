@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { apiUrl } from './App.tsx';
-import { refreshUserSession } from '../UserSession.tsx';
+import { refreshUserSession, userRequest } from '../UserSession.tsx';
+import { UserRequestEnum } from '../../../App.Server/dto/shared/user-request-dto.ts';
 import { container } from '../style.ts';
 
 export default function UserLogout() {
@@ -9,7 +9,7 @@ export default function UserLogout() {
   useEffect(() => {
     (async () => {
       try {
-        const response = await fetch(`${apiUrl}user-logout`, { credentials: 'include' });
+        const response = await userRequest({ requestEnum: UserRequestEnum.Logout });
         if (response.ok) {
           setResult('You successfully logged out');
           refreshUserSession();
