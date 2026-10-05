@@ -19,6 +19,8 @@ interface GridStoreValue {
   sendCommand: (path: number[], override: GridOverride) => Promise<GridPlaneDto>;
   /** Posts the plane with override applied at path to /api/grid-patch and applies the returned GridDto.patches to the loaded grids (rows aren't reloaded). override.state is also kept on the grid at path. */
   sendPatch: (path: number[], override: GridOverride) => Promise<GridPlaneDto>;
+  /** Closes the plane containing the nested grid at path (sets it to null in the parent's GridDto.planes) without a server call. No-op for a root grid. */
+  closePlane: (path: number[]) => void;
 }
 
 const GridStoreContext = createContext<GridStoreValue | undefined>(undefined);
@@ -49,10 +51,14 @@ function buildOutgoingGrid(existingGrid: GridDto, path: number[], entries: GridO
   delete grid.patches;
 
   if (grid.planes !== undefined) {
-    grid.planes = grid.planes.map((gridPlane, planesIndex) => ({
-      ...gridPlane,
-      grids: (gridPlane.grids ?? []).map((nestedGrid, gridIndex) => buildOutgoingGrid(nestedGrid, [...path, planesIndex, gridIndex], entries)),
-    }));
+    grid.planes = grid.planes.map((gridPlane, planesIndex) =>
+      gridPlane === null
+        ? null
+        : {
+            ...gridPlane,
+            grids: (gridPlane.grids ?? []).map((nestedGrid, gridIndex) => buildOutgoingGrid(nestedGrid, [...path, planesIndex, gridIndex], entries)),
+          },
+    );
   }
 
   return grid;
@@ -77,7 +83,7 @@ function applyPatches(grid: GridDto, responseGrid: GridDto): void {
   }
 
   (grid.planes ?? []).forEach((gridPlane, planesIndex) => {
-    (gridPlane.grids ?? []).forEach((nestedGrid, gridIndex) => {
+    (gridPlane?.grids ?? []).forEach((nestedGrid, gridIndex) => {
       const nestedResponseGrid = responseGrid.planes?.[planesIndex]?.grids?.[gridIndex];
       if (nestedResponseGrid !== undefined) {
         applyPatches(nestedGrid, nestedResponseGrid);
@@ -182,7 +188,18 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
     return data;
   }, []);
 
-  return <GridStoreContext.Provider value={{ gridPlaneDto, gridVersion, load, sendCommand, sendPatch }}>{children}</GridStoreContext.Provider>;
+  const closePlane = useCallback((path: number[]): void => {
+    const planesIndex = path[path.length - 2];
+    const parentGrid = resolveGrid(gridPlaneDtoRef.current.grids, path.slice(0, -2));
+    if (planesIndex === undefined || parentGrid?.planes?.[planesIndex] === undefined) {
+      return;
+    }
+    parentGrid.planes = parentGrid.planes.map((gridPlane, index) => (index === planesIndex ? null : gridPlane));
+    gridPlaneDtoRef.current = { ...gridPlaneDtoRef.current };
+    setGridPlaneDto(gridPlaneDtoRef.current);
+  }, []);
+
+  return <GridStoreContext.Provider value={{ gridPlaneDto, gridVersion, load, sendCommand, sendPatch, closePlane }}>{children}</GridStoreContext.Provider>;
 }
 
 export function useGridStore(): GridStoreValue {

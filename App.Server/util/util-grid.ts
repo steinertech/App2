@@ -39,14 +39,15 @@ export function gridHeaderCell(column: string | undefined, sort?: GridSortDto, t
 
 /**
  * Walks gridDto and every GridDto nested under it (via gridPlaneGrids) for the GridPlaneDto whose grids contain a GridDto
- * with the given customName command, and removes that GridPlaneDto from its immediate parent's planes list. Returns true if found and removed.
+ * with the given customName command, and sets that GridPlaneDto to null in its immediate parent's planes list (other planes keep their index).
+ * Returns true if found and removed.
  */
 export function gridRemoveCommand(gridDto: GridDto, customName: string): boolean {
   for (const parentGridDto of gridPlaneGrids({ grids: [gridDto] })) {
     const planes = parentGridDto.planes ?? [];
-    const planesIndex = planes.findIndex((gridPlane) => (gridPlane.grids ?? []).some((nestedGridDto) => gridIsCommand(nestedGridDto, customName)));
+    const planesIndex = planes.findIndex((gridPlane) => (gridPlane?.grids ?? []).some((nestedGridDto) => gridIsCommand(nestedGridDto, customName)));
     if (planesIndex !== -1) {
-      planes.splice(planesIndex, 1);
+      planes[planesIndex] = null;
       return true;
     }
   }
@@ -59,11 +60,11 @@ export function gridFindCommand(gridDto: GridDto, customName: string): GridDto |
   return gridPlaneGrids({ grids: [gridDto] }).find((nestedGridDto) => gridIsCommand(nestedGridDto, customName));
 }
 
-/** Sets lookupGridDto (e.g. Column Chooser) as the only grid of gridDto.planes[0], or clears planes[0] if undefined. App dialogs at planes[1] and up are kept. */
+/** Sets lookupGridDto (e.g. Column Chooser) as the only grid of gridDto.planes[0], or sets planes[0] to null if undefined. App dialogs at planes[1] and up are kept; planes becomes undefined if all entries are null. */
 export function gridLookupSet(gridDto: GridDto, lookupGridDto: GridDto | undefined): void {
   const planes = [...(gridDto.planes ?? [])];
-  planes[0] = lookupGridDto !== undefined ? { grids: [lookupGridDto] } : {};
-  gridDto.planes = planes.length > 1 || lookupGridDto !== undefined ? planes : undefined;
+  planes[0] = lookupGridDto !== undefined ? { grids: [lookupGridDto] } : null;
+  gridDto.planes = planes.some((gridPlane) => gridPlane !== null) ? planes : undefined;
 }
 
 export function gridIsCommand(gridDto: GridDto, customName: string): boolean {
@@ -108,8 +109,9 @@ export function gridLoadColumnChooser(columns: GridConfigColumnDto[]): GridDto {
   const columnRows: GridRowDto[] = columns.map((column, rowIndex) => ({
     cells: [{ cellEnum: GridCellEnum.Label, text: column.text ?? titleCase(column.columnName), rowIndex, isSelectMulti: true }],
   }));
+  const cancelRow: GridRowDto = { cells: [{ cellEnum: GridCellEnum.Cancel, text: 'Cancel' }] };
   return {
-    rows: [headerRow, ...columnRows],
+    rows: [headerRow, ...columnRows, cancelRow],
     state: {
       rowKeys: columns.map((column) => column.columnName ?? ''),
       isSelectedMulti: columns.map(() => true),

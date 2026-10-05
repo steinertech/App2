@@ -8,6 +8,8 @@ export enum GridCellEnum {
   Empty = 5,
   /** Renders GridCellDto.text as plain (read-only) text. */
   Label = 6,
+  /** Button with text GridCellDto.text; clicking it closes the plane containing this grid (sets it to null in the parent's GridDto.planes) without a server command call. */
+  Cancel = 7,
 }
 
 export enum GridCustomEnum {
@@ -148,8 +150,8 @@ export interface GridDto {
   command?: GridCommandDto;
   modifies?: GridModifyDto[];
   customModifies?: GridCustomModifyDto[];
-  /** Nested grids (e.g. dialogs). planes[0] is reserved for grid system lookups (e.g. Column Chooser, rendered by Grid.tsx as overlay); app dialogs start at planes[1]. */
-  planes?: GridPlaneDto[];
+  /** Nested grids (e.g. dialogs). planes[0] is reserved for grid system lookups (e.g. Column Chooser, rendered by Grid.tsx as overlay); app dialogs start at planes[1]. A null entry is a plane closed by App.Web (GridCellEnum.Cancel). */
+  planes?: (GridPlaneDto | null)[];
   patches?: GridPatchDto[];
 }
 
@@ -159,7 +161,7 @@ export interface GridPlaneDto {
 }
 
 /** Returns all GridDtos of the GridPlaneDto and, recursively, of every GridPlaneDto nested under GridDto.planes, as a flat list (depth-first, each grid before its nested grids). */
-export function gridPlaneGrids(plane: GridPlaneDto | undefined): GridDto[] {
+export function gridPlaneGrids(plane: GridPlaneDto | null | undefined): GridDto[] {
   return (plane?.grids ?? []).flatMap((grid) => [
     grid,
     ...(grid.planes ?? []).flatMap((nestedPlane) => gridPlaneGrids(nestedPlane)),

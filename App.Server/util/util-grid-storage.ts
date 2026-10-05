@@ -36,7 +36,7 @@ export async function gridLoadStorage(request: Request, gridDto: GridDto): Promi
     }
   }
 
-  // Dialogs (Delete confirmation or New Folder, opened by the buttons below) live at gridDto.planes[1].grids[0] (planes[0] stays empty).
+  // Dialogs (Delete confirmation or New Folder, opened by the buttons below) live at gridDto.planes[1].grids[0] (planes[0] is null).
   // A New Folder dialog carries GridStateDto.custom.path, a Delete confirmation GridStateDto.custom.rowKeys.
   const confirmGridDto = gridDto.planes?.[1]?.grids?.[0];
   const newFolderPath = confirmGridDto?.state?.custom?.path;
@@ -51,7 +51,7 @@ export async function gridLoadStorage(request: Request, gridDto: GridDto): Promi
       gridDto.planes = undefined;
     } else {
       // Rows aren't sent back by the client: rebuild them (keeping the entered name) so the dialog stays visible across other commands.
-      gridDto.planes = [{}, { grids: [gridStorageNewFolder(newFolderPath, folderName)] }];
+      gridDto.planes = [null, { grids: [gridStorageNewFolder(newFolderPath, folderName)] }];
     }
   } else if (confirmGridDto !== undefined) {
     if (gridIsCommand(confirmGridDto, 'Yes')) {
@@ -64,7 +64,7 @@ export async function gridLoadStorage(request: Request, gridDto: GridDto): Promi
       gridDto.planes = undefined;
     } else {
       // Rows aren't sent back by the client: rebuild them so the dialog stays visible across other commands.
-      gridDto.planes = [{}, { grids: [{ ...gridStorageDeleteConfirm(confirmGridDto.state?.custom?.rowKeys), command: undefined }] }];
+      gridDto.planes = [null, { grids: [{ ...gridStorageDeleteConfirm(confirmGridDto.state?.custom?.rowKeys), command: undefined }] }];
     }
   }
 
@@ -72,16 +72,16 @@ export async function gridLoadStorage(request: Request, gridDto: GridDto): Promi
     const rowIndex = gridDto.command.rowIndex;
     const rowKey = rowIndex !== undefined ? gridDto.state?.rowKeys?.[rowIndex] : undefined;
     if (rowKey !== undefined) {
-      gridDto.planes = [{}, { grids: [gridStorageDeleteConfirm([rowKey])] }];
+      gridDto.planes = [null, { grids: [gridStorageDeleteConfirm([rowKey])] }];
     }
   }
 
   if (gridIsCommand(gridDto, 'DeleteMulti') && selectedMultiRowKeys.size > 0) {
-    gridDto.planes = [{}, { grids: [gridStorageDeleteConfirm([...selectedMultiRowKeys])] }];
+    gridDto.planes = [null, { grids: [gridStorageDeleteConfirm([...selectedMultiRowKeys])] }];
   }
 
   if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === 'NewFolder') {
-    gridDto.planes = [{}, { grids: [gridStorageNewFolder(gridStatePath(gridDto.state))] }];
+    gridDto.planes = [null, { grids: [gridStorageNewFolder(gridStatePath(gridDto.state))] }];
   }
 
   if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === 'Up') {

@@ -109,6 +109,7 @@ function gridCellContent(
   onCustomTextChange: (gridCustom: GridCustomDto, textModified: string) => void,
   onTextChange: (gridCell: GridCellDto, textModified: string) => void,
   onSelectMultiChange: (rowIndex: number, checked: boolean) => void,
+  onCancelClick: () => void,
   isSelectedMulti: boolean[],
   pathSegments: GridPathSegmentDto[],
 ): ReactNode {
@@ -137,6 +138,19 @@ function gridCellContent(
     content = `${gridCell.text ?? ''}${arrow}`;
   } else if (gridCell.cellEnum === GridCellEnum.Label) {
     content = gridCell.text;
+  } else if (gridCell.cellEnum === GridCellEnum.Cancel) {
+    content = (
+      <button
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          onCancelClick();
+        }}
+        className={buttonGridClassName}
+      >
+        {gridCell.text}
+      </button>
+    );
   } else {
     content = gridCell.text;
   }
@@ -159,7 +173,7 @@ function gridCellContent(
 }
 
 export default function Grid({ path }: GridProps) {
-  const { gridPlaneDto, gridVersion, sendCommand, sendPatch } = useGridStore();
+  const { gridPlaneDto, gridVersion, sendCommand, sendPatch, closePlane } = useGridStore();
 
   const grid = resolveGrid(gridPlaneDto.grids, path);
   const gridRows = grid?.rows ?? [];
@@ -385,6 +399,7 @@ export default function Grid({ path }: GridProps) {
                     handleCustomTextChange,
                     handleTextChange,
                     handleSelectMultiChange,
+                    () => closePlane(path),
                     isSelectedMulti,
                     grid?.state?.pathSegments ?? [],
                   )}
