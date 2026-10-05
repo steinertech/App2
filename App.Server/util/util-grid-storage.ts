@@ -8,7 +8,7 @@ const STORAGE_FILE_COLUMNS: GridConfigDto = {
   columns: [
     { columnName: 'fileNameOnly' satisfies keyof StorageFileDto, text: 'File Name', typeEnum: GridConfigTypeEnum.Text },
     { columnName: 'size' satisfies keyof StorageFileDto, typeEnum: GridConfigTypeEnum.Number },
-    { columnName: 'dateModified' satisfies keyof StorageFileDto, text: 'Date Modified (UTC)', typeEnum: GridConfigTypeEnum.Text },
+    { columnName: 'dateModified' satisfies keyof StorageFileDto, text: 'Date Modified', typeEnum: GridConfigTypeEnum.Text },
     { columnName: 'isFolder' satisfies keyof StorageFileDto, typeEnum: GridConfigTypeEnum.Text },
   ],
 };
@@ -126,6 +126,7 @@ export async function gridLoadStorage(request: Request, gridDto: GridDto): Promi
           rowIndex,
           columnName: column.columnName,
           isSelectMulti: columnIndex === 0 ? true : undefined,
+          isDate: column.columnName === ('dateModified' satisfies keyof StorageFileDto) ? true : undefined,
         }),
       ),
       {
@@ -198,24 +199,16 @@ export async function gridLoadStorage(request: Request, gridDto: GridDto): Promi
   return result;
 }
 
-/** Returns the text of the cell in column columnName for file. Folders have no size or date: their cells are empty instead of "undefined". */
+/**
+ * Returns the text of the cell in column columnName for file. Folders have no size or date: their cells are empty instead of "undefined".
+ * dateModified stays an ISO 8601 string (cell isDate): App.Web formats it in the browser's local time zone.
+ */
 function gridStorageCellText(file: StorageFileDto, columnName: keyof StorageFileDto): string {
   const value = file[columnName];
   if (value === undefined) {
     return '';
   }
-  if (columnName === 'size') {
-    return gridFormatSize(value as number);
-  }
-  if (columnName === 'dateModified') {
-    return gridFormatDate(value as string);
-  }
-  return String(value);
-}
-
-/** Formats an ISO 8601 date (UTC) as "YYYY-MM-DD HH:mm", e.g. "2026-10-05T14:30:12.000Z" → "2026-10-05 14:30". */
-function gridFormatDate(date: string): string {
-  return date.slice(0, 16).replace('T', ' ');
+  return columnName === 'size' ? gridFormatSize(value as number) : String(value);
 }
 
 /** Formats size (in bytes) as B, KB, MB or GB (1 KB = 1024 B), e.g. 512 → "512 B", 1536 → "1.5 KB". */
