@@ -57,13 +57,12 @@ export async function gridLoadStorage(request: Request, gridDto: GridDto): Promi
       gridDto.planes = [null, { grids: [gridStorageNewFolder(newFolderPath, folderName)] }];
     }
   } else if (confirmGridDto !== undefined) {
+    // Its Cancel button (GridCustomEnum.Cancel) closes the dialog in App.Web without a server call.
     if (gridIsCommand(confirmGridDto, 'Yes')) {
       const rowKeys = confirmGridDto.state?.custom?.rowKeys;
       if (Array.isArray(rowKeys)) {
         await gridStorageDelete(request, rowKeys);
       }
-    }
-    if (gridIsCommand(confirmGridDto, 'Yes') || gridIsCommand(confirmGridDto, 'Cancel')) {
       gridDto.planes = undefined;
     } else {
       // Rows aren't sent back by the client: rebuild them so the dialog stays visible across other commands.
@@ -263,7 +262,7 @@ async function gridStorageSaveRename(request: Request, gridDto: GridDto): Promis
   }
 }
 
-/** Returns the "Delete item?" confirmation GridDto (Yes and Cancel buttons) carrying rowKeys (paths relative to the sector key) in GridStateDto.custom. */
+/** Returns the "Delete item?" confirmation GridDto (Yes button and client-side GridCustomEnum.Cancel button) carrying rowKeys (paths relative to the sector key) in GridStateDto.custom. */
 function gridStorageDeleteConfirm(rowKeys: unknown): GridDto {
   const count = Array.isArray(rowKeys) ? rowKeys.length : 0;
   const text = count === 1 ? 'Delete item?' : `Delete ${count} items?`;
@@ -276,7 +275,7 @@ function gridStorageDeleteConfirm(rowKeys: unknown): GridDto {
         cellEnum: GridCellEnum.Custom,
         customs: [
           { customEnum: GridCustomEnum.Button, text: 'Yes', name: 'Yes' },
-          { customEnum: GridCustomEnum.Button, text: 'Cancel', name: 'Cancel' },
+          { customEnum: GridCustomEnum.Cancel, text: 'Cancel' },
         ],
       },
     ],

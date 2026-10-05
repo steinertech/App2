@@ -1,3 +1,4 @@
+/** Data grid cell specific controls. One per GridCellDto (table cell), selected by GridCellDto.cellEnum. */
 export enum GridCellEnum {
   None = 0,
   Edit = 1,
@@ -10,6 +11,7 @@ export enum GridCellEnum {
   Label = 6,
 }
 
+/** Custom controls, rendered inside a GridCellEnum.Custom cell. Multiple can be in one table cell (GridCellDto.customs). */
 export enum GridCustomEnum {
   None = 0,
   Button = 1,
