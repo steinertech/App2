@@ -15,7 +15,10 @@ export function domainName(request: Request): string {
 export async function sectorKey(request: Request, isProject: boolean = true): Promise<string> {
   if (isProject) {
     const dto = await userSession(request);
-    if (!dto) throw new Error('User not signed in!');
+    if (!dto) {
+      redirectSet(request, '/');
+      throw new Error('User not signed in!');
+    }
     // SessionDto.projectName mirrors UserDto.projectName (copied on sign-in, kept in sync by userProject).
     if (!dto.projectName) throw new Error('User has no project selected!');
     return 'Domain' + '/' + domainName(request) + '/' + 'Project' + '/' + dto.projectName + '/';

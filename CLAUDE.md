@@ -70,7 +70,7 @@ All persisted DTOs (`UserDto`, `SessionDto`, `ProjectDto` — the ones with `_id
 
 The key takes one of two forms:
 - `Domain/<domainName>/Global/` when `isProject` is `false` (e.g. users, projects — looked up by domain, no sign-in required)
-- `Domain/<domainName>/Project/<projectName>/` when `isProject` is `true` (e.g. blob files inside a project) — this branch also asserts the caller has a valid session (throws `'User not signed in!'` if not) and a selected project (`<projectName>` is the session's `projectName`, which mirrors `UserDto.projectName`; throws `'User has no project selected!'` if unset), so `isProject: true` is how sign-in is enforced for a query or blob access.
+- `Domain/<domainName>/Project/<projectName>/` when `isProject` is `true` (e.g. blob files inside a project) — this branch also asserts the caller has a valid session (throws `'User not signed in!'` and redirects App.Web to `'/'` via `redirectSet` if not) and a selected project (`<projectName>` is the session's `projectName`, which mirrors `UserDto.projectName`; throws `'User has no project selected!'` if unset), so `isProject: true` is how sign-in is enforced for a query or blob access.
 
 Always build sector keys through `sectorKey(...)` rather than constructing the `Domain/.../Global|Project/` string manually.
 
