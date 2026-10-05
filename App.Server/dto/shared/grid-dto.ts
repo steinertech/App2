@@ -45,6 +45,8 @@ export enum GridCommandEnum {
   ColumnChooser = 7,
   /** A GridCustomEnum.Ok button was clicked; App.Web closes the plane containing the grid afterwards. */
   Ok = 8,
+  /** Data grid control bar: Save, New (Add) and Reload (Refresh) buttons plus the pager. */
+  Bar = 9,
 }
 
 export interface GridCustomDto {
