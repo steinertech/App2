@@ -1,5 +1,6 @@
 import { useRef, useState, type ChangeEvent, type ReactNode } from 'react';
-import { apiFetch, getIsProgress, setIsProgress } from './util/util-main.ts';
+import { addAlert, apiFetch, getIsProgress, setIsProgress } from './util/util-main.ts';
+import { AlertEnum } from '../../App.Server/dto/shared/alert-dto.ts';
 import { resolveGrid, useGridStore } from './GridStore.tsx';
 import { buttonGridClassName, buttonPrimaryClassName } from './style.ts';
 import {
@@ -262,16 +263,27 @@ export default function Grid({ path }: GridProps) {
       const storageUploadCollection = (await response.json()) as StorageUploadCollectionDto;
 
       // Upload every selected file directly to blob storage via its presigned fileUrl.
+      // Each file is handled on its own: a failed one (e.g. too big, network error) gets an Error alert, the others still upload.
       await Promise.all(
         (storageUploadCollection.files ?? []).map(async (storageUpload, index) => {
           const file = selectedFiles[index];
           if (storageUpload.fileUrl === undefined || file === undefined) {
             return;
           }
-          await fetch(storageUpload.fileUrl, { method: 'PUT', body: file });
+          try {
+            const uploadResponse = await fetch(storageUpload.fileUrl, { method: 'PUT', body: file });
+            if (!uploadResponse.ok) {
+              // statusText is empty over HTTP/2, so it's only appended when present.
+              const status = [uploadResponse.status, uploadResponse.statusText].filter(Boolean).join(' ');
+              addAlert(AlertEnum.Error, `Upload of ${file.name} failed (${status})`);
+            }
+          } catch {
+            addAlert(AlertEnum.Error, `Upload of ${file.name} failed (no response from server)`);
+          }
         }),
       );
 
+      // Reload even if some uploads failed, so the ones that succeeded are shown.
       await handleReloadClick();
     } finally {
       setIsProgress(getIsProgress() - 1);
