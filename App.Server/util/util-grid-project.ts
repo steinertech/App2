@@ -137,7 +137,7 @@ export async function gridProjectLoad(request: Request, gridDto: GridDto): Promi
   }
 
   if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === 'Confirm') {
-    result.planes = [{ grids: [gridConfirm('Are you sure?')] }];
+    result.planes = [{}, { grids: [gridConfirm('Are you sure?')] }];
   }
 
   if (gridRemoveCommand(gridDto, 'Cancel')) {
@@ -146,7 +146,7 @@ export async function gridProjectLoad(request: Request, gridDto: GridDto): Promi
 
   const confirmTwoGridDto = gridFindCommand(gridDto, 'ConfirmTwo');
   if (confirmTwoGridDto !== undefined) {
-    confirmTwoGridDto.planes = [{ grids: [gridConfirm('Are you sure?')] }];
+    confirmTwoGridDto.planes = [{}, { grids: [gridConfirm('Are you sure?')] }];
     confirmTwoGridDto.command = undefined;
   }
 

@@ -148,21 +148,14 @@ export interface GridDto {
   command?: GridCommandDto;
   modifies?: GridModifyDto[];
   customModifies?: GridCustomModifyDto[];
+  /** Nested grids (e.g. dialogs). planes[0] is reserved for grid system lookups (e.g. Column Chooser, rendered by Grid.tsx as overlay); app dialogs start at planes[1]. */
   planes?: GridPlaneDto[];
   patches?: GridPatchDto[];
-  lookup?: GridLookupDto;
 }
 
 export interface GridPlaneDto {
   planeName?: string;
   grids?: GridDto[];
-}
-
-export interface GridLookupDto {
-  grid?: GridDto;
-  cellEnum?: GridCellEnum;
-  rowIndex?: number;
-  columnName?: string;
 }
 
 /** Returns all GridDtos of the GridPlaneDto and, recursively, of every GridPlaneDto nested under GridDto.planes, as a flat list (depth-first, each grid before its nested grids). */

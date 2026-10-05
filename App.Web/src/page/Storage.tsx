@@ -10,8 +10,8 @@ export default function Storage() {
     void load('storage');
   }, [load]);
 
-  // Dialog (Delete confirmation or New Folder), opened by the server at GridPlaneDto.grids[0].planes[0].grids[0].
-  const modalPath = [0, 0, 0];
+  // Dialog (Delete confirmation or New Folder), opened by the server at GridPlaneDto.grids[0].planes[1].grids[0].
+  const modalPath = [0, 1, 0];
   const isModal = resolveGrid(gridPlaneDto.grids, modalPath) !== undefined;
 
   return (

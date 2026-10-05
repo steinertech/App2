@@ -1,8 +1,8 @@
 import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridRowDto, gridStatePath } from '../dto/shared/grid-dto.js';
 import { storageDelete, storageDownloadUrls, storageFiles, storageNew, storageRename } from './util-storage.js';
 import { StorageFileDto } from '../dto/storage-file-dto.js';
-import { GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
-import { gridFindRow, gridHeaderCell, gridIsCommand, gridLoadColumnChooser, gridSelectedMultiRowKeys } from './util-grid.js';
+import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
+import { gridColumns, gridFindRow, gridHeaderCell, gridIsCommand, gridLoadColumnChooser, gridLookupSet, gridSelectedMultiRowKeys } from './util-grid.js';
 
 const STORAGE_FILE_COLUMNS: GridConfigDto = {
   columns: [
@@ -36,9 +36,9 @@ export async function gridLoadStorage(request: Request, gridDto: GridDto): Promi
     }
   }
 
-  // Dialogs (Delete confirmation or New Folder, opened by the buttons below) live at gridDto.planes[0].grids[0].
+  // Dialogs (Delete confirmation or New Folder, opened by the buttons below) live at gridDto.planes[1].grids[0] (planes[0] stays empty).
   // A New Folder dialog carries GridStateDto.custom.path, a Delete confirmation GridStateDto.custom.rowKeys.
-  const confirmGridDto = gridDto.planes?.[0]?.grids?.[0];
+  const confirmGridDto = gridDto.planes?.[1]?.grids?.[0];
   const newFolderPath = confirmGridDto?.state?.custom?.path;
   if (confirmGridDto !== undefined && typeof newFolderPath === 'string') {
     const folderName = (confirmGridDto.customModifies ?? [])
@@ -51,7 +51,7 @@ export async function gridLoadStorage(request: Request, gridDto: GridDto): Promi
       gridDto.planes = undefined;
     } else {
       // Rows aren't sent back by the client: rebuild them (keeping the entered name) so the dialog stays visible across other commands.
-      gridDto.planes = [{ grids: [gridStorageNewFolder(newFolderPath, folderName)] }];
+      gridDto.planes = [{}, { grids: [gridStorageNewFolder(newFolderPath, folderName)] }];
     }
   } else if (confirmGridDto !== undefined) {
     if (gridIsCommand(confirmGridDto, 'Yes')) {
@@ -64,7 +64,7 @@ export async function gridLoadStorage(request: Request, gridDto: GridDto): Promi
       gridDto.planes = undefined;
     } else {
       // Rows aren't sent back by the client: rebuild them so the dialog stays visible across other commands.
-      gridDto.planes = [{ grids: [{ ...gridStorageDeleteConfirm(confirmGridDto.state?.custom?.rowKeys), command: undefined }] }];
+      gridDto.planes = [{}, { grids: [{ ...gridStorageDeleteConfirm(confirmGridDto.state?.custom?.rowKeys), command: undefined }] }];
     }
   }
 
@@ -72,16 +72,16 @@ export async function gridLoadStorage(request: Request, gridDto: GridDto): Promi
     const rowIndex = gridDto.command.rowIndex;
     const rowKey = rowIndex !== undefined ? gridDto.state?.rowKeys?.[rowIndex] : undefined;
     if (rowKey !== undefined) {
-      gridDto.planes = [{ grids: [gridStorageDeleteConfirm([rowKey])] }];
+      gridDto.planes = [{}, { grids: [gridStorageDeleteConfirm([rowKey])] }];
     }
   }
 
   if (gridIsCommand(gridDto, 'DeleteMulti') && selectedMultiRowKeys.size > 0) {
-    gridDto.planes = [{ grids: [gridStorageDeleteConfirm([...selectedMultiRowKeys])] }];
+    gridDto.planes = [{}, { grids: [gridStorageDeleteConfirm([...selectedMultiRowKeys])] }];
   }
 
   if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === 'NewFolder') {
-    gridDto.planes = [{ grids: [gridStorageNewFolder(gridStatePath(gridDto.state))] }];
+    gridDto.planes = [{}, { grids: [gridStorageNewFolder(gridStatePath(gridDto.state))] }];
   }
 
   if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === 'Up') {
@@ -105,16 +105,17 @@ export async function gridLoadStorage(request: Request, gridDto: GridDto): Promi
   }
 
   const files = await storageFiles(request, gridStatePath(gridDto.state));
+  const columns = gridColumns(STORAGE_FILE_COLUMNS.columns ?? [], gridDto.state);
 
   const headerRow: GridRowDto = {
     cells: [
-      ...(STORAGE_FILE_COLUMNS.columns ?? []).map((column) => gridHeaderCell(column.columnName, gridDto.state?.sort, column.text)),
+      ...columns.map((column) => gridHeaderCell(column.columnName, gridDto.state?.sort, column.text)),
       { cellEnum: GridCellEnum.Header, text: 'Command' },
     ],
   };
   const fileRows: GridRowDto[] = files.map((file, rowIndex) => ({
     cells: [
-      ...(STORAGE_FILE_COLUMNS.columns ?? []).map(
+      ...columns.map(
         (column, columnIndex): GridCellDto => ({
           cellEnum: STORAGE_FILE_LABEL_COLUMNS.has(column.columnName) ? GridCellEnum.Label : GridCellEnum.Edit,
           text: gridStorageCellText(file, column.columnName as keyof StorageFileDto),
@@ -136,7 +137,7 @@ export async function gridLoadStorage(request: Request, gridDto: GridDto): Promi
 
   const rowKeys: string[] = files.map((file) => file.fileName ?? '');
   const isSelectedMulti = rowKeys.map((rowKey) => selectedMultiRowKeys.has(rowKey));
-  const findRow = gridFindRow([...(STORAGE_FILE_COLUMNS.columns ?? []).map((column) => column.columnName), undefined]);
+  const findRow = gridFindRow([...columns.map((column) => column.columnName), undefined]);
 
   // Path breadcrumb and Up button are only shown below the root folder; Upload button is always shown.
   const pathCustoms: GridCustomDto[] =
@@ -181,11 +182,11 @@ export async function gridLoadStorage(request: Request, gridDto: GridDto): Promi
   };
 
   if (gridDto.command?.commandEnum === GridCommandEnum.New) {
-    gridStorageNew(result);
+    gridStorageNew(result, columns);
   }
 
-  // Column chooser lookup is only shown in the response to the ColumnChooser command; any other command closes it.
-  result.lookup = gridDto.command?.commandEnum === GridCommandEnum.ColumnChooser ? { grid: gridLoadColumnChooser(STORAGE_FILE_COLUMNS.columns ?? []) } : undefined;
+  // Column chooser lookup (planes[0]) is only shown in the response to the ColumnChooser command; any other command closes it.
+  gridLookupSet(result, gridDto.command?.commandEnum === GridCommandEnum.ColumnChooser ? gridLoadColumnChooser(STORAGE_FILE_COLUMNS.columns ?? []) : undefined);
 
   // Command is transient: clear it so it isn't re-processed on a later request.
   result.command = undefined;
@@ -318,13 +319,13 @@ async function gridStorageDelete(request: Request, rowKeys: unknown[]): Promise<
   await storageDelete(request, '', fileOrFolderNames);
 }
 
-/** Appends one empty, editable new row to gridDto. */
-function gridStorageNew(gridDto: GridDto): void {
+/** Appends one empty, editable new row (one cell per rendered column) to gridDto. */
+function gridStorageNew(gridDto: GridDto, columns: GridConfigColumnDto[]): void {
   const rows = gridDto.rows ?? [];
   const rowIndex = rows.length;
 
   const newRow: GridRowDto = {
-    cells: (STORAGE_FILE_COLUMNS.columns ?? []).map(
+    cells: columns.map(
       (column): GridCellDto => ({
         cellEnum: GridCellEnum.Edit,
         columnName: column.columnName,

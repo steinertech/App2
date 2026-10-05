@@ -1,4 +1,4 @@
-import { GridCellDto, GridCellEnum, GridCommandEnum, GridDto, GridPatchDto, GridPlaneDto, gridPlaneGrids, GridRowDto, GridSortDto } from '../dto/shared/grid-dto.js';
+import { GridCellDto, GridCellEnum, GridCommandEnum, GridDto, GridPatchDto, GridPlaneDto, gridPlaneGrids, GridRowDto, GridSortDto, GridStateDto } from '../dto/shared/grid-dto.js';
 import { titleCase } from './util-main.js';
 import { GridConfigColumnDto } from '../dto/grid-config-dto.js';
 import { gridProjectLoad } from './util-grid-project.js';
@@ -13,6 +13,20 @@ export function gridFindRow(columnNames: (string | undefined)[]): GridRowDto {
         : { cellEnum: GridCellEnum.Empty },
     ),
   };
+}
+
+/**
+ * Returns the columns to render: if GridStateDto.columnNames is defined only those columns (in columnNames order;
+ * names not found in columns are ignored, since they come back from the client), otherwise all columns.
+ */
+export function gridColumns(columns: GridConfigColumnDto[], state: GridStateDto | undefined): GridConfigColumnDto[] {
+  const columnNames = state?.columnNames;
+  if (columnNames === undefined) {
+    return columns;
+  }
+  return columnNames
+    .map((columnName) => columns.find((column) => column.columnName === columnName))
+    .filter((column): column is GridConfigColumnDto => column !== undefined);
 }
 
 export function gridHeaderCell(column: string | undefined, sort?: GridSortDto, text?: string): GridCellDto {
@@ -43,6 +57,13 @@ export function gridRemoveCommand(gridDto: GridDto, customName: string): boolean
 /** Walks gridDto and every GridDto nested under it (via gridPlaneGrids) for the first one whose own command matches customName. */
 export function gridFindCommand(gridDto: GridDto, customName: string): GridDto | undefined {
   return gridPlaneGrids({ grids: [gridDto] }).find((nestedGridDto) => gridIsCommand(nestedGridDto, customName));
+}
+
+/** Sets lookupGridDto (e.g. Column Chooser) as the only grid of gridDto.planes[0], or clears planes[0] if undefined. App dialogs at planes[1] and up are kept. */
+export function gridLookupSet(gridDto: GridDto, lookupGridDto: GridDto | undefined): void {
+  const planes = [...(gridDto.planes ?? [])];
+  planes[0] = lookupGridDto !== undefined ? { grids: [lookupGridDto] } : {};
+  gridDto.planes = planes.length > 1 || lookupGridDto !== undefined ? planes : undefined;
 }
 
 export function gridIsCommand(gridDto: GridDto, customName: string): boolean {
@@ -81,7 +102,7 @@ async function gridPatchDeleteMulti(request: Request, gridDto: GridDto): Promise
   return { patches: [{ name: 'DeleteMulti', isDisabled: !gridIsAnySelectedMulti(gridDto) } satisfies GridPatchDto] };
 }
 
-/** Returns the multi select "Column Chooser" GridDto (used as GridDto.lookup) with one row per column; every column is selected initially. */
+/** Returns the multi select "Column Chooser" GridDto (used as lookup, see gridLookupSet) with one row per column; every column is selected initially. */
 export function gridLoadColumnChooser(columns: GridConfigColumnDto[]): GridDto {
   const headerRow: GridRowDto = { cells: [{ cellEnum: GridCellEnum.Header, text: 'Column Name' }] };
   const columnRows: GridRowDto[] = columns.map((column, rowIndex) => ({

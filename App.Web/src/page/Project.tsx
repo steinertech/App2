@@ -10,8 +10,8 @@ export default function Project() {
     void load('project');
   }, [load]);
 
-  // Confirmation dialog, opened by the server at GridPlaneDto.grids[0].planes[0].grids[0].
-  const confirmPath = [0, 0, 0];
+  // Confirmation dialog, opened by the server at GridPlaneDto.grids[0].planes[1].grids[0].
+  const confirmPath = [0, 1, 0];
   const isConfirm = resolveGrid(gridPlaneDto.grids, confirmPath) !== undefined;
 
   return (
