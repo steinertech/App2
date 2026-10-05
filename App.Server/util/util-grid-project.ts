@@ -127,7 +127,7 @@ export async function gridProjectLoad(request: Request, gridDto: GridDto): Promi
 
   const result: GridDto = {
     ...gridDto,
-    setting: { title: `Project Data (${time})` },
+    setting: { title: `Project Data (${time})`, isSelectMultiPatch: true },
     rows: [deleteMultiRow, headerRow, findRow, ...rows],
     state: { ...gridDto.state, rowKeys },
   };

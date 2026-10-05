@@ -2,7 +2,7 @@ import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEn
 import { storageDelete, storageDownloadUrls, storageFiles, storageNew, storageRename } from './util-storage.js';
 import { StorageFileDto } from '../dto/storage-file-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
-import { gridColumns, gridFindRow, gridHeaderCell, gridIsCommand, gridLoadColumnChooser, gridLookupSet, gridSelectedMultiRowKeys } from './util-grid.js';
+import { gridColumnChooserOk, gridColumns, gridFindRow, gridHeaderCell, gridIsCommand, gridLoadColumnChooser, gridLookupSet, gridSelectedMultiRowKeys } from './util-grid.js';
 
 const STORAGE_FILE_COLUMNS: GridConfigDto = {
   columns: [
@@ -15,6 +15,9 @@ const STORAGE_FILE_COLUMNS: GridConfigDto = {
 const STORAGE_FILE_LABEL_COLUMNS = new Set<string | undefined>(['size', 'isFolder'] satisfies (keyof StorageFileDto)[]);
 
 export async function gridLoadStorage(request: Request, gridDto: GridDto): Promise<GridDto> {
+  // Column Chooser Ok: apply the chosen columns (GridStateDto.columnNames) before the rows are built.
+  gridColumnChooserOk(gridDto);
+
   // Selection is by rowIndex: remember it by rowKey so it can be mapped onto the reloaded rows (deleted files or another folder drop out).
   const selectedMultiRowKeys = new Set(gridSelectedMultiRowKeys(gridDto));
 
@@ -178,7 +181,7 @@ export async function gridLoadStorage(request: Request, gridDto: GridDto): Promi
     ...gridDto,
     rows: [toolbarRow, toolbarRow2, headerRow, findRow, ...fileRows],
     state: { ...gridDto.state, rowKeys, isSelectedMulti },
-    setting: { title: 'Storage Data', isSelectReload: true },
+    setting: { title: 'Storage Data', isSelectReload: true, isSelectMultiPatch: true },
   };
 
   if (gridDto.command?.commandEnum === GridCommandEnum.New) {
@@ -186,7 +189,7 @@ export async function gridLoadStorage(request: Request, gridDto: GridDto): Promi
   }
 
   // Column chooser lookup (planes[0]) is only shown in the response to the ColumnChooser command; any other command closes it.
-  gridLookupSet(result, gridDto.command?.commandEnum === GridCommandEnum.ColumnChooser ? gridLoadColumnChooser(STORAGE_FILE_COLUMNS.columns ?? []) : undefined);
+  gridLookupSet(result, gridDto.command?.commandEnum === GridCommandEnum.ColumnChooser ? gridLoadColumnChooser(STORAGE_FILE_COLUMNS.columns ?? [], gridDto.state) : undefined);
 
   // Command is transient: clear it so it isn't re-processed on a later request.
   result.command = undefined;

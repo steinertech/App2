@@ -79,7 +79,9 @@ function gridCustomContent(
   if (
     gridCustom.customEnum === GridCustomEnum.Button ||
     gridCustom.customEnum === GridCustomEnum.ButtonUpload ||
-    gridCustom.customEnum === GridCustomEnum.ColumnChooser
+    gridCustom.customEnum === GridCustomEnum.ColumnChooser ||
+    gridCustom.customEnum === GridCustomEnum.Cancel ||
+    gridCustom.customEnum === GridCustomEnum.Ok
   ) {
     return (
       <button
@@ -109,7 +111,6 @@ function gridCellContent(
   onCustomTextChange: (gridCustom: GridCustomDto, textModified: string) => void,
   onTextChange: (gridCell: GridCellDto, textModified: string) => void,
   onSelectMultiChange: (rowIndex: number, checked: boolean) => void,
-  onCancelClick: () => void,
   isSelectedMulti: boolean[],
   pathSegments: GridPathSegmentDto[],
 ): ReactNode {
@@ -138,19 +139,6 @@ function gridCellContent(
     content = `${gridCell.text ?? ''}${arrow}`;
   } else if (gridCell.cellEnum === GridCellEnum.Label) {
     content = gridCell.text;
-  } else if (gridCell.cellEnum === GridCellEnum.Cancel) {
-    content = (
-      <button
-        type="button"
-        onClick={(event) => {
-          event.stopPropagation();
-          onCancelClick();
-        }}
-        className={buttonGridClassName}
-      >
-        {gridCell.text}
-      </button>
-    );
   } else {
     content = gridCell.text;
   }
@@ -173,7 +161,7 @@ function gridCellContent(
 }
 
 export default function Grid({ path }: GridProps) {
-  const { gridPlaneDto, gridVersion, sendCommand, sendPatch, closePlane } = useGridStore();
+  const { gridPlaneDto, gridVersion, sendCommand, sendPatch, setState, closePlane } = useGridStore();
 
   const grid = resolveGrid(gridPlaneDto.grids, path);
   const gridRows = grid?.rows ?? [];
@@ -187,8 +175,13 @@ export default function Grid({ path }: GridProps) {
     const next = [...isSelectedMulti];
     next[rowIndex] = checked;
 
+    const state = { ...grid?.state, isSelectedMulti: next };
+    if (grid?.setting?.isSelectMultiPatch !== true) {
+      setState(path, state);
+      return;
+    }
     const gridCommand: GridCommandDto = { commandEnum: GridCommandEnum.MultiClick, rowIndex };
-    await sendPatch(path, { command: gridCommand, state: { ...grid?.state, isSelectedMulti: next } });
+    await sendPatch(path, { command: gridCommand, state });
   };
 
   const handleTextChange = (gridCell: GridCellDto, textModified: string) => {
@@ -248,10 +241,14 @@ export default function Grid({ path }: GridProps) {
     });
   };
 
-  /** Sends a command with the current customModifies. Afterwards the GridCustomEnum.Edit inputs are re-rendered from GridCustomDto.text (gridVersion changes), so customModifies is cleared. */
-  const sendGridCommand = async (override: GridDto) => {
-    await sendCommand(path, { ...override, customModifies });
+  /**
+   * Sends a command with the current customModifies. Afterwards the GridCustomEnum.Edit inputs are re-rendered from GridCustomDto.text (gridVersion changes), so customModifies is cleared.
+   * Returns true if the server call succeeded.
+   */
+  const sendGridCommand = async (override: GridDto): Promise<boolean> => {
+    const result = await sendCommand(path, { ...override, customModifies });
     setCustomModifies([]);
+    return result !== undefined;
   };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -318,6 +315,14 @@ export default function Grid({ path }: GridProps) {
       await handleColumnChooserClick();
       return;
     }
+    if (gridCustom.customEnum === GridCustomEnum.Cancel) {
+      closePlane(path);
+      return;
+    }
+    if (gridCustom.customEnum === GridCustomEnum.Ok) {
+      await handleOkClick();
+      return;
+    }
 
     const gridCommand: GridCommandDto = { commandEnum: GridCommandEnum.CustomButtonClick };
     if (gridCustom.rowIndex !== undefined) {
@@ -368,6 +373,13 @@ export default function Grid({ path }: GridProps) {
     await sendGridCommand({ command: { commandEnum: GridCommandEnum.New }, modifies });
   };
 
+  /** Sends GridCommandEnum.Ok, then, only if the server call succeeded, closes the plane containing this grid (in the reloaded data). */
+  const handleOkClick = async () => {
+    if (await sendGridCommand({ command: { commandEnum: GridCommandEnum.Ok } })) {
+      closePlane(path);
+    }
+  };
+
   const handleColumnChooserClick = async () => {
     await sendGridCommand({ command: { commandEnum: GridCommandEnum.ColumnChooser } });
   };
@@ -399,7 +411,6 @@ export default function Grid({ path }: GridProps) {
                     handleCustomTextChange,
                     handleTextChange,
                     handleSelectMultiChange,
-                    () => closePlane(path),
                     isSelectedMulti,
                     grid?.state?.pathSegments ?? [],
                   )}

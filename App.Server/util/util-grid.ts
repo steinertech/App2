@@ -1,4 +1,4 @@
-import { GridCellDto, GridCellEnum, GridCommandEnum, GridDto, GridPatchDto, GridPlaneDto, gridPlaneGrids, GridRowDto, GridSortDto, GridStateDto } from '../dto/shared/grid-dto.js';
+import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomEnum, GridDto, GridPatchDto, GridPlaneDto, gridPlaneGrids, GridRowDto, GridSortDto, GridStateDto } from '../dto/shared/grid-dto.js';
 import { titleCase } from './util-main.js';
 import { GridConfigColumnDto } from '../dto/grid-config-dto.js';
 import { gridProjectLoad } from './util-grid-project.js';
@@ -67,6 +67,14 @@ export function gridLookupSet(gridDto: GridDto, lookupGridDto: GridDto | undefin
   gridDto.planes = planes.some((gridPlane) => gridPlane !== null) ? planes : undefined;
 }
 
+/** If the Column Chooser lookup (gridDto.planes[0]) sent GridCommandEnum.Ok, sets gridDto.state.columnNames to its selected columns. */
+export function gridColumnChooserOk(gridDto: GridDto): void {
+  const lookupGridDto = gridDto.planes?.[0]?.grids?.[0];
+  if (lookupGridDto?.command?.commandEnum === GridCommandEnum.Ok) {
+    gridDto.state = { ...gridDto.state, columnNames: gridSelectedMultiRowKeys(lookupGridDto) };
+  }
+}
+
 export function gridIsCommand(gridDto: GridDto, customName: string): boolean {
   return gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === customName;
 }
@@ -103,18 +111,32 @@ async function gridPatchDeleteMulti(request: Request, gridDto: GridDto): Promise
   return { patches: [{ name: 'DeleteMulti', isDisabled: !gridIsAnySelectedMulti(gridDto) } satisfies GridPatchDto] };
 }
 
-/** Returns the multi select "Column Chooser" GridDto (used as lookup, see gridLookupSet) with one row per column; every column is selected initially. */
-export function gridLoadColumnChooser(columns: GridConfigColumnDto[]): GridDto {
+/**
+ * Returns the multi select "Column Chooser" GridDto (used as lookup, see gridLookupSet) with one row per column; a column is selected
+ * initially if it is in state.columnNames (all columns if columnNames is undefined). Its Ok button is handled by gridColumnChooserOk.
+ */
+export function gridLoadColumnChooser(columns: GridConfigColumnDto[], state: GridStateDto | undefined): GridDto {
   const headerRow: GridRowDto = { cells: [{ cellEnum: GridCellEnum.Header, text: 'Column Name' }] };
   const columnRows: GridRowDto[] = columns.map((column, rowIndex) => ({
     cells: [{ cellEnum: GridCellEnum.Label, text: column.text ?? titleCase(column.columnName), rowIndex, isSelectMulti: true }],
   }));
-  const cancelRow: GridRowDto = { cells: [{ cellEnum: GridCellEnum.Cancel, text: 'Cancel' }] };
+  const buttonRow: GridRowDto = {
+    cells: [
+      {
+        cellEnum: GridCellEnum.Custom,
+        customs: [
+          { text: 'Ok', customEnum: GridCustomEnum.Ok },
+          { text: 'Cancel', customEnum: GridCustomEnum.Cancel },
+        ],
+      },
+    ],
+  };
+  const columnNames = state?.columnNames;
   return {
-    rows: [headerRow, ...columnRows, cancelRow],
+    rows: [headerRow, ...columnRows, buttonRow],
     state: {
       rowKeys: columns.map((column) => column.columnName ?? ''),
-      isSelectedMulti: columns.map(() => true),
+      isSelectedMulti: columns.map((column) => columnNames === undefined || columnNames.includes(column.columnName ?? '')),
     },
     setting: { title: 'Column Chooser' },
   };

@@ -8,8 +8,6 @@ export enum GridCellEnum {
   Empty = 5,
   /** Renders GridCellDto.text as plain (read-only) text. */
   Label = 6,
-  /** Button with text GridCellDto.text; clicking it closes the plane containing this grid (sets it to null in the parent's GridDto.planes) without a server command call. */
-  Cancel = 7,
 }
 
 export enum GridCustomEnum {
@@ -26,6 +24,10 @@ export enum GridCustomEnum {
   Image = 6,
   /** Rendered like Button; clicking it sends GridCommandEnum.ColumnChooser. */
   ColumnChooser = 7,
+  /** Rendered like Button; clicking it closes the plane containing this grid (sets it to null in the parent's GridDto.planes) without a server command call. */
+  Cancel = 8,
+  /** Rendered like Button; clicking it calls the server with GridCommandEnum.Ok, then (on success) closes the plane containing this grid (sets it to null in the parent's GridDto.planes). */
+  Ok = 9,
 }
 
 export enum GridCommandEnum {
@@ -39,6 +41,8 @@ export enum GridCommandEnum {
   MultiClick = 6,
   /** Command to open the column chooser. */
   ColumnChooser = 7,
+  /** A GridCustomEnum.Ok button was clicked; App.Web closes the plane containing the grid afterwards. */
+  Ok = 8,
 }
 
 export interface GridCustomDto {
@@ -140,6 +144,8 @@ export interface GridSettingDto {
   title?: string;
   /** If true, selecting a row sends GridCommandEnum.Reload (with GridStateDto.selected set) to the backend, e.g. to load detail data for the selected row. */
   isSelectReload?: boolean;
+  /** If true, changing a GridCellDto.isSelectMulti checkbox sends GridCommandEnum.MultiClick to /api/grid-patch (e.g. to enable a DeleteMulti button); otherwise the new GridStateDto.isSelectedMulti is only kept on the client and sent with the next command. */
+  isSelectMultiPatch?: boolean;
 }
 
 export interface GridDto {
@@ -150,7 +156,7 @@ export interface GridDto {
   command?: GridCommandDto;
   modifies?: GridModifyDto[];
   customModifies?: GridCustomModifyDto[];
-  /** Nested grids (e.g. dialogs). planes[0] is reserved for grid system lookups (e.g. Column Chooser, rendered by Grid.tsx as overlay); app dialogs start at planes[1]. A null entry is a plane closed by App.Web (GridCellEnum.Cancel). */
+  /** Nested grids (e.g. dialogs). planes[0] is reserved for grid system lookups (e.g. Column Chooser, rendered by Grid.tsx as overlay); app dialogs start at planes[1]. A null entry is a plane closed by App.Web (GridCustomEnum.Cancel). */
   planes?: (GridPlaneDto | null)[];
   patches?: GridPatchDto[];
 }

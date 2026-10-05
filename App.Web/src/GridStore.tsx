@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react';
 import { apiFetch } from './util/util-main.ts';
-import type { GridDto, GridPlaneDto } from '../../App.Server/dto/shared/grid-dto.ts';
+import type { GridDto, GridPlaneDto, GridStateDto } from '../../App.Server/dto/shared/grid-dto.ts';
 
 export type { GridPlaneDto };
 
@@ -15,10 +15,14 @@ interface GridOverrideEntry {
 interface GridStoreValue {
   gridPlaneDto: GridPlaneDto;
   gridVersion: number;
-  load: (planeName: string) => Promise<GridPlaneDto>;
-  sendCommand: (path: number[], override: GridOverride) => Promise<GridPlaneDto>;
+  /** Returns the loaded plane, or undefined if the server call failed (the store is kept as is). */
+  load: (planeName: string) => Promise<GridPlaneDto | undefined>;
+  /** Returns the reloaded plane, or undefined if the server call failed (the store is kept as is). */
+  sendCommand: (path: number[], override: GridOverride) => Promise<GridPlaneDto | undefined>;
   /** Posts the plane with override applied at path to /api/grid-patch and applies the returned GridDto.patches to the loaded grids (rows aren't reloaded). override.state is also kept on the grid at path. */
   sendPatch: (path: number[], override: GridOverride) => Promise<GridPlaneDto>;
+  /** Merges state into GridDto.state of the grid at path without a server call; it is sent with the next command. */
+  setState: (path: number[], state: GridStateDto) => void;
   /** Closes the plane containing the nested grid at path (sets it to null in the parent's GridDto.planes) without a server call. No-op for a root grid. */
   closePlane: (path: number[]) => void;
 }
@@ -99,7 +103,7 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
   const planeNameRef = useRef<string | undefined>(undefined);
   const overridesRef = useRef<Map<string, GridOverrideEntry>>(new Map());
 
-  const fetchPlane = useCallback(async (): Promise<GridPlaneDto> => {
+  const fetchPlane = useCallback(async (): Promise<GridPlaneDto | undefined> => {
     const entries = [...overridesRef.current.values()];
     overridesRef.current.clear();
 
@@ -119,7 +123,7 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
     });
     // Error (e.g. not signed in): apiFetch already shows the alert; keep the store as is (the error body is not a GridPlaneDto).
     if (!response.ok) {
-      return gridPlaneDtoRef.current;
+      return undefined;
     }
     const data = (await response.json()) as GridPlaneDto;
     gridPlaneDtoRef.current = data;
@@ -129,7 +133,7 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const load = useCallback(
-    (planeName: string): Promise<GridPlaneDto> => {
+    (planeName: string): Promise<GridPlaneDto | undefined> => {
       planeNameRef.current = planeName;
       gridPlaneDtoRef.current = {};
       overridesRef.current.clear();
@@ -139,20 +143,27 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
   );
 
   const sendCommand = useCallback(
-    (path: number[], override: GridOverride): Promise<GridPlaneDto> => {
+    (path: number[], override: GridOverride): Promise<GridPlaneDto | undefined> => {
       overridesRef.current.set(path.join(':'), { path, override });
       return fetchPlane();
     },
     [fetchPlane],
   );
 
+  const setState = useCallback((path: number[], state: GridStateDto): void => {
+    const targetGrid = resolveGrid(gridPlaneDtoRef.current.grids, path);
+    if (targetGrid === undefined) {
+      return;
+    }
+    targetGrid.state = { ...targetGrid.state, ...state };
+    gridPlaneDtoRef.current = { ...gridPlaneDtoRef.current };
+    setGridPlaneDto(gridPlaneDtoRef.current);
+  }, []);
+
   const sendPatch = useCallback(async (path: number[], override: GridOverride): Promise<GridPlaneDto> => {
     // Keep the new state (e.g. isSelectedMulti) on the loaded grid so later commands like Reload or Save send it too.
-    const targetGrid = resolveGrid(gridPlaneDtoRef.current.grids, path);
-    if (targetGrid !== undefined && override.state !== undefined) {
-      targetGrid.state = { ...targetGrid.state, ...override.state };
-      gridPlaneDtoRef.current = { ...gridPlaneDtoRef.current };
-      setGridPlaneDto(gridPlaneDtoRef.current);
+    if (override.state !== undefined) {
+      setState(path, override.state);
     }
 
     const entries: GridOverrideEntry[] = [{ path, override }];
@@ -186,7 +197,7 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
     setGridPlaneDto(gridPlaneDtoRef.current);
 
     return data;
-  }, []);
+  }, [setState]);
 
   const closePlane = useCallback((path: number[]): void => {
     const planesIndex = path[path.length - 2];
@@ -199,7 +210,7 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
     setGridPlaneDto(gridPlaneDtoRef.current);
   }, []);
 
-  return <GridStoreContext.Provider value={{ gridPlaneDto, gridVersion, load, sendCommand, sendPatch, closePlane }}>{children}</GridStoreContext.Provider>;
+  return <GridStoreContext.Provider value={{ gridPlaneDto, gridVersion, load, sendCommand, sendPatch, setState, closePlane }}>{children}</GridStoreContext.Provider>;
 }
 
 export function useGridStore(): GridStoreValue {
