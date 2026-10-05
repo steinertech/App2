@@ -22,6 +22,8 @@ export enum GridCustomEnum {
   Edit = 5,
   /** Image with url GridCustomDto.imageUrl; GridCustomDto.text is its alt text. */
   Image = 6,
+  /** Rendered like Button; clicking it sends GridCommandEnum.ColumnChooser. */
+  ColumnChooser = 7,
 }
 
 export enum GridCommandEnum {
@@ -33,6 +35,8 @@ export enum GridCommandEnum {
   New = 5,
   /** A GridCellDto.isSelectMulti checkbox changed; rowIndex is the changed row, GridStateDto.isSelectedMulti the new selection. */
   MultiClick = 6,
+  /** Command to open the column chooser. */
+  ColumnChooser = 7,
 }
 
 export interface GridCustomDto {
@@ -114,6 +118,8 @@ export interface GridStateDto {
   sort?: GridSortDto;
   pathSegments?: GridPathSegmentDto[];
   rowKeys?: string[];
+  /** Names of the columns to display. */
+  columnNames?: string[];
   /** Custom JSON data (e.g. a pending action), sent back to the server unchanged with every request. Values must be JSON serializable. */
   custom?: Record<string, unknown>;
 }
@@ -144,11 +150,19 @@ export interface GridDto {
   customModifies?: GridCustomModifyDto[];
   planes?: GridPlaneDto[];
   patches?: GridPatchDto[];
+  lookup?: GridLookupDto;
 }
 
 export interface GridPlaneDto {
   planeName?: string;
   grids?: GridDto[];
+}
+
+export interface GridLookupDto {
+  grid?: GridDto;
+  cellEnum?: GridCellEnum;
+  rowIndex?: number;
+  columnName?: string;
 }
 
 /** Returns all GridDtos of the GridPlaneDto and, recursively, of every GridPlaneDto nested under GridDto.planes, as a flat list (depth-first, each grid before its nested grids). */

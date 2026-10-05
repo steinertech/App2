@@ -27,7 +27,18 @@ function samePath(a: number[], b: number[]): boolean {
   return a.length === b.length && a.every((value, index) => value === b[index]);
 }
 
-/** Finds the GridDto at path: [gridIndex] for a root grid, or [gridIndex, planesIndex, gridIndex, ...] for one nested under GridDto.planes. */
+/** planesIndex used in a path to address GridDto.lookup.grid (as its only nested grid, gridIndex 0) instead of a GridDto.planes entry. */
+export const LOOKUP_PLANES_INDEX = -1;
+
+/** Returns the grids nested under grid at planesIndex: GridDto.planes[planesIndex].grids, or [GridDto.lookup.grid] for LOOKUP_PLANES_INDEX. */
+function nestedGrids(grid: GridDto | undefined, planesIndex: number): GridDto[] | undefined {
+  if (planesIndex === LOOKUP_PLANES_INDEX) {
+    return grid?.lookup?.grid !== undefined ? [grid.lookup.grid] : undefined;
+  }
+  return grid?.planes?.[planesIndex]?.grids;
+}
+
+/** Finds the GridDto at path: [gridIndex] for a root grid, or [gridIndex, planesIndex, gridIndex, ...] for one nested under GridDto.planes (or GridDto.lookup, see LOOKUP_PLANES_INDEX). */
 export function resolveGrid(rootGrids: GridDto[] | undefined, path: number[]): GridDto | undefined {
   const [gridIndex, planesIndex, nestedGridIndex, ...rest] = path;
   if (gridIndex === undefined) {
@@ -37,7 +48,7 @@ export function resolveGrid(rootGrids: GridDto[] | undefined, path: number[]): G
   if (planesIndex === undefined || nestedGridIndex === undefined) {
     return grid;
   }
-  return resolveGrid(grid?.planes?.[planesIndex]?.grids, [nestedGridIndex, ...rest]);
+  return resolveGrid(nestedGrids(grid, planesIndex), [nestedGridIndex, ...rest]);
 }
 
 /** Rebuilds a GridDto for sending to the server: strips rows, setting and patches (the server always recomputes them) and, recursively, applies any override addressed at this node or one nested under it. */
@@ -53,6 +64,10 @@ function buildOutgoingGrid(existingGrid: GridDto, path: number[], entries: GridO
       ...gridPlane,
       grids: (gridPlane.grids ?? []).map((nestedGrid, gridIndex) => buildOutgoingGrid(nestedGrid, [...path, planesIndex, gridIndex], entries)),
     }));
+  }
+
+  if (grid.lookup?.grid !== undefined) {
+    grid.lookup = { ...grid.lookup, grid: buildOutgoingGrid(grid.lookup.grid, [...path, LOOKUP_PLANES_INDEX, 0], entries) };
   }
 
   return grid;

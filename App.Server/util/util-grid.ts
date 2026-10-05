@@ -501,10 +501,18 @@ async function gridLoadStorage(request: Request, gridDto: GridDto): Promise<Grid
       },
     ],
   };
+  const toolbarRow2: GridRowDto = {
+    cells: [
+      {
+        cellEnum: GridCellEnum.Custom,
+        customs: [{ text: 'Column Chooser', name: 'ColumnChooser', customEnum: GridCustomEnum.ColumnChooser }],
+      },
+    ],
+  };
 
   const result: GridDto = {
     ...gridDto,
-    rows: [toolbarRow, headerRow, findRow, ...fileRows],
+    rows: [toolbarRow, toolbarRow2, headerRow, findRow, ...fileRows],
     state: { ...gridDto.state, rowKeys, isSelectedMulti },
     setting: { title: 'Storage Data', isSelectReload: true },
   };
@@ -513,10 +521,29 @@ async function gridLoadStorage(request: Request, gridDto: GridDto): Promise<Grid
     gridStorageNew(result);
   }
 
+  // Column chooser lookup is only shown in the response to the ColumnChooser command; any other command closes it.
+  result.lookup = gridDto.command?.commandEnum === GridCommandEnum.ColumnChooser ? { grid: gridLoadColumnChooser(STORAGE_FILE_COLUMNS.columns ?? []) } : undefined;
+
   // Command is transient: clear it so it isn't re-processed on a later request.
   result.command = undefined;
 
   return result;
+}
+
+/** Returns the multi select "Column Chooser" GridDto (used as GridDto.lookup) with one row per column; every column is selected initially. */
+function gridLoadColumnChooser(columns: GridConfigColumnDto[]): GridDto {
+  const headerRow: GridRowDto = { cells: [{ cellEnum: GridCellEnum.Header, text: 'Column Name' }] };
+  const columnRows: GridRowDto[] = columns.map((column, rowIndex) => ({
+    cells: [{ cellEnum: GridCellEnum.Label, text: column.text ?? titleCase(column.columnName), rowIndex, isSelectMulti: true }],
+  }));
+  return {
+    rows: [headerRow, ...columnRows],
+    state: {
+      rowKeys: columns.map((column) => column.columnName ?? ''),
+      isSelectedMulti: columns.map(() => true),
+    },
+    setting: { title: 'Column Chooser' },
+  };
 }
 
 /** Returns the text of the cell in column columnName for file. Folders have no size: their Size cell is empty instead of "undefined". */

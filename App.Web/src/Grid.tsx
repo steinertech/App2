@@ -1,7 +1,7 @@
 import { useRef, useState, type ChangeEvent, type ReactNode } from 'react';
 import { addAlert, apiFetch, getIsProgress, setIsProgress } from './util/util-main.ts';
 import { AlertEnum } from '../../App.Server/dto/shared/alert-dto.ts';
-import { resolveGrid, useGridStore } from './GridStore.tsx';
+import { LOOKUP_PLANES_INDEX, resolveGrid, useGridStore } from './GridStore.tsx';
 import { buttonGridClassName, buttonPrimaryClassName } from './style.ts';
 import {
   GridCellEnum,
@@ -23,6 +23,7 @@ interface GridProps {
    * Address of this GridDto within the recursive GridPlaneDto tree: [gridIndex] for a
    * root grid, or [gridIndex, planesIndex, gridIndex, planesIndex, ...] to reach a GridDto
    * nested under GridDto.planes (e.g. a confirmation dialog opened by a parent grid).
+   * planesIndex LOOKUP_PLANES_INDEX addresses the parent's GridDto.lookup grid instead.
    */
   path: number[];
 }
@@ -75,7 +76,11 @@ function gridCustomContent(
       </nav>
     );
   }
-  if (gridCustom.customEnum === GridCustomEnum.Button || gridCustom.customEnum === GridCustomEnum.ButtonUpload) {
+  if (
+    gridCustom.customEnum === GridCustomEnum.Button ||
+    gridCustom.customEnum === GridCustomEnum.ButtonUpload ||
+    gridCustom.customEnum === GridCustomEnum.ColumnChooser
+  ) {
     return (
       <button
         key={key}
@@ -295,6 +300,10 @@ export default function Grid({ path }: GridProps) {
       fileInputRef.current?.click();
       return;
     }
+    if (gridCustom.customEnum === GridCustomEnum.ColumnChooser) {
+      await handleColumnChooserClick();
+      return;
+    }
 
     const gridCommand: GridCommandDto = { commandEnum: GridCommandEnum.CustomButtonClick };
     if (gridCustom.rowIndex !== undefined) {
@@ -345,6 +354,10 @@ export default function Grid({ path }: GridProps) {
     await sendGridCommand({ command: { commandEnum: GridCommandEnum.New }, modifies });
   };
 
+  const handleColumnChooserClick = async () => {
+    await sendGridCommand({ command: { commandEnum: GridCommandEnum.ColumnChooser } });
+  };
+
   return (
     <div>
       <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(event) => void handleFileChange(event)} />
@@ -390,6 +403,19 @@ export default function Grid({ path }: GridProps) {
       <button type="button" onClick={() => void handleNewClick()} className={`${buttonPrimaryClassName} mt-2 ml-2`}>
         New
       </button>
+      {/* Lookup grid (e.g. Column Chooser) as overlay; clicking outside it sends Reload, which closes it (the server only returns a lookup for the command that opened it). */}
+      {grid?.lookup?.grid !== undefined && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => void handleReloadClick()}
+        >
+          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl" onClick={(event) => event.stopPropagation()}>
+            <Grid path={[...path, LOOKUP_PLANES_INDEX, 0]} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
