@@ -47,10 +47,11 @@ export async function gridLoadStorage(request: Request, gridDto: GridDto): Promi
     const folderName = (confirmGridDto.customModifies ?? [])
       .find((customModify) => customModify.customName === 'FolderName')
       ?.textModified?.trim();
-    if (gridIsCommand(confirmGridDto, 'Yes') && folderName !== undefined && folderName !== '') {
-      await storageNew(request, newFolderPath, `${folderName}/`);
-    }
-    if (gridIsCommand(confirmGridDto, 'Yes') || gridIsCommand(confirmGridDto, 'Cancel')) {
+    // Its Cancel button (GridCustomEnum.Cancel) closes the dialog in App.Web without a server call.
+    if (gridIsCommand(confirmGridDto, 'Save')) {
+      if (folderName !== undefined && folderName !== '') {
+        await storageNew(request, newFolderPath, `${folderName}/`);
+      }
       gridDto.planes = undefined;
     } else {
       // Rows aren't sent back by the client: rebuild them (keeping the entered name) so the dialog stays visible across other commands.
@@ -283,7 +284,7 @@ function gridStorageDeleteConfirm(rowKeys: unknown): GridDto {
   return { setting: { title: 'Confirmation' }, rows: [textRow, buttonRow], state: { custom: { rowKeys } } };
 }
 
-/** Returns the "New Folder" dialog GridDto (Folder Name label and text box, Yes and Cancel buttons) carrying path (gridStatePath of the storage grid) in GridStateDto.custom. */
+/** Returns the "New Folder" dialog GridDto (Folder Name label and text box, Save button and client-side GridCustomEnum.Cancel button) carrying path (gridStatePath of the storage grid) in GridStateDto.custom. */
 function gridStorageNewFolder(path: string, folderName?: string): GridDto {
   const nameRow: GridRowDto = {
     cells: [
@@ -301,8 +302,8 @@ function gridStorageNewFolder(path: string, folderName?: string): GridDto {
       {
         cellEnum: GridCellEnum.Custom,
         customs: [
-          { customEnum: GridCustomEnum.Button, text: 'Yes', name: 'Yes' },
-          { customEnum: GridCustomEnum.Button, text: 'Cancel', name: 'Cancel' },
+          { customEnum: GridCustomEnum.Button, text: 'Save', name: 'Save' },
+          { customEnum: GridCustomEnum.Cancel, text: 'Cancel' },
         ],
       },
     ],
