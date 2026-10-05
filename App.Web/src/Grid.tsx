@@ -28,15 +28,6 @@ interface GridProps {
   path: number[];
 }
 
-/** Formats an ISO 8601 date (UTC) in the browser's locale and time zone, e.g. "2026-10-05T14:30:12.000Z" → "05.10.26, 16:30" (de-CH). Empty text stays empty. */
-function gridFormatDate(text: string | undefined): string | undefined {
-  if (!text) {
-    return text;
-  }
-  const date = new Date(text);
-  return isNaN(date.getTime()) ? text : date.toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
-}
-
 function gridCellClassName(gridCell: GridCellDto, rowSelected: boolean): string {
   if (gridCell.cellEnum === GridCellEnum.Header) {
     return 'font-bold text-white bg-blue-600';
@@ -147,7 +138,7 @@ function gridCellContent(
     const arrow = gridCell.isSortAsc === true ? ' ↑' : gridCell.isSortAsc === false ? ' ↓' : '';
     content = `${gridCell.text ?? ''}${arrow}`;
   } else if (gridCell.cellEnum === GridCellEnum.Label) {
-    content = gridCell.isDate ? gridFormatDate(gridCell.text) : gridCell.text;
+    content = gridCell.text;
   } else {
     content = gridCell.text;
   }

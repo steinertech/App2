@@ -80,8 +80,6 @@ export interface GridCellDto {
   isNew?: boolean;
   /** If true, show checkbox */
   isSelectMulti?: boolean;
-  /** If true, text is an ISO 8601 date (UTC) and App.Web shows it in the browser's local time zone. */
-  isDate?: boolean;
 }
 
 export interface GridRowDto {
