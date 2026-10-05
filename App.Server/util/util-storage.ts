@@ -65,7 +65,7 @@ export async function storageFiles(request: Request, path: string = ''): Promise
   const prefix = key + path;
 
   // Folded mode returns only the direct children of prefix: files in blobs, sub-folders (with trailing slash) in folders.
-  const blobs: { pathname: string; size: number }[] = [];
+  const blobs: { pathname: string; size: number; uploadedAt: Date }[] = [];
   const folderPaths: string[] = [];
   let cursor: string | undefined;
   do {
@@ -88,6 +88,7 @@ export async function storageFiles(request: Request, path: string = ''): Promise
       fileNameOnly: blob.pathname.split('/').pop() ?? blob.pathname,
       isFolder: false,
       size: blob.size,
+      dateModified: blob.uploadedAt.toISOString(),
     }));
 
   return [...folders, ...files];
