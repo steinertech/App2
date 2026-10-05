@@ -1,5 +1,5 @@
 import { userSession } from './util-user.js';
-import { ALERT_HEADER, type AlertDto, type AlertEnum } from '../dto/shared/alert-dto.js';
+import { ALERT_HEADER, type AlertDto, AlertEnum } from '../dto/shared/alert-dto.js';
 import { REDIRECT_HEADER } from '../dto/shared/redirect-dto.js';
 
 export const VERSION_SERVER = '1.18';
@@ -15,7 +15,10 @@ export function domainName(request: Request): string {
 export async function sectorKey(request: Request, isProject: boolean = true): Promise<string> {
   if (isProject) {
     const dto = await userSession(request);
-    if (!dto) throw new Error('User not signed in!');
+    if (!dto) {
+      redirectSet(request, '/sign-in');
+      throw new Error('User not signed in!');
+    }
     // SessionDto.projectName mirrors UserDto.projectName (copied on sign-in, kept in sync by userProject).
     if (!dto.projectName) throw new Error('User has no project selected!');
     return 'Domain' + '/' + domainName(request) + '/' + 'Project' + '/' + dto.projectName + '/';
@@ -72,7 +75,7 @@ export function jsonResponse(body: unknown, status = 200, headers: Record<string
 
 /**
  * Wraps an api/ endpoint: answers OPTIONS with 204, rejects every method other than `method` with 405,
- * merges corsHeaders into the handler's response, sends alerts queued via alertAdd in the ALERT_HEADER
+ * merges corsHeaders into the handler's response, turns a thrown error into a 500 with an Error alert, sends alerts queued via alertAdd in the ALERT_HEADER
  * and the url set via redirectSet in the REDIRECT_HEADER.
  * Export the result as the file's default.
  */
@@ -86,7 +89,15 @@ export function apiHandler(method: ApiMethod, handler: (request: Request) => Res
       if (request.method !== method) {
         return new Response(null, { status: 405, headers: { allow: `OPTIONS, ${method}`, ...cors } });
       }
-      const response = await handler(request);
+      let response: Response;
+      try {
+        response = await handler(request);
+      } catch (error) {
+        // Logged for Vercel's function logs; the message reaches App.Web as an Error alert.
+        console.error(error);
+        alertAdd(request, AlertEnum.Error, error instanceof Error ? error.message : String(error));
+        response = jsonResponse(null, 500);
+      }
       for (const [name, value] of Object.entries(cors)) {
         response.headers.set(name, value);
       }

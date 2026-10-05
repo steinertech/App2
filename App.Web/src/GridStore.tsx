@@ -111,6 +111,10 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body),
     });
+    // Error (e.g. not signed in): apiFetch already shows the alert; keep the store as is (the error body is not a GridPlaneDto).
+    if (!response.ok) {
+      return gridPlaneDtoRef.current;
+    }
     const data = (await response.json()) as GridPlaneDto;
     gridPlaneDtoRef.current = data;
     setGridPlaneDto(data);
@@ -160,6 +164,9 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body),
     });
+    if (!response.ok) {
+      return gridPlaneDtoRef.current;
+    }
     const data = (await response.json()) as GridPlaneDto;
 
     // Patch the loaded grids in place; gridVersion is left as is so unsaved input text isn't reset.

@@ -41,7 +41,7 @@ Vite only builds `App.Web`; `App.Server` has no build step.
 
 ### App.Server endpoint pattern
 Every file in `App.Server/api/` is a standalone Vercel function, mapped by filename to `/api/<filename>` (e.g. `api/user.ts` → `/api/user`). Each file's default export is `apiHandler(method, handler)` from `util-main.ts` (it returns the `{ fetch(request) }` object Vercel expects):
-1. `method` is the single HTTP method the endpoint accepts: `'POST'` for every endpoint except `api/version.ts` and `api/index.ts` (the plain-text page at the server root), which are `'GET'`. `apiHandler` answers `OPTIONS` with 204, rejects any other method with 405 (plus an `Allow` header), and merges `corsHeaders(request, method)` into every response — handlers never deal with OPTIONS or CORS themselves.
+1. `method` is the single HTTP method the endpoint accepts: `'POST'` for every endpoint except `api/version.ts` and `api/index.ts` (the plain-text page at the server root), which are `'GET'`. `apiHandler` answers `OPTIONS` with 204, rejects any other method with 405 (plus an `Allow` header), and merges `corsHeaders(request, method)` into every response — handlers never deal with OPTIONS or CORS themselves. If `handler` throws, `apiHandler` logs the error, queues its message as an `AlertEnum.Error` alert and returns a 500 (so a plain `throw new Error('...')` reaches the user as an alert).
 2. `handler` delegates business logic to a function in `App.Server/util/`.
 3. `handler` returns its result via `jsonResponse(body, status?, headers?)`.
 
@@ -70,7 +70,7 @@ All persisted DTOs (`UserDto`, `SessionDto`, `ProjectDto` — the ones with `_id
 
 The key takes one of two forms:
 - `Domain/<domainName>/Global/` when `isProject` is `false` (e.g. users, projects — looked up by domain, no sign-in required)
-- `Domain/<domainName>/Project/<projectName>/` when `isProject` is `true` (e.g. blob files inside a project) — this branch also asserts the caller has a valid session (throws `'User not signed in!'` if not) and a selected project (`<projectName>` is the session's `projectName`, which mirrors `UserDto.projectName`; throws `'User has no project selected!'` if unset), so `isProject: true` is how sign-in is enforced for a query or blob access.
+- `Domain/<domainName>/Project/<projectName>/` when `isProject` is `true` (e.g. blob files inside a project) — this branch also asserts the caller has a valid session (throws `'User not signed in!'` if not, after `redirectSet(request, '/sign-in')`) and a selected project (`<projectName>` is the session's `projectName`, which mirrors `UserDto.projectName`; throws `'User has no project selected!'` if unset), so `isProject: true` is how sign-in is enforced for a query or blob access.
 
 Always build sector keys through `sectorKey(...)` rather than constructing the `Domain/.../Global|Project/` string manually.
 

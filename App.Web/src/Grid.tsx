@@ -256,6 +256,9 @@ export default function Grid({ path }: GridProps) {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(storageUploadCollectionDto),
       });
+      if (!response.ok) {
+        return;
+      }
       const storageUploadCollection = (await response.json()) as StorageUploadCollectionDto;
 
       // Upload every selected file directly to blob storage via its presigned fileUrl.

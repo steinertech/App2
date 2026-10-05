@@ -4,3 +4,4 @@ dist-server/
 /.claude/
 .vercel
 .env*
+*.tsbuildinfo
