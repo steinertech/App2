@@ -1,5 +1,6 @@
 import { useRef, useState, type ChangeEvent, type ReactNode } from 'react';
-import { apiFetch, getIsProgress, setIsProgress } from './util/util-main.ts';
+import { addAlert, apiFetch, getIsProgress, setIsProgress } from './util/util-main.ts';
+import { AlertEnum } from '../../App.Server/dto/shared/alert-dto.ts';
 import { resolveGrid, useGridStore } from './GridStore.tsx';
 import { buttonGridClassName, buttonPrimaryClassName } from './style.ts';
 import {
@@ -256,6 +257,9 @@ export default function Grid({ path }: GridProps) {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(storageUploadCollectionDto),
       });
+      if (!response.ok) {
+        return; // apiFetch already showed an Error alert.
+      }
       const storageUploadCollection = (await response.json()) as StorageUploadCollectionDto;
 
       // Upload every selected file directly to blob storage via its presigned fileUrl.
@@ -265,7 +269,15 @@ export default function Grid({ path }: GridProps) {
           if (storageUpload.fileUrl === undefined || file === undefined) {
             return;
           }
-          await fetch(storageUpload.fileUrl, { method: 'PUT', body: file });
+          // Not an /api call, so apiFetch doesn't report a failure (e.g. file too large, expired fileUrl); report it here.
+          try {
+            const uploadResponse = await fetch(storageUpload.fileUrl, { method: 'PUT', body: file });
+            if (!uploadResponse.ok) {
+              addAlert(AlertEnum.Error, `Upload of ${file.name} failed (${uploadResponse.status})`);
+            }
+          } catch {
+            addAlert(AlertEnum.Error, `Upload of ${file.name} failed (no response from storage)`);
+          }
         }),
       );
 

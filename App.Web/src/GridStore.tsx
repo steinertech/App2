@@ -111,6 +111,10 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body),
     });
+    if (!response.ok) {
+      // apiFetch already showed an Error alert; keep the current grids instead of replacing them with the error body.
+      throw new Error(`Request grid-load failed (${response.status})`);
+    }
     const data = (await response.json()) as GridPlaneDto;
     gridPlaneDtoRef.current = data;
     setGridPlaneDto(data);
@@ -160,6 +164,10 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body),
     });
+    if (!response.ok) {
+      // apiFetch already showed an Error alert; keep the current grids instead of replacing them with the error body.
+      throw new Error(`Request grid-patch failed (${response.status})`);
+    }
     const data = (await response.json()) as GridPlaneDto;
 
     // Patch the loaded grids in place; gridVersion is left as is so unsaved input text isn't reset.

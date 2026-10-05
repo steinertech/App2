@@ -1,5 +1,5 @@
 import { userSession } from './util-user.js';
-import { ALERT_HEADER, type AlertDto, type AlertEnum } from '../dto/shared/alert-dto.js';
+import { ALERT_HEADER, AlertEnum, type AlertDto } from '../dto/shared/alert-dto.js';
 import { REDIRECT_HEADER } from '../dto/shared/redirect-dto.js';
 
 export const VERSION_SERVER = '1.18';
@@ -74,6 +74,7 @@ export function jsonResponse(body: unknown, status = 200, headers: Record<string
  * Wraps an api/ endpoint: answers OPTIONS with 204, rejects every method other than `method` with 405,
  * merges corsHeaders into the handler's response, sends alerts queued via alertAdd in the ALERT_HEADER
  * and the url set via redirectSet in the REDIRECT_HEADER.
+ * An error thrown by `handler` becomes a 500 response with the error's message as an Error alert.
  * Export the result as the file's default.
  */
 export function apiHandler(method: ApiMethod, handler: (request: Request) => Response | Promise<Response>) {
@@ -86,7 +87,14 @@ export function apiHandler(method: ApiMethod, handler: (request: Request) => Res
       if (request.method !== method) {
         return new Response(null, { status: 405, headers: { allow: `OPTIONS, ${method}`, ...cors } });
       }
-      const response = await handler(request);
+      let response: Response;
+      try {
+        response = await handler(request);
+      } catch (error) {
+        console.error(error);
+        alertAdd(request, AlertEnum.Error, error instanceof Error ? error.message : String(error));
+        response = jsonResponse({ error: 'Internal Server Error' }, 500);
+      }
       for (const [name, value] of Object.entries(cors)) {
         response.headers.set(name, value);
       }
