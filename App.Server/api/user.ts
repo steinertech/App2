@@ -25,7 +25,7 @@ export default apiHandler('POST', async (request) => {
       alertAdd(request, AlertEnum.Success, 'You successfully signed in.');
       redirectSet(request, '/');
       return json({ success: true }, 200, {
-        'set-cookie': `sessionId=${sessionId}; HttpOnly; Path=/; Secure; SameSite=None`,
+        'set-cookie': `sessionId=${sessionId}; HttpOnly; Path=/; Secure; SameSite=None; Max-Age=3600`,
       });
     }
     case UserRequestEnum.SignOut: {
