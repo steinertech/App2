@@ -50,6 +50,9 @@ Shared logic lives in `App.Server/util/` (not directly in `api/`):
 - `util-db.ts` — the shared MongoDB `client` (via `@vercel/functions` `attachDatabasePool`)
 - `util-user.ts` — user sign-up/sign-in/session/sign-out
 - `util-storage.ts` — blob upload/download via `@vercel/blob` (blob paths are prefixed with `sectorKey(request, true)`)
+- `util-grid.ts` — shared grid helpers plus the plane registry (`PLANE_GRID_LOADERS`, `PLANE_LOADERS`, `PLANE_GRID_PATCHERS`) behind `api/grid-load.ts` / `api/grid-patch.ts`
+
+Grid-specific logic lives in `App.Server/grid/` — one file per main grid served to App.Web (`grid-project.ts`, `grid-user.ts`, `grid-storage.ts`, the latter including the Image Preview grid). New grids go here and are registered in `util/util-grid.ts`.
 
 DTOs (plain interfaces, not classes) live under `App.Server/dto/`, split by whether `App.Web` uses them:
 - `App.Server/dto/shared/` — DTOs used by both `App.Server` and `App.Web` (must have no Node-only fields such as `ObjectId`). `App.Web` and `App.Server` share the same git repo, so these are imported directly by `App.Web` via a relative path (`import type { GridDto } from '../../../App.Server/dto/shared/grid-dto.ts'`) instead of being duplicated.

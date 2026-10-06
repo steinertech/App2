@@ -1,8 +1,8 @@
 import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridRowDto, gridStatePath } from '../dto/shared/grid-dto.js';
-import { storageDelete, storageDownloadUrls, storageFiles, storageNew, storageRename } from './util-storage.js';
+import { storageDelete, storageDownloadUrls, storageFiles, storageNew, storageRename } from '../util/util-storage.js';
 import { StorageFileDto } from '../dto/storage-file-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
-import { gridBarRow, gridColumnChooserOk, gridColumns, gridFindRow, gridHeaderCell, gridIsCommand, gridLoadColumnChooser, gridLookupSet, gridSelectedMultiRowKeys } from './util-grid.js';
+import { gridBarRow, gridColumnChooserOk, gridColumns, gridFindRow, gridHeaderCell, gridIsCommand, gridLoadColumnChooser, gridLookupSet, gridSelectedMultiRowKeys } from '../util/util-grid.js';
 
 const STORAGE_FILE_COLUMNS: GridConfigDto = {
   columns: [

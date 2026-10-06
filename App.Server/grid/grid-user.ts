@@ -1,8 +1,8 @@
 import { GridCellDto, GridCellEnum, GridDto, GridRowDto } from '../dto/shared/grid-dto.js';
-import { usersLoad } from './util-user.js';
+import { usersLoad } from '../util/util-user.js';
 import { UserDto } from '../dto/user-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
-import { gridFindRow, gridHeaderCell } from './util-grid.js';
+import { gridFindRow, gridHeaderCell } from '../util/util-grid.js';
 
 const USER_COLUMNS: GridConfigDto = {
   columns: (['email', 'sectorKey'] as const satisfies readonly (keyof UserDto)[]).map(

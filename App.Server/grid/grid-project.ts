@@ -1,11 +1,11 @@
 import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridRowDto } from '../dto/shared/grid-dto.js';
 import { AlertEnum } from '../dto/shared/alert-dto.js';
-import { alertAdd } from './util-main.js';
-import { projectsLoad, projectsLoadByNames, projectsUpdate, projectsInsert, projectsDeleteByNames } from './util-project.js';
-import { userProject } from './util-user.js';
+import { alertAdd } from '../util/util-main.js';
+import { projectsLoad, projectsLoadByNames, projectsUpdate, projectsInsert, projectsDeleteByNames } from '../util/util-project.js';
+import { userProject } from '../util/util-user.js';
 import { ProjectDto } from '../dto/project-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
-import { gridBarRow, gridFindCommand, gridFindRow, gridHeaderCell, gridIsAnySelectedMulti, gridRemoveCommand } from './util-grid.js';
+import { gridBarRow, gridFindCommand, gridFindRow, gridHeaderCell, gridIsAnySelectedMulti, gridRemoveCommand } from '../util/util-grid.js';
 
 const PROJECT_COLUMNS: GridConfigDto = {
   columns: (['name', 'description'] as const satisfies readonly (keyof ProjectDto)[]).map(

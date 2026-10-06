@@ -1,9 +1,9 @@
 import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomEnum, GridDto, GridPatchDto, GridPlaneDto, gridPlaneGrids, GridRowDto, GridSortDto, GridStateDto } from '../dto/shared/grid-dto.js';
 import { titleCase } from './util-main.js';
 import { GridConfigColumnDto } from '../dto/grid-config-dto.js';
-import { gridProjectLoad } from './util-grid-project.js';
-import { gridLoadUser } from './util-grid-user.js';
-import { gridLoadStorage, gridLoadStoragePreview } from './util-grid-storage.js';
+import { gridProjectLoad } from '../grid/grid-project.js';
+import { gridLoadUser } from '../grid/grid-user.js';
+import { gridLoadStorage, gridLoadStoragePreview } from '../grid/grid-storage.js';
 
 /** Row with a GridCustomEnum.Bar (Reload, Save and New buttons). Append it last, after any GridCommandEnum.New rows. */
 export function gridBarRow(): GridRowDto {
