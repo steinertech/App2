@@ -30,6 +30,8 @@ export enum GridCustomEnum {
   Cancel = 8,
   /** Rendered like Button; clicking it calls the server with GridCommandEnum.Ok, then (on success) closes the plane containing this grid (sets it to null in the parent's GridDto.planes). */
   Ok = 9,
+  /** Data grid control bar: renders Reload, Save and New buttons (sending GridCommandEnum.Reload, Save and New). Without it, a grid has none of these buttons. */
+  Bar = 10,
 }
 
 export enum GridCommandEnum {
@@ -45,8 +47,6 @@ export enum GridCommandEnum {
   ColumnChooser = 7,
   /** A GridCustomEnum.Ok button was clicked; App.Web closes the plane containing the grid afterwards. */
   Ok = 8,
-  /** Data grid control bar: Save, New (Add) and Reload (Refresh) buttons plus the pager. */
-  Bar = 9,
 }
 
 export interface GridCustomDto {

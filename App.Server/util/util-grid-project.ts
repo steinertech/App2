@@ -5,7 +5,7 @@ import { projectsLoad, projectsLoadByNames, projectsUpdate, projectsInsert, proj
 import { userProject } from './util-user.js';
 import { ProjectDto } from '../dto/project-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
-import { gridFindCommand, gridFindRow, gridHeaderCell, gridIsAnySelectedMulti, gridRemoveCommand } from './util-grid.js';
+import { gridBarRow, gridFindCommand, gridFindRow, gridHeaderCell, gridIsAnySelectedMulti, gridRemoveCommand } from './util-grid.js';
 
 const PROJECT_COLUMNS: GridConfigDto = {
   columns: (['name', 'description'] as const satisfies readonly (keyof ProjectDto)[]).map(
@@ -135,6 +135,9 @@ export async function gridProjectLoad(request: Request, gridDto: GridDto): Promi
   if (gridDto.command?.commandEnum === GridCommandEnum.New) {
     await gridProjectNew(request, result);
   }
+
+  // Bar last, after any New rows.
+  result.rows = [...(result.rows ?? []), gridBarRow()];
 
   if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === 'Confirm') {
     result.planes = [null, { grids: [gridConfirm('Are you sure?')] }];

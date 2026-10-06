@@ -48,7 +48,23 @@ function gridCustomContent(
   onCustomClick: (gridCustom: GridCustomDto, pathIndex?: number) => void,
   onCustomTextChange: (gridCustom: GridCustomDto, textModified: string) => void,
   pathSegments: GridPathSegmentDto[],
+  onBarClick: (commandEnum: GridCommandEnum) => void,
 ): ReactNode {
+  if (gridCustom.customEnum === GridCustomEnum.Bar) {
+    return (
+      <span key={key}>
+        <button type="button" onClick={() => onBarClick(GridCommandEnum.Reload)} className={buttonPrimaryClassName}>
+          Reload
+        </button>
+        <button type="button" onClick={() => onBarClick(GridCommandEnum.Save)} className={`${buttonPrimaryClassName} ml-2`}>
+          Save
+        </button>
+        <button type="button" onClick={() => onBarClick(GridCommandEnum.New)} className={`${buttonPrimaryClassName} ml-2`}>
+          New
+        </button>
+      </span>
+    );
+  }
   if (gridCustom.customEnum === GridCustomEnum.Edit) {
     return (
       <input
@@ -113,11 +129,12 @@ function gridCellContent(
   onSelectMultiChange: (rowIndex: number, checked: boolean) => void,
   isSelectedMulti: boolean[],
   pathSegments: GridPathSegmentDto[],
+  onBarClick: (commandEnum: GridCommandEnum) => void,
 ): ReactNode {
   let content: ReactNode;
   if (gridCell.cellEnum === GridCellEnum.Custom) {
     content = (gridCell.customs ?? []).map((gridCustom, index) =>
-      gridCustomContent(gridCustom, index, gridVersion, onCustomClick, onCustomTextChange, pathSegments),
+      gridCustomContent(gridCustom, index, gridVersion, onCustomClick, onCustomTextChange, pathSegments, onBarClick),
     );
   } else if (gridCell.cellEnum === GridCellEnum.Empty) {
     content = null;
@@ -380,6 +397,17 @@ export default function Grid({ path }: GridProps) {
     }
   };
 
+  /** Click on a button of a GridCustomEnum.Bar. */
+  const handleBarClick = async (commandEnum: GridCommandEnum) => {
+    if (commandEnum === GridCommandEnum.Reload) {
+      await handleReloadClick();
+    } else if (commandEnum === GridCommandEnum.Save) {
+      await handleSaveClick();
+    } else if (commandEnum === GridCommandEnum.New) {
+      await handleNewClick();
+    }
+  };
+
   const handleColumnChooserClick = async () => {
     await sendGridCommand({ command: { commandEnum: GridCommandEnum.ColumnChooser } });
   };
@@ -413,6 +441,7 @@ export default function Grid({ path }: GridProps) {
                     handleSelectMultiChange,
                     isSelectedMulti,
                     grid?.state?.pathSegments ?? [],
+                    (commandEnum) => void handleBarClick(commandEnum),
                   )}
                 </td>
               ))}
@@ -420,15 +449,6 @@ export default function Grid({ path }: GridProps) {
           ))}
         </tbody>
       </table>
-      <button type="button" onClick={() => void handleReloadClick()} className={`${buttonPrimaryClassName} mt-2`}>
-        Reload
-      </button>
-      <button type="button" onClick={() => void handleSaveClick()} className={`${buttonPrimaryClassName} mt-2 ml-2`}>
-        Save
-      </button>
-      <button type="button" onClick={() => void handleNewClick()} className={`${buttonPrimaryClassName} mt-2 ml-2`}>
-        New
-      </button>
       {/* Lookup grid (e.g. Column Chooser) at planes[0] as overlay; clicking outside it sends Reload, which closes it (the server only returns a lookup for the command that opened it). */}
       {grid?.planes?.[0]?.grids?.[0] !== undefined && (
         <div
