@@ -2,7 +2,7 @@ import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEn
 import { storageDelete, storageDownloadUrls, storageFiles, storageNew, storageRename } from './util-storage.js';
 import { StorageFileDto } from '../dto/storage-file-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
-import { gridColumnChooserOk, gridColumns, gridFindRow, gridHeaderCell, gridIsCommand, gridLoadColumnChooser, gridLookupSet, gridSelectedMultiRowKeys } from './util-grid.js';
+import { gridBarRow, gridColumnChooserOk, gridColumns, gridFindRow, gridHeaderCell, gridIsCommand, gridLoadColumnChooser, gridLookupSet, gridSelectedMultiRowKeys } from './util-grid.js';
 
 const STORAGE_FILE_COLUMNS: GridConfigDto = {
   columns: [
@@ -178,13 +178,9 @@ export async function gridLoadStorage(request: Request, gridDto: GridDto): Promi
     ],
   };
 
-  const barRow: GridRowDto = {
-    cells: [{ cellEnum: GridCellEnum.Custom, customs: [{ name: 'Bar', customEnum: GridCustomEnum.Bar }] }],
-  };
-
   const result: GridDto = {
     ...gridDto,
-    rows: [toolbarRow, toolbarRow2, headerRow, findRow, ...fileRows, barRow],
+    rows: [toolbarRow, toolbarRow2, headerRow, findRow, ...fileRows],
     state: { ...gridDto.state, rowKeys, isSelectedMulti },
     setting: { title: 'Storage Data', isSelectReload: true, isSelectMultiPatch: true },
   };
@@ -192,6 +188,9 @@ export async function gridLoadStorage(request: Request, gridDto: GridDto): Promi
   if (gridDto.command?.commandEnum === GridCommandEnum.New) {
     gridStorageNew(result, columns);
   }
+
+  // Bar last, after any New rows.
+  result.rows = [...(result.rows ?? []), gridBarRow()];
 
   // Column chooser lookup (planes[0]) is only shown in the response to the ColumnChooser command; any other command closes it.
   gridLookupSet(result, gridDto.command?.commandEnum === GridCommandEnum.ColumnChooser ? gridLoadColumnChooser(STORAGE_FILE_COLUMNS.columns ?? [], gridDto.state) : undefined);

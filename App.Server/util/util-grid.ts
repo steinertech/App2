@@ -5,6 +5,11 @@ import { gridProjectLoad } from './util-grid-project.js';
 import { gridLoadUser } from './util-grid-user.js';
 import { gridLoadStorage, gridLoadStoragePreview } from './util-grid-storage.js';
 
+/** Row with a GridCustomEnum.Bar (Reload, Save and New buttons). Append it last, after any GridCommandEnum.New rows. */
+export function gridBarRow(): GridRowDto {
+  return { cells: [{ cellEnum: GridCellEnum.Custom, customs: [{ name: 'Bar', customEnum: GridCustomEnum.Bar }] }] };
+}
+
 export function gridFindRow(columnNames: (string | undefined)[]): GridRowDto {
   return {
     cells: columnNames.map((columnName): GridCellDto =>
