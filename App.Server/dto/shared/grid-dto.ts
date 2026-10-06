@@ -86,6 +86,11 @@ export interface GridRowDto {
   cells?: GridCellDto[];
 }
 
+/** One html table of a grid. See GridDto.tables. */
+export interface GridTableDto {
+  rows?: GridRowDto[];
+}
+
 export interface GridSortDto {
   isSortAsc?: boolean;
   columnName?: string;
@@ -166,7 +171,8 @@ export interface GridSettingDto {
 }
 
 export interface GridDto {
-  rows?: GridRowDto[];
+  /** Rendered as one html table each: tables[0] toolbar rows, tables[1] data rows (header, find and data rows; or a dialog's content), tables[2] GridCustomEnum.Bar rows. */
+  tables?: GridTableDto[];
   state?: GridStateDto;
   /** Not sent back to the server (stripped by App.Web), so the backend must set it on every response. */
   setting?: GridSettingDto;

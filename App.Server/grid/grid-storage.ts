@@ -2,7 +2,7 @@ import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEn
 import { storageDelete, storageDownloadUrls, storageFiles, storageNew, storageRename } from '../util/util-storage.js';
 import { StorageFileDto } from '../dto/storage-file-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
-import { gridBarRow, gridColumnChooserOk, gridColumns, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand, gridLoadColumnChooser, gridLookupSet, gridSelectedMultiRowKeys } from '../util/util-grid.js';
+import { gridBarRow, gridColumnChooserOk, gridColumns, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand, gridLoadColumnChooser, gridLookupSet, gridSelectedMultiRowKeys, gridTables } from '../util/util-grid.js';
 
 const STORAGE_FILE_COLUMNS: GridConfigDto = {
   columns: [
@@ -182,7 +182,7 @@ export async function gridLoadStorage(request: Request, gridDto: GridDto): Promi
 
   const result: GridDto = {
     ...gridDto,
-    rows: [toolbarRow, toolbarRow2, headerRow, findRow, ...fileRows],
+    tables: gridTables([toolbarRow, toolbarRow2], [headerRow, findRow, ...fileRows], [gridBarRow()]),
     state: { ...gridDto.state, ...fspState, rowKeys, isSelectedMulti },
     setting: { title: 'Storage Data', isSelectReload: true, isSelectMultiPatch: true },
   };
@@ -190,9 +190,6 @@ export async function gridLoadStorage(request: Request, gridDto: GridDto): Promi
   if (gridDto.command?.commandEnum === GridCommandEnum.New) {
     gridStorageNew(result, columns);
   }
-
-  // Bar last, after any New rows.
-  result.rows = [...(result.rows ?? []), gridBarRow()];
 
   // Column chooser lookup (planes[0]) is only shown in the response to the ColumnChooser command; any other command closes it.
   gridLookupSet(result, gridDto.command?.commandEnum === GridCommandEnum.ColumnChooser ? gridLoadColumnChooser(STORAGE_FILE_COLUMNS.columns ?? [], gridDto.state) : undefined);
@@ -298,7 +295,7 @@ function gridStorageDeleteConfirm(rowKeys: unknown): GridDto {
       },
     ],
   };
-  return { setting: { title: 'Confirmation' }, rows: [textRow, buttonRow], state: { custom: { rowKeys } } };
+  return { setting: { title: 'Confirmation' }, tables: gridTables([], [textRow, buttonRow]), state: { custom: { rowKeys } } };
 }
 
 /** Returns the "New Folder" dialog GridDto (Folder Name label and text box, Save button and client-side GridCustomEnum.Cancel button) carrying path (gridStatePath of the storage grid) in GridStateDto.custom. */
@@ -325,7 +322,7 @@ function gridStorageNewFolder(path: string, folderName?: string): GridDto {
       },
     ],
   };
-  return { setting: { title: 'New Folder' }, rows: [nameRow, buttonRow], state: { custom: { path } } };
+  return { setting: { title: 'New Folder' }, tables: gridTables([], [nameRow, buttonRow]), state: { custom: { path } } };
 }
 
 /** Deletes rowKeys (paths relative to the sector key; folders end with "/"). rowKeys come back from the client; storageDelete prepends the caller's sector key. */
@@ -339,9 +336,13 @@ async function gridStorageDelete(request: Request, rowKeys: unknown[]): Promise<
   await storageDelete(request, '', fileOrFolderNames);
 }
 
-/** Appends one empty, editable new row (one cell per rendered column) to gridDto. */
+/** Appends one empty, editable new row (one cell per rendered column) to the data table (GridDto.tables[1]). */
 function gridStorageNew(gridDto: GridDto, columns: GridConfigColumnDto[]): void {
-  const rows = gridDto.rows ?? [];
+  const dataTable = gridDto.tables?.[1];
+  if (dataTable === undefined) {
+    return;
+  }
+  const rows = dataTable.rows ?? [];
   const rowIndex = rows.length;
 
   const newRow: GridRowDto = {
@@ -356,7 +357,7 @@ function gridStorageNew(gridDto: GridDto, columns: GridConfigColumnDto[]): void 
     ),
   };
 
-  gridDto.rows = [...rows, newRow];
+  dataTable.rows = [...rows, newRow];
 }
 
 /** Adds the "Image Preview" grid (GridPlaneDto.grids[1]) if the selected row of the storage grid (grids[0]) is a .jpg or .png file. */
@@ -371,7 +372,7 @@ export async function gridLoadStoragePreview(request: Request, grids: GridDto[])
   const [imageUrl] = await storageDownloadUrls(request, [rowKey]);
   const previewGridDto: GridDto = {
     setting: { title: 'Image Preview' },
-    rows: [{ cells: [{ cellEnum: GridCellEnum.Custom, customs: [{ customEnum: GridCustomEnum.Image, imageUrl, text: rowKey.split('/').pop() }] }] }],
+    tables: gridTables([], [{ cells: [{ cellEnum: GridCellEnum.Custom, customs: [{ customEnum: GridCustomEnum.Image, imageUrl, text: rowKey.split('/').pop() }] }] }]),
   };
   return [storageGridDto, previewGridDto];
 }

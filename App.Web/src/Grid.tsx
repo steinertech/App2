@@ -250,7 +250,7 @@ export default function Grid({ path }: GridProps) {
   const { gridPlaneDto, gridVersion, sendCommand, sendPatch, setState, closePlane } = useGridStore();
 
   const grid = resolveGrid(gridPlaneDto.grids, path);
-  const gridRows = grid?.rows ?? [];
+  const gridTables = grid?.tables ?? [];
   const [rowIndexSelected, setRowIndexSelected] = useState(grid?.state?.selected);
   const [modifies, setModifies] = useState<GridModifyDto[]>(grid?.modifies ?? []);
   const [customModifies, setCustomModifies] = useState<GridCustomModifyDto[]>(grid?.customModifies ?? []);
@@ -523,43 +523,46 @@ export default function Grid({ path }: GridProps) {
     <div>
       <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(event) => void handleFileChange(event)} />
       <h1 className="text-4xl font-bold">{grid?.setting?.title}</h1>
-      <table className="w-full">
-        <tbody>
-          {gridRows.map((gridRow, rowIndex) => (
-            <tr key={rowIndex}>
-              {(gridRow.cells ?? []).map((gridCell, cellIndex) => (
-                <td
-                  key={cellIndex}
-                  className={gridCellClassName(gridCell, gridCell.rowIndex !== undefined && gridCell.rowIndex === rowIndexSelected)}
-                  onClick={() => {
-                    if (gridCell.cellEnum === GridCellEnum.Header) {
-                      void handleHeaderClick(gridCell);
-                    } else if (gridCell.rowIndex !== undefined) {
-                      void handleRowSelect(gridCell.rowIndex);
-                    }
-                  }}
-                >
-                  {gridCellContent(
-                    gridCell,
-                    gridVersion,
-                    (gridCustom, pathIndex) => handleCustomClick(gridCell, gridCustom, pathIndex),
-                    handleCustomTextChange,
-                    handleTextChange,
-                    handleSelectMultiChange,
-                    isSelectedMulti,
-                    grid?.state?.pathSegments ?? [],
-                    (commandEnum) => void handleBarClick(commandEnum),
-                    (statePage) => void handlePageChange(statePage),
-                    handleSearchChange,
-                    grid?.state?.filters ?? {},
-                    grid?.state,
-                  )}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {/* One html table per GridDto.tables entry: toolbar, data and Bar. */}
+      {gridTables.map((gridTable, tableIndex) => (
+        <table key={tableIndex} className="w-full">
+          <tbody>
+            {(gridTable.rows ?? []).map((gridRow, rowIndex) => (
+              <tr key={rowIndex}>
+                {(gridRow.cells ?? []).map((gridCell, cellIndex) => (
+                  <td
+                    key={cellIndex}
+                    className={gridCellClassName(gridCell, gridCell.rowIndex !== undefined && gridCell.rowIndex === rowIndexSelected)}
+                    onClick={() => {
+                      if (gridCell.cellEnum === GridCellEnum.Header) {
+                        void handleHeaderClick(gridCell);
+                      } else if (gridCell.rowIndex !== undefined) {
+                        void handleRowSelect(gridCell.rowIndex);
+                      }
+                    }}
+                  >
+                    {gridCellContent(
+                      gridCell,
+                      gridVersion,
+                      (gridCustom, pathIndex) => handleCustomClick(gridCell, gridCustom, pathIndex),
+                      handleCustomTextChange,
+                      handleTextChange,
+                      handleSelectMultiChange,
+                      isSelectedMulti,
+                      grid?.state?.pathSegments ?? [],
+                      (commandEnum) => void handleBarClick(commandEnum),
+                      (statePage) => void handlePageChange(statePage),
+                      handleSearchChange,
+                      grid?.state?.filters ?? {},
+                      grid?.state,
+                    )}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ))}
       {/* Lookup grid (e.g. Column Chooser) at planes[0] as overlay; clicking outside it sends Reload, which closes it (the server only returns a lookup for the command that opened it). */}
       {grid?.planes?.[0]?.grids?.[0] !== undefined && (
         <div

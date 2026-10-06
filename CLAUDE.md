@@ -98,6 +98,8 @@ SignIn (`UserRequestEnum.SignIn` → `signIn`) sets an httpOnly `sessionId` cook
 ### App.Web styles and grid toolbar (Bar)
 Shared Tailwind class strings live as constants in `App.Web/src/style.ts` (e.g. `buttonPrimaryClassName`, `buttonGridClassName`, `textInputClassName`); reuse them instead of repeating class lists inline.
 
+A `GridDto` has no `rows` of its own: its rows are split over `GridDto.tables` (`GridTableDto[]`, built with `gridTables(toolbarRows, dataRows, barRows)` in `util-grid.ts`), and `Grid.tsx` renders one html `<table>` per entry: `tables[0]` toolbar rows, `tables[1]` data rows (header, find and data rows, or a dialog's content; `GridCommandEnum.New` rows are appended here), `tables[2]` the `gridBarRow()`.
+
 `GridCustomEnum.Bar` (rendered in `gridCustomContent` in `Grid.tsx`) follows the typical data grid toolbar layout: a `gridBarClassName` strip (light gray, bordered, rounded top, `justify-between`, wraps on narrow screens) with two groups:
 - **Left — actions:** `New` (the main action, `buttonBarPrimaryClassName`, solid blue), then `Save` and `Reload` (secondary, `buttonBarClassName`, white outlined).
 - **Right — paging:** "Rows per page:" select, "Page X of Y", then Previous/Next as icon-only buttons (`buttonBarIconClassName`, inline SVG chevrons with `aria-label`/`title`), disabled on the first/last page.

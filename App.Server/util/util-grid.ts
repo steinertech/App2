@@ -1,11 +1,16 @@
-import { GRID_PAGE_ROW_COUNT_DEFAULT, GRID_PAGE_ROW_COUNT_MAX, GridCellDto, GridCellEnum, GridCommandEnum, GridCustomEnum, GridDto, GridPatchDto, GridPlaneDto, gridPlaneGrids, GridRowDto, GridSortDto, GridStateDto } from '../dto/shared/grid-dto.js';
+import { GRID_PAGE_ROW_COUNT_DEFAULT, GRID_PAGE_ROW_COUNT_MAX, GridCellDto, GridCellEnum, GridCommandEnum, GridCustomEnum, GridDto, GridPatchDto, GridPlaneDto, gridPlaneGrids, GridRowDto, GridSortDto, GridStateDto, GridTableDto } from '../dto/shared/grid-dto.js';
 import { titleCase } from './util-main.js';
 import { GridConfigColumnDto, GridConfigTypeEnum } from '../dto/grid-config-dto.js';
 import { gridProjectLoad } from '../grid/grid-project.js';
 import { gridLoadUser } from '../grid/grid-user.js';
 import { gridLoadStorage, gridLoadStoragePreview } from '../grid/grid-storage.js';
 
-/** Row with a GridCustomEnum.Bar (Reload, Save and New buttons). Append it last, after any GridCommandEnum.New rows. */
+/** Returns GridDto.tables: tables[0] toolbarRows, tables[1] dataRows and tables[2] barRows. */
+export function gridTables(toolbarRows: GridRowDto[], dataRows: GridRowDto[], barRows: GridRowDto[] = []): GridTableDto[] {
+  return [{ rows: toolbarRows }, { rows: dataRows }, { rows: barRows }];
+}
+
+/** Row with a GridCustomEnum.Bar (Reload, Save and New buttons). Goes into GridDto.tables[2] (see gridTables). */
 export function gridBarRow(): GridRowDto {
   return { cells: [{ cellEnum: GridCellEnum.Custom, customs: [{ name: 'Bar', customEnum: GridCustomEnum.Bar }] }] };
 }
@@ -227,7 +232,7 @@ export function gridLoadColumnChooser(allColumns: GridConfigColumnDto[], state: 
   };
   const columnNames = state?.columnNames;
   return {
-    rows: [headerRow, ...columnRows, buttonRow],
+    tables: gridTables([], [headerRow, ...columnRows, buttonRow]),
     state: {
       rowKeys: columns.map((column) => column.columnName ?? ''),
       isSelectedMulti: columns.map((column) => columnNames === undefined || columnNames.includes(column.columnName ?? '')),

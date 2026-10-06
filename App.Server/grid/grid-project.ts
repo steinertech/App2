@@ -5,7 +5,7 @@ import { projectsLoad, projectsLoadByNames, projectsUpdate, projectsInsert, proj
 import { userProject } from '../util/util-user.js';
 import { ProjectDto } from '../dto/project-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
-import { gridBarRow, gridColumns, gridFindCommand, gridFindRow, gridFsp, gridHeaderCell, gridIsAnySelectedMulti, gridRemoveCommand } from '../util/util-grid.js';
+import { gridBarRow, gridColumns, gridFindCommand, gridFindRow, gridFsp, gridHeaderCell, gridIsAnySelectedMulti, gridRemoveCommand, gridTables } from '../util/util-grid.js';
 
 const PROJECT_COLUMNS: GridConfigDto = {
   columns: (['name', 'description'] as const satisfies readonly (keyof ProjectDto)[]).map(
@@ -29,7 +29,7 @@ function gridConfirm(text: string): GridDto {
       },
     ],
   };
-  return { rows: [textRow, buttonRow] };
+  return { tables: gridTables([], [textRow, buttonRow]) };
 }
 
 export async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<GridDto> {
@@ -129,16 +129,13 @@ export async function gridProjectLoad(request: Request, gridDto: GridDto): Promi
   const result: GridDto = {
     ...gridDto,
     setting: { title: `Project Data (${time})`, isSelectMultiPatch: true },
-    rows: [deleteMultiRow, headerRow, findRow, ...rows],
+    tables: gridTables([deleteMultiRow], [headerRow, findRow, ...rows], [gridBarRow()]),
     state: { ...gridDto.state, ...fspState, rowKeys },
   };
 
   if (gridDto.command?.commandEnum === GridCommandEnum.New) {
     await gridProjectNew(request, result);
   }
-
-  // Bar last, after any New rows.
-  result.rows = [...(result.rows ?? []), gridBarRow()];
 
   if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === 'Confirm') {
     result.planes = [null, { grids: [gridConfirm('Are you sure?')] }];
@@ -221,8 +218,13 @@ async function gridProjectSaveInsert(request: Request, gridDto: GridDto): Promis
   await projectsInsert(request, [...projectsByRowIndex.values()]);
 }
 
+/** Appends two empty, editable new rows to the data table (GridDto.tables[1]). */
 async function gridProjectNew(request: Request, gridDto: GridDto): Promise<void> {
-  const rows = gridDto.rows ?? [];
+  const dataTable = gridDto.tables?.[1];
+  if (dataTable === undefined) {
+    return;
+  }
+  const rows = dataTable.rows ?? [];
 
   const newRows: GridRowDto[] = [0, 1].map((rowOffset) => {
     const rowIndex = rows.length + rowOffset;
@@ -239,5 +241,5 @@ async function gridProjectNew(request: Request, gridDto: GridDto): Promise<void>
     };
   });
 
-  gridDto.rows = [...rows, ...newRows];
+  dataTable.rows = [...rows, ...newRows];
 }

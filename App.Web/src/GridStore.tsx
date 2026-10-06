@@ -46,11 +46,11 @@ export function resolveGrid(rootGrids: GridDto[] | undefined, path: number[]): G
   return resolveGrid(grid?.planes?.[planesIndex]?.grids,[nestedGridIndex, ...rest]);
 }
 
-/** Rebuilds a GridDto for sending to the server: strips rows, setting and patches (the server always recomputes them) and, recursively, applies any override addressed at this node or one nested under it. */
+/** Rebuilds a GridDto for sending to the server: strips tables, setting and patches (the server always recomputes them) and, recursively, applies any override addressed at this node or one nested under it. */
 function buildOutgoingGrid(existingGrid: GridDto, path: number[], entries: GridOverrideEntry[]): GridDto {
   const entry = entries.find((candidate) => samePath(candidate.path, path));
   const grid: GridDto = { ...existingGrid, ...entry?.override };
-  delete grid.rows;
+  delete grid.tables;
   delete grid.setting;
   delete grid.patches;
 
@@ -71,7 +71,7 @@ function buildOutgoingGrid(existingGrid: GridDto, path: number[], entries: GridO
 /** Copies isDisabled from every patch in responseGrid.patches onto each GridCustomDto in grid whose name matches, then recurses into planes (the response mirrors the request's structure). */
 function applyPatches(grid: GridDto, responseGrid: GridDto): void {
   for (const patch of responseGrid.patches ?? []) {
-    for (const row of grid.rows ?? []) {
+    for (const row of (grid.tables ?? []).flatMap((table) => table.rows ?? [])) {
       for (const cell of row.cells ?? []) {
         for (const custom of cell.customs ?? []) {
           if (custom.name === patch.name) {

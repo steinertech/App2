@@ -2,7 +2,7 @@ import { GridCellDto, GridCellEnum, GridDto, GridRowDto } from '../dto/shared/gr
 import { usersLoad } from '../util/util-user.js';
 import { UserDto } from '../dto/user-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
-import { gridColumns, gridFindRow, gridHeaderCell } from '../util/util-grid.js';
+import { gridColumns, gridFindRow, gridHeaderCell, gridTables } from '../util/util-grid.js';
 
 const USER_COLUMNS: GridConfigDto = {
   columns: (['email', 'sectorKey'] as const satisfies readonly (keyof UserDto)[]).map(
@@ -28,5 +28,5 @@ export async function gridLoadUser(request: Request, gridDto: GridDto): Promise<
   }));
   const findRow = gridFindRow([...gridColumns(USER_COLUMNS.columns ?? []).map((column) => column.columnName)]);
 
-  return { ...gridDto, setting: { title: 'User Data' }, rows: [headerRow, findRow, ...rows] };
+  return { ...gridDto, setting: { title: 'User Data' }, tables: gridTables([], [headerRow, findRow, ...rows]) };
 }
