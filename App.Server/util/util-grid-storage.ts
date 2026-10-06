@@ -178,9 +178,13 @@ export async function gridLoadStorage(request: Request, gridDto: GridDto): Promi
     ],
   };
 
+  const barRow: GridRowDto = {
+    cells: [{ cellEnum: GridCellEnum.Custom, customs: [{ name: 'Bar', customEnum: GridCustomEnum.Bar }] }],
+  };
+
   const result: GridDto = {
     ...gridDto,
-    rows: [toolbarRow, toolbarRow2, headerRow, findRow, ...fileRows],
+    rows: [toolbarRow, toolbarRow2, headerRow, findRow, ...fileRows, barRow],
     state: { ...gridDto.state, rowKeys, isSelectedMulti },
     setting: { title: 'Storage Data', isSelectReload: true, isSelectMultiPatch: true },
   };
