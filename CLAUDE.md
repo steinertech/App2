@@ -94,3 +94,12 @@ SignIn (`UserRequestEnum.SignIn` → `signIn`) sets an httpOnly `sessionId` cook
 `main.tsx` renders in `<StrictMode>`, which runs every effect twice in dev. A page that calls the backend on mount (e.g. `load('storage')`, sign-out) uses `useEffectOnce(effect, deps)` (`src/util/util-main.ts`) instead of `useEffect`, so the call is sent once per distinct `deps` values.
 
 `NavState.tsx` polls `/api/user` (`UserRequestEnum.Session`) on mount and exposes `refreshNavState()`, which dispatches a window event other components (e.g. after sign-in/sign-out) use to force it to re-fetch. It also shares the signed-in state via `getIsSignIn()` + `SIGN_IN_EVENT`; `Nav` uses it to show "Sign Out" only when signed in and "Sign In" only when not (Sign Up is linked from the Sign In page, not the navbar).
+
+### App.Web styles and grid toolbar (Bar)
+Shared Tailwind class strings live as constants in `App.Web/src/style.ts` (e.g. `buttonPrimaryClassName`, `buttonGridClassName`, `textInputClassName`); reuse them instead of repeating class lists inline.
+
+`GridCustomEnum.Bar` (rendered in `gridCustomContent` in `Grid.tsx`) follows the typical data grid toolbar layout: a `gridBarClassName` strip (light gray, bordered, rounded top, `justify-between`, wraps on narrow screens) with two groups:
+- **Left — actions:** `New` (the main action, `buttonBarPrimaryClassName`, solid blue), then `Save` and `Reload` (secondary, `buttonBarClassName`, white outlined).
+- **Right — paging:** "Rows per page:" select, "Page X of Y", then Previous/Next as icon-only buttons (`buttonBarIconClassName`, inline SVG chevrons with `aria-label`/`title`), disabled on the first/last page.
+
+New toolbar buttons use these `buttonBar*` classes (not `buttonPrimaryClassName`): only the main action is primary, everything else secondary.
