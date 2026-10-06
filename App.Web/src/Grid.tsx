@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from 'r
 import { addAlert, apiFetch, getIsProgress, setIsProgress } from './util/util-main.ts';
 import { AlertEnum } from '../../App.Server/dto/shared/alert-dto.ts';
 import { resolveGrid, useGridStore } from './GridStore.tsx';
-import { buttonGridClassName, buttonPrimaryClassName } from './style.ts';
+import { buttonBarClassName, buttonBarIconClassName, buttonBarPrimaryClassName, buttonGridClassName, gridBarClassName } from './style.ts';
 import {
   GridCellEnum,
   GridCommandEnum,
@@ -60,39 +60,64 @@ function gridCustomContent(
 ): ReactNode {
   if (gridCustom.customEnum === GridCustomEnum.Bar) {
     const pageIndex = gridState?.pageIndex ?? 0;
+    const pageCount = gridState?.pageCount ?? 0;
     return (
-      <span key={key}>
-        <button type="button" onClick={() => onBarClick(GridCommandEnum.Reload)} className={buttonPrimaryClassName}>
-          Reload
-        </button>
-        <button type="button" onClick={() => onBarClick(GridCommandEnum.Save)} className={`${buttonPrimaryClassName} ml-2`}>
-          Save
-        </button>
-        <button type="button" onClick={() => onBarClick(GridCommandEnum.New)} className={`${buttonPrimaryClassName} ml-2`}>
-          New
-        </button>
-        <button type="button" onClick={() => onPageChange({ pageIndex: pageIndex - 1 })} className={`${buttonPrimaryClassName} ml-2`}>
-          Previous
-        </button>
-        <button type="button" onClick={() => onPageChange({ pageIndex: pageIndex + 1 })} className={`${buttonPrimaryClassName} ml-2`}>
-          Next
-        </button>
-        <span className="ml-2">
-          Page {pageIndex + 1} / {gridState?.pageCount ?? 0}
+      <div key={key} className={gridBarClassName}>
+        <span className="flex items-center gap-2">
+          <button type="button" onClick={() => onBarClick(GridCommandEnum.New)} className={buttonBarPrimaryClassName}>
+            + New
+          </button>
+          <button type="button" onClick={() => onBarClick(GridCommandEnum.Save)} className={buttonBarClassName}>
+            Save
+          </button>
+          <button type="button" onClick={() => onBarClick(GridCommandEnum.Reload)} className={buttonBarClassName}>
+            ⟳ Reload
+          </button>
         </span>
-        <select
-          aria-label="Rows per page"
-          value={gridState?.pageRowCount ?? GRID_PAGE_ROW_COUNT_DEFAULT}
-          onChange={(event) => onPageChange({ pageIndex: 0, pageRowCount: Number(event.target.value) })}
-          className="ml-2 rounded-md border border-gray-300 px-2 py-1"
-        >
-          {GRID_PAGE_ROW_COUNTS.map((pageRowCount) => (
-            <option key={pageRowCount} value={pageRowCount}>
-              {pageRowCount} rows
-            </option>
-          ))}
-        </select>
-      </span>
+        <span className="flex items-center gap-1">
+          <label className="flex items-center gap-1">
+            Rows per page:
+            <select
+              value={gridState?.pageRowCount ?? GRID_PAGE_ROW_COUNT_DEFAULT}
+              onChange={(event) => onPageChange({ pageIndex: 0, pageRowCount: Number(event.target.value) })}
+              className="cursor-pointer rounded-md border border-gray-300 bg-white px-1 py-0.5"
+            >
+              {GRID_PAGE_ROW_COUNTS.map((pageRowCount) => (
+                <option key={pageRowCount} value={pageRowCount}>
+                  {pageRowCount}
+                </option>
+              ))}
+            </select>
+          </label>
+          <span className="ml-3 mr-1 tabular-nums">
+            Page {pageCount === 0 ? 0 : pageIndex + 1} of {pageCount}
+          </span>
+          <button
+            type="button"
+            aria-label="Previous page"
+            title="Previous page"
+            disabled={pageIndex <= 0}
+            onClick={() => onPageChange({ pageIndex: pageIndex - 1 })}
+            className={buttonBarIconClassName}
+          >
+            <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5" aria-hidden="true">
+              <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 0 1-.02 1.06L8.83 10l3.94 3.71a.75.75 0 1 1-1.04 1.08l-4.5-4.25a.75.75 0 0 1 0-1.08l4.5-4.25a.75.75 0 0 1 1.06.02Z" clipRule="evenodd" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            aria-label="Next page"
+            title="Next page"
+            disabled={pageIndex >= pageCount - 1}
+            onClick={() => onPageChange({ pageIndex: pageIndex + 1 })}
+            className={buttonBarIconClassName}
+          >
+            <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5" aria-hidden="true">
+              <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 0 1 .02-1.06L11.17 10 7.23 6.29a.75.75 0 1 1 1.04-1.08l4.5 4.25a.75.75 0 0 1 0 1.08l-4.5 4.25a.75.75 0 0 1-1.06-.02Z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </span>
+      </div>
     );
   }
   if (gridCustom.customEnum === GridCustomEnum.Edit) {
