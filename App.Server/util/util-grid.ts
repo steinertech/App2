@@ -1,9 +1,9 @@
-import { GRID_PAGE_ROW_COUNT_DEFAULT, GRID_PAGE_ROW_COUNT_MAX, GridCellDto, GridCellEnum, GridCommandEnum, GridCustomEnum, GridDto, GridPatchDto, GridPlaneDto, gridPlaneGrids, GridRowDto, GridSortDto, GridStateDto, GridTableDto } from '../dto/shared/grid-dto.js';
+import { GRID_PAGE_ROW_COUNT_DEFAULT, GRID_PAGE_ROW_COUNT_MAX, GridCellDto, GridCellEnum, GridCommandEnum, GridCustomEnum, GridDto, GridPatchDto, GridPatchEnum, GridPlaneDto, gridPlaneGrids, GridRowDto, GridSortDto, GridStateDto, GridTableDto } from '../dto/shared/grid-dto.js';
 import { titleCase } from './util-main.js';
 import { GridConfigColumnDto, GridConfigTypeEnum } from '../dto/grid-config-dto.js';
 import { gridProjectLoad } from '../grid/grid-project.js';
 import { gridLoadUser } from '../grid/grid-user.js';
-import { gridLoadStorage, gridLoadStoragePreview } from '../grid/grid-storage.js';
+import { gridLoadStorage, gridLoadStoragePreview, gridPatchStorage } from '../grid/grid-storage.js';
 
 /** Returns GridDto.tables: tables[0] toolbarRows, tables[1] dataRows and tables[2] barRows. */
 export function gridTables(toolbarRows: GridRowDto[], dataRows: GridRowDto[], barRows: GridRowDto[] = []): GridTableDto[] {
@@ -205,8 +205,8 @@ export function gridSelectedMultiRowKeys(gridDto: GridDto): string[] {
 }
 
 /** Enables the DeleteMulti button if one or more rows are selected. */
-async function gridPatchDeleteMulti(request: Request, gridDto: GridDto): Promise<GridDto> {
-  return { patches: [{ name: 'DeleteMulti', isDisabled: !gridIsAnySelectedMulti(gridDto) } satisfies GridPatchDto] };
+export async function gridPatchDeleteMulti(request: Request, gridDto: GridDto): Promise<GridDto> {
+  return { patches: [{ patchEnum: GridPatchEnum.Button, name: 'DeleteMulti', isDisabled: !gridIsAnySelectedMulti(gridDto) } satisfies GridPatchDto] };
 }
 
 /**
@@ -277,7 +277,7 @@ type GridPatcher = (request: Request, gridDto: GridDto) => Promise<GridDto>;
 const PLANE_GRID_PATCHERS: Record<string, GridPatcher[]> = {
   debug: [gridPatchDeleteMulti],
   project: [gridPatchDeleteMulti],
-  storage: [gridPatchDeleteMulti],
+  storage: [gridPatchStorage],
 };
 
 export async function gridPlanePatch(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {

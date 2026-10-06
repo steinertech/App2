@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react';
 import { apiFetch } from './util/util-main.ts';
-import type { GridDto, GridPlaneDto, GridStateDto } from '../../App.Server/dto/shared/grid-dto.ts';
+import { GridPatchEnum, type GridDto, type GridPlaneDto, type GridStateDto } from '../../App.Server/dto/shared/grid-dto.ts';
 
 export type { GridPlaneDto };
 
@@ -68,9 +68,21 @@ function buildOutgoingGrid(existingGrid: GridDto, path: number[], entries: GridO
   return grid;
 }
 
-/** Copies isDisabled from every patch in responseGrid.patches onto each GridCustomDto in grid whose name matches, then recurses into planes (the response mirrors the request's structure). */
+/**
+ * Applies responseGrid.patches to grid, then recurses into planes (the response mirrors the request's structure):
+ * GridPatchEnum.Button copies isDisabled onto each GridCustomDto whose name matches; GridPatchEnum.Lookup sets GridPatchDto.lookup as the only grid of grid.planes[0].
+ */
 function applyPatches(grid: GridDto, responseGrid: GridDto): void {
   for (const patch of responseGrid.patches ?? []) {
+    if (patch.patchEnum === GridPatchEnum.Lookup) {
+      const planes = [...(grid.planes ?? [])];
+      planes[0] = patch.lookup !== undefined ? { grids: [patch.lookup] } : null;
+      grid.planes = planes;
+      continue;
+    }
+    if (patch.patchEnum !== GridPatchEnum.Button) {
+      continue;
+    }
     for (const row of (grid.tables ?? []).flatMap((table) => table.rows ?? [])) {
       for (const cell of row.cells ?? []) {
         for (const custom of cell.customs ?? []) {

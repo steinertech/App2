@@ -1,8 +1,8 @@
-import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridRowDto, gridStatePath } from '../dto/shared/grid-dto.js';
+import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPatchDto, GridPatchEnum, GridRowDto, gridStatePath } from '../dto/shared/grid-dto.js';
 import { storageDelete, storageDownloadUrls, storageFiles, storageNew, storageRename } from '../util/util-storage.js';
 import { StorageFileDto } from '../dto/storage-file-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
-import { gridBarRow, gridColumnChooserOk, gridColumns, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand, gridLoadColumnChooser, gridLookupSet, gridSelectedMultiRowKeys, gridTables } from '../util/util-grid.js';
+import { gridBarRow, gridColumnChooserOk, gridColumns, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand, gridLoadColumnChooser, gridLookupSet, gridPatchDeleteMulti, gridSelectedMultiRowKeys, gridTables } from '../util/util-grid.js';
 
 const STORAGE_FILE_COLUMNS: GridConfigDto = {
   columns: [
@@ -198,6 +198,16 @@ export async function gridLoadStorage(request: Request, gridDto: GridDto): Promi
   result.command = undefined;
 
   return result;
+}
+
+/** Storage grid patch: GridCommandEnum.FilterMulti opens the filter lookup; any other command (MultiClick) enables/disables the DeleteMulti button. */
+export async function gridPatchStorage(request: Request, gridDto: GridDto): Promise<GridDto> {
+  if (gridDto.command?.commandEnum === GridCommandEnum.FilterMulti) {
+    const rows: GridRowDto[] = ['Hello', 'World'].map((text, rowIndex) => ({ cells: [{ cellEnum: GridCellEnum.Label, text, rowIndex }] }));
+    const lookup: GridDto = { tables: gridTables([], rows) };
+    return { patches: [{ patchEnum: GridPatchEnum.Lookup, lookup } satisfies GridPatchDto] };
+  }
+  return gridPatchDeleteMulti(request, gridDto);
 }
 
 /** Returns the text of the cell in column columnName for file. Folders have no size or date: their cells are empty instead of "undefined". */

@@ -47,6 +47,8 @@ export enum GridCommandEnum {
   ColumnChooser = 7,
   /** A GridCustomEnum.Ok button was clicked; App.Web closes the plane containing the grid afterwards. */
   Ok = 8,
+  /** The filter (triangle down) button of a GridCellEnum.Header was clicked (columnName); sent to /api/grid-patch. */
+  FilterMulti = 9,
 }
 
 export interface GridCustomDto {
@@ -119,10 +121,26 @@ export interface GridCustomModifyDto {
   textModified?: string;
 }
 
+/** What a GridPatchDto applies to. */
+export enum GridPatchEnum {
+  None = 0,
+  /** Patches the GridCustomDto with GridCustomDto.name = GridPatchDto.name. */
+  Button = 1,
+  /** Opens GridPatchDto.lookup as lookup grid (the only grid of GridDto.planes[0]), e.g. for GridCommandEnum.FilterMulti. */
+  Lookup = 2,
+}
+
 export interface GridPatchDto {
+  patchEnum?: GridPatchEnum;
   name?: string;
   rowIndex?: number;
   isDisabled?: boolean;
+  /** Lookup grid of a GridPatchEnum.Lookup patch. */
+  lookup?: GridDto;
+}
+
+export interface GridStateFilterMultiDto {
+  texts?: string[];
 }
 
 export interface GridStateDto {
@@ -137,6 +155,8 @@ export interface GridStateDto {
   columnNames?: string[];
   /** Filter text per column (key: columnName, value: filter text). */
   filters?: Record<string, string>;
+  /** Multi filter per column (key: columnName). */
+  filterMultis?: Record<string, GridStateFilterMultiDto>;
   /** Index of the displayed page (0 = first); changed by the GridCustomEnum.Bar Previous/Next buttons. */
   pageIndex?: number;
   /** Number of pages; shown in the GridCustomEnum.Bar as "Page pageIndex + 1 / pageCount". */

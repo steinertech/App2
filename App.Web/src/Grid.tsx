@@ -189,6 +189,7 @@ function gridCellContent(
   onSearchChange: (gridCell: GridCellDto, text: string) => void,
   filters: Record<string, string>,
   gridState: GridStateDto | undefined,
+  onFilterMultiClick: (gridCell: GridCellDto) => void,
 ): ReactNode {
   let content: ReactNode;
   if (gridCell.cellEnum === GridCellEnum.Custom) {
@@ -222,7 +223,24 @@ function gridCellContent(
     );
   } else if (gridCell.cellEnum === GridCellEnum.Header) {
     const arrow = gridCell.isSortAsc === true ? ' ↑' : gridCell.isSortAsc === false ? ' ↓' : '';
-    content = `${gridCell.text ?? ''}${arrow}`;
+    content = (
+      <span className="flex items-center justify-between gap-2">
+        <span>{`${gridCell.text ?? ''}${arrow}`}</span>
+        <button
+          type="button"
+          aria-label="Filter"
+          title="Filter"
+          onClick={(event) => {
+            // Don't also trigger the header's SortClick.
+            event.stopPropagation();
+            onFilterMultiClick(gridCell);
+          }}
+          className="cursor-pointer px-1 font-normal hover:text-blue-200"
+        >
+          ▼
+        </button>
+      </span>
+    );
   } else if (gridCell.cellEnum === GridCellEnum.Label) {
     content = gridCell.text;
   } else {
@@ -442,6 +460,15 @@ export default function Grid({ path }: GridProps) {
     await sendGridCommand({ command: gridCommand });
   };
 
+  /** Triangle down button of a GridCellEnum.Header: sends GridCommandEnum.FilterMulti for its column to /api/grid-patch (which returns a GridPatchEnum.Lookup patch). */
+  const handleFilterMultiClick = async (gridCell: GridCellDto) => {
+    if (gridCell.columnName === undefined) {
+      return;
+    }
+    const gridCommand: GridCommandDto = { commandEnum: GridCommandEnum.FilterMulti, columnName: gridCell.columnName };
+    await sendPatch(path, { command: gridCommand });
+  };
+
   const handleReloadClick = async () => {
     await sendGridCommand({ command: { commandEnum: GridCommandEnum.Reload } });
   };
@@ -555,6 +582,7 @@ export default function Grid({ path }: GridProps) {
                       handleSearchChange,
                       grid?.state?.filters ?? {},
                       grid?.state,
+                      (gridCell) => void handleFilterMultiClick(gridCell),
                     )}
                   </td>
                 ))}
