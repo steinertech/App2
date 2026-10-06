@@ -5,7 +5,7 @@ import { projectsLoad, projectsLoadByNames, projectsUpdate, projectsInsert, proj
 import { userProject } from '../util/util-user.js';
 import { ProjectDto } from '../dto/project-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
-import { gridBarRow, gridFindCommand, gridFindRow, gridHeaderCell, gridIsAnySelectedMulti, gridRemoveCommand } from '../util/util-grid.js';
+import { gridBarRow, gridColumns, gridFindCommand, gridFindRow, gridFsp, gridHeaderCell, gridIsAnySelectedMulti, gridRemoveCommand } from '../util/util-grid.js';
 
 const PROJECT_COLUMNS: GridConfigDto = {
   columns: (['name', 'description'] as const satisfies readonly (keyof ProjectDto)[]).map(
@@ -73,17 +73,18 @@ export async function gridProjectLoad(request: Request, gridDto: GridDto): Promi
     gridDto.state = { ...gridDto.state, isSelectedMulti: [] };
   }
 
-  const projects = await projectsLoad(request);
+  // Filter-Sort-Page: projects holds only the rows of the current page.
+  const { rows: projects, state: fspState } = gridFsp(await projectsLoad(request), PROJECT_COLUMNS.columns ?? [], gridDto.state);
 
   const headerRow: GridRowDto = {
     cells: [
-      ...(PROJECT_COLUMNS.columns ?? []).map((column) => gridHeaderCell(column.columnName, gridDto.state?.sort)),
+      ...gridColumns(PROJECT_COLUMNS.columns ?? []).map((column) => gridHeaderCell(column.columnName, gridDto.state?.sort)),
       { cellEnum: GridCellEnum.Header, text: 'Command' },
     ],
   };
   const rows: GridRowDto[] = projects.map((project, rowIndex) => ({
     cells: [
-      ...(PROJECT_COLUMNS.columns ?? []).map(
+      ...gridColumns(PROJECT_COLUMNS.columns ?? []).map(
         (column, columnIndex): GridCellDto => ({
           cellEnum: GridCellEnum.Edit,
           text: project[column.columnName as keyof ProjectDto] as string | undefined,
@@ -105,7 +106,7 @@ export async function gridProjectLoad(request: Request, gridDto: GridDto): Promi
   }));
 
   const rowKeys: string[] = projects.map((project) => project.name ?? '');
-  const findRow = gridFindRow([...(PROJECT_COLUMNS.columns ?? []).map((column) => column.columnName), undefined]);
+  const findRow = gridFindRow([...gridColumns(PROJECT_COLUMNS.columns ?? []).map((column) => column.columnName), undefined]);
 
   const deleteMultiRow: GridRowDto = {
     cells: [
@@ -129,7 +130,7 @@ export async function gridProjectLoad(request: Request, gridDto: GridDto): Promi
     ...gridDto,
     setting: { title: `Project Data (${time})`, isSelectMultiPatch: true },
     rows: [deleteMultiRow, headerRow, findRow, ...rows],
-    state: { ...gridDto.state, rowKeys },
+    state: { ...gridDto.state, ...fspState, rowKeys },
   };
 
   if (gridDto.command?.commandEnum === GridCommandEnum.New) {
@@ -173,7 +174,7 @@ async function gridProjectSaveUpdate(request: Request, gridDto: GridDto): Promis
 
   const projects = await projectsLoadByNames(request, names);
 
-  const columnNames = new Set((PROJECT_COLUMNS.columns ?? []).map((column) => column.columnName));
+  const columnNames = new Set(gridColumns(PROJECT_COLUMNS.columns ?? []).map((column) => column.columnName));
 
   for (const modify of modifies) {
     if (
@@ -198,7 +199,7 @@ async function gridProjectSaveUpdate(request: Request, gridDto: GridDto): Promis
 async function gridProjectSaveInsert(request: Request, gridDto: GridDto): Promise<void> {
   const modifies = (gridDto.modifies ?? []).filter((modify) => modify.isNew);
 
-  const columnNames = new Set((PROJECT_COLUMNS.columns ?? []).map((column) => column.columnName));
+  const columnNames = new Set(gridColumns(PROJECT_COLUMNS.columns ?? []).map((column) => column.columnName));
 
   const projectsByRowIndex = new Map<number, ProjectDto>();
 
@@ -226,7 +227,7 @@ async function gridProjectNew(request: Request, gridDto: GridDto): Promise<void>
   const newRows: GridRowDto[] = [0, 1].map((rowOffset) => {
     const rowIndex = rows.length + rowOffset;
     return {
-      cells: (PROJECT_COLUMNS.columns ?? []).map(
+      cells: gridColumns(PROJECT_COLUMNS.columns ?? []).map(
         (column): GridCellDto => ({
           cellEnum: GridCellEnum.Edit,
           columnName: column.columnName,

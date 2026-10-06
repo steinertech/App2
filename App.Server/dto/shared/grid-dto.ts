@@ -30,7 +30,7 @@ export enum GridCustomEnum {
   Cancel = 8,
   /** Rendered like Button; clicking it calls the server with GridCommandEnum.Ok, then (on success) closes the plane containing this grid (sets it to null in the parent's GridDto.planes). */
   Ok = 9,
-  /** Data grid control bar: renders Reload, Save and New buttons (sending GridCommandEnum.Reload, Save and New). Without it, a grid has none of these buttons. */
+  /** Data grid control bar: renders Reload, Save and New buttons (sending GridCommandEnum.Reload, Save and New), plus Previous and Next buttons (decreasing/increasing GridStateDto.pageIndex by one, then sending GridCommandEnum.Reload), the text "Page GridStateDto.pageIndex + 1 / GridStateDto.pageCount" and a page size picker (GRID_PAGE_ROW_COUNTS; sets GridStateDto.pageRowCount and pageIndex 0, then sends GridCommandEnum.Reload). Without it, a grid has none of these buttons. */
   Bar = 10,
 }
 
@@ -121,18 +121,31 @@ export interface GridPatchDto {
 }
 
 export interface GridStateDto {
-  /** rowIndex of selected row */
-  selected?: number;
-  /** rowIndex of selected rows */
-  isSelectedMulti?: boolean[];
+  /** rowIndex of selected row. Explicitly undefined allowed, so App.Web can clear it (on filter, sort or paging). */
+  selected?: number | undefined;
+  /** rowIndex of selected rows. Explicitly undefined allowed, so App.Web can clear it (on filter, sort or paging). */
+  isSelectedMulti?: boolean[] | undefined;
   sort?: GridSortDto;
   pathSegments?: GridPathSegmentDto[];
   rowKeys?: string[];
   /** Names of the columns to display. */
   columnNames?: string[];
+  /** Filter text per column (key: columnName, value: filter text). */
+  filters?: Record<string, string>;
+  /** Index of the displayed page (0 = first); changed by the GridCustomEnum.Bar Previous/Next buttons. */
+  pageIndex?: number;
+  /** Number of pages; shown in the GridCustomEnum.Bar as "Page pageIndex + 1 / pageCount". */
+  pageCount?: number;
+  /** Number of rows per page; defaults to GRID_PAGE_ROW_COUNT_DEFAULT, max GRID_PAGE_ROW_COUNT_MAX (enforced by the backend). */
+  pageRowCount?: number;
   /** Custom JSON data (e.g. a pending action), sent back to the server unchanged with every request. Values must be JSON serializable. */
   custom?: Record<string, unknown>;
 }
+
+/** Default and max GridStateDto.pageRowCount, and the page sizes offered by the GridCustomEnum.Bar page size picker. */
+export const GRID_PAGE_ROW_COUNT_DEFAULT = 5;
+export const GRID_PAGE_ROW_COUNT_MAX = 10;
+export const GRID_PAGE_ROW_COUNTS = [5, 10];
 
 /** Returns the GridStateDto.pathSegments names joined with "/" plus a trailing "/" (e.g. "a/b/"), or "" if there are no segments. */
 export function gridStatePath(state: GridStateDto | undefined): string {

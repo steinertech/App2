@@ -2,14 +2,15 @@ import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEn
 import { storageDelete, storageDownloadUrls, storageFiles, storageNew, storageRename } from '../util/util-storage.js';
 import { StorageFileDto } from '../dto/storage-file-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
-import { gridBarRow, gridColumnChooserOk, gridColumns, gridFindRow, gridHeaderCell, gridIsCommand, gridLoadColumnChooser, gridLookupSet, gridSelectedMultiRowKeys } from '../util/util-grid.js';
+import { gridBarRow, gridColumnChooserOk, gridColumns, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand, gridLoadColumnChooser, gridLookupSet, gridSelectedMultiRowKeys } from '../util/util-grid.js';
 
 const STORAGE_FILE_COLUMNS: GridConfigDto = {
   columns: [
-    { columnName: 'fileNameOnly' satisfies keyof StorageFileDto, text: 'File Name', typeEnum: GridConfigTypeEnum.Text },
+    { columnName: 'fileNameOnly' satisfies keyof StorageFileDto, text: 'File Name', typeEnum: GridConfigTypeEnum.Text, columnNameSort: 'fileNameOnlySort' satisfies keyof StorageFileDto },
     { columnName: 'size' satisfies keyof StorageFileDto, typeEnum: GridConfigTypeEnum.Number },
     { columnName: 'dateModified' satisfies keyof StorageFileDto, text: 'Date Modified (UTC)', typeEnum: GridConfigTypeEnum.Text },
     { columnName: 'isFolder' satisfies keyof StorageFileDto, typeEnum: GridConfigTypeEnum.Text },
+    { columnName: 'fileNameOnlySort' satisfies keyof StorageFileDto, typeEnum: GridConfigTypeEnum.Text, isHide: true },
   ],
 };
 /** Storage columns whose values are rendered read-only (GridCellEnum.Label) instead of as text boxes. */
@@ -108,7 +109,8 @@ export async function gridLoadStorage(request: Request, gridDto: GridDto): Promi
     await gridStorageSaveInsert(request, gridDto);
   }
 
-  const files = await storageFiles(request, gridStatePath(gridDto.state));
+  // Filter-Sort-Page: files holds only the rows of the current page.
+  const { rows: files, state: fspState } = gridFsp(await storageFiles(request, gridStatePath(gridDto.state)), STORAGE_FILE_COLUMNS.columns ?? [], gridDto.state);
   const columns = gridColumns(STORAGE_FILE_COLUMNS.columns ?? [], gridDto.state);
 
   const headerRow: GridRowDto = {
@@ -181,7 +183,7 @@ export async function gridLoadStorage(request: Request, gridDto: GridDto): Promi
   const result: GridDto = {
     ...gridDto,
     rows: [toolbarRow, toolbarRow2, headerRow, findRow, ...fileRows],
-    state: { ...gridDto.state, rowKeys, isSelectedMulti },
+    state: { ...gridDto.state, ...fspState, rowKeys, isSelectedMulti },
     setting: { title: 'Storage Data', isSelectReload: true, isSelectMultiPatch: true },
   };
 
@@ -254,7 +256,7 @@ async function gridStorageSaveInsert(request: Request, gridDto: GridDto): Promis
 
 /**
  * Renames (in the current path) every existing file or folder whose fileNameOnly cell was changed.
- * The entry is looked up by rowIndex in the server's own listing (not in client supplied rowKeys); a modify whose
+ * The entry is looked up by rowIndex in the server's own listing (filtered, sorted and paged like the grid; not in client supplied rowKeys); a modify whose
  * original text doesn't match that entry (e.g. the listing changed meanwhile) is skipped.
  */
 async function gridStorageSaveRename(request: Request, gridDto: GridDto): Promise<void> {
@@ -266,7 +268,7 @@ async function gridStorageSaveRename(request: Request, gridDto: GridDto): Promis
     return;
   }
 
-  const files = await storageFiles(request, path);
+  const files = gridFsp(await storageFiles(request, path), STORAGE_FILE_COLUMNS.columns ?? [], gridDto.state).rows;
   for (const modify of renameModifies) {
     const file = files[modify.rowIndex as number];
     const fileNameOnlyModified = modify.textModified?.trim();

@@ -75,21 +75,29 @@ export async function storageFiles(request: Request, path: string = ''): Promise
     cursor = result.hasMore ? result.cursor : undefined;
   } while (cursor);
 
-  const folders: StorageFileDto[] = folderPaths.map((folderPath) => ({
-    fileName: folderPath.slice(key.length),
-    fileNameOnly: folderPath.split('/').filter(Boolean).pop() ?? folderPath,
-    isFolder: true,
-  }));
+  const folders: StorageFileDto[] = folderPaths.map((folderPath) => {
+    const fileNameOnly = folderPath.split('/').filter(Boolean).pop() ?? folderPath;
+    return {
+      fileName: folderPath.slice(key.length),
+      fileNameOnly,
+      fileNameOnlySort: '0 - ' + fileNameOnly,
+      isFolder: true,
+    };
+  });
 
   const files: StorageFileDto[] = blobs
     .filter((blob) => blob.pathname !== prefix) // Skip the folder marker blob of prefix itself.
-    .map((blob) => ({
-      fileName: blob.pathname.slice(key.length),
-      fileNameOnly: blob.pathname.split('/').pop() ?? blob.pathname,
-      isFolder: false,
-      size: blob.size,
-      dateModified: blob.uploadedAt.toISOString(),
-    }));
+    .map((blob) => {
+      const fileNameOnly = blob.pathname.split('/').pop() ?? blob.pathname;
+      return {
+        fileName: blob.pathname.slice(key.length),
+        fileNameOnly,
+        fileNameOnlySort: '1 - ' + fileNameOnly,
+        isFolder: false,
+        size: blob.size,
+        dateModified: blob.uploadedAt.toISOString(),
+      };
+    });
 
   return [...folders, ...files];
 }

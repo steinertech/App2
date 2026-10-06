@@ -1,4 +1,4 @@
-import { useRef, useState, type ChangeEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
 import { addAlert, apiFetch, getIsProgress, setIsProgress } from './util/util-main.ts';
 import { AlertEnum } from '../../App.Server/dto/shared/alert-dto.ts';
 import { resolveGrid, useGridStore } from './GridStore.tsx';
@@ -14,7 +14,10 @@ import {
   type GridDto,
   type GridModifyDto,
   type GridPathSegmentDto,
+  type GridStateDto,
   gridStatePath,
+  GRID_PAGE_ROW_COUNT_DEFAULT,
+  GRID_PAGE_ROW_COUNTS,
 } from '../../App.Server/dto/shared/grid-dto.ts';
 import type { StorageUploadCollectionDto } from '../../App.Server/dto/shared/storage-upload-dto.ts';
 
@@ -27,6 +30,9 @@ interface GridProps {
    */
   path: number[];
 }
+
+/** Paging part of GridStateDto changed by a GridCustomEnum.Bar. */
+type GridStatePage = Pick<GridStateDto, 'pageIndex' | 'pageRowCount'>;
 
 function gridCellClassName(gridCell: GridCellDto, rowSelected: boolean): string {
   if (gridCell.cellEnum === GridCellEnum.Header) {
@@ -49,8 +55,11 @@ function gridCustomContent(
   onCustomTextChange: (gridCustom: GridCustomDto, textModified: string) => void,
   pathSegments: GridPathSegmentDto[],
   onBarClick: (commandEnum: GridCommandEnum) => void,
+  onPageChange: (statePage: GridStatePage) => void,
+  gridState: GridStateDto | undefined,
 ): ReactNode {
   if (gridCustom.customEnum === GridCustomEnum.Bar) {
+    const pageIndex = gridState?.pageIndex ?? 0;
     return (
       <span key={key}>
         <button type="button" onClick={() => onBarClick(GridCommandEnum.Reload)} className={buttonPrimaryClassName}>
@@ -62,6 +71,27 @@ function gridCustomContent(
         <button type="button" onClick={() => onBarClick(GridCommandEnum.New)} className={`${buttonPrimaryClassName} ml-2`}>
           New
         </button>
+        <button type="button" onClick={() => onPageChange({ pageIndex: pageIndex - 1 })} className={`${buttonPrimaryClassName} ml-2`}>
+          Previous
+        </button>
+        <button type="button" onClick={() => onPageChange({ pageIndex: pageIndex + 1 })} className={`${buttonPrimaryClassName} ml-2`}>
+          Next
+        </button>
+        <span className="ml-2">
+          Page {pageIndex + 1} / {gridState?.pageCount ?? 0}
+        </span>
+        <select
+          aria-label="Rows per page"
+          value={gridState?.pageRowCount ?? GRID_PAGE_ROW_COUNT_DEFAULT}
+          onChange={(event) => onPageChange({ pageIndex: 0, pageRowCount: Number(event.target.value) })}
+          className="ml-2 rounded-md border border-gray-300 px-2 py-1"
+        >
+          {GRID_PAGE_ROW_COUNTS.map((pageRowCount) => (
+            <option key={pageRowCount} value={pageRowCount}>
+              {pageRowCount} rows
+            </option>
+          ))}
+        </select>
       </span>
     );
   }
@@ -130,11 +160,15 @@ function gridCellContent(
   isSelectedMulti: boolean[],
   pathSegments: GridPathSegmentDto[],
   onBarClick: (commandEnum: GridCommandEnum) => void,
+  onPageChange: (statePage: GridStatePage) => void,
+  onSearchChange: (gridCell: GridCellDto, text: string) => void,
+  filters: Record<string, string>,
+  gridState: GridStateDto | undefined,
 ): ReactNode {
   let content: ReactNode;
   if (gridCell.cellEnum === GridCellEnum.Custom) {
     content = (gridCell.customs ?? []).map((gridCustom, index) =>
-      gridCustomContent(gridCustom, index, gridVersion, onCustomClick, onCustomTextChange, pathSegments, onBarClick),
+      gridCustomContent(gridCustom, index, gridVersion, onCustomClick, onCustomTextChange, pathSegments, onBarClick, onPageChange, gridState),
     );
   } else if (gridCell.cellEnum === GridCellEnum.Empty) {
     content = null;
@@ -150,7 +184,17 @@ function gridCellContent(
       />
     );
   } else if (gridCell.cellEnum === GridCellEnum.Search) {
-    content = <input key={gridVersion} type="text" placeholder={gridCell.placeHolder} defaultValue={gridCell.text} className="w-full" />;
+    // Keyed by columnName (not gridVersion) so the input keeps focus and caret across the Reload each change sends.
+    content = (
+      <input
+        key={`search-${gridCell.columnName ?? ''}`}
+        type="text"
+        placeholder={gridCell.placeHolder}
+        defaultValue={(gridCell.columnName !== undefined ? filters[gridCell.columnName] : undefined) ?? gridCell.text}
+        onChange={(event) => onSearchChange(gridCell, event.target.value)}
+        className="w-full"
+      />
+    );
   } else if (gridCell.cellEnum === GridCellEnum.Header) {
     const arrow = gridCell.isSortAsc === true ? ' ↑' : gridCell.isSortAsc === false ? ' ↓' : '';
     content = `${gridCell.text ?? ''}${arrow}`;
@@ -358,10 +402,17 @@ export default function Grid({ path }: GridProps) {
     await sendGridCommand({ command: gridCommand });
   };
 
+  /** Filter, sort or paging changed, so the rows shown change: clears the selected row and the multi select checkboxes. */
+  const resetSelection = () => {
+    setRowIndexSelected(undefined);
+    setState(path, { selected: undefined, isSelectedMulti: undefined });
+  };
+
   const handleHeaderClick = async (gridCell: GridCellDto) => {
     if (gridCell.columnName === undefined) {
       return;
     }
+    resetSelection();
     const gridCommand: GridCommandDto = { commandEnum: GridCommandEnum.SortClick, columnName: gridCell.columnName };
     await sendGridCommand({ command: gridCommand });
   };
@@ -408,6 +459,37 @@ export default function Grid({ path }: GridProps) {
     }
   };
 
+  /** Previous/Next button or page size picker of a GridCustomEnum.Bar: changes GridStateDto.pageIndex (and pageRowCount) and sends GridCommandEnum.Reload. */
+  const handlePageChange = async (statePage: GridStatePage) => {
+    resetSelection();
+    setState(path, statePage);
+    await handleReloadClick();
+  };
+
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  // Cancel a pending search Reload when the grid unmounts (e.g. page change).
+  useEffect(() => () => clearTimeout(searchTimerRef.current), []);
+
+  /** GridCellEnum.Search text changed: stores it in GridStateDto.filters and (debounced) sends GridCommandEnum.Reload. */
+  const handleSearchChange = (gridCell: GridCellDto, text: string) => {
+    if (gridCell.columnName === undefined) {
+      return;
+    }
+    const filters = { ...grid?.state?.filters };
+    if (text === '') {
+      delete filters[gridCell.columnName];
+    } else {
+      filters[gridCell.columnName] = text;
+    }
+    // Filter changed: back to the first page.
+    resetSelection();
+    setState(path, { filters, pageIndex: 0 });
+
+    clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => void handleReloadClick(), 300);
+  };
+
   const handleColumnChooserClick = async () => {
     await sendGridCommand({ command: { commandEnum: GridCommandEnum.ColumnChooser } });
   };
@@ -442,6 +524,10 @@ export default function Grid({ path }: GridProps) {
                     isSelectedMulti,
                     grid?.state?.pathSegments ?? [],
                     (commandEnum) => void handleBarClick(commandEnum),
+                    (statePage) => void handlePageChange(statePage),
+                    handleSearchChange,
+                    grid?.state?.filters ?? {},
+                    grid?.state,
                   )}
                 </td>
               ))}

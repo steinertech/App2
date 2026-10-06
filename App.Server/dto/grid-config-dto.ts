@@ -9,6 +9,10 @@ export interface GridConfigColumnDto {
   /** Header text. Defaults to titleCase(columnName). */
   text?: string;
   typeEnum?: GridConfigTypeEnum;
+  /** If true, the column is not sent to App.Web (see gridColumns). */
+  isHide?: boolean;
+  /** If set, sorting by this column sorts by columnNameSort instead of columnName. */
+  columnNameSort?: string;
 }
 
 export interface GridConfigDto {

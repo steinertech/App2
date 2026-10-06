@@ -1,6 +1,6 @@
-import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomEnum, GridDto, GridPatchDto, GridPlaneDto, gridPlaneGrids, GridRowDto, GridSortDto, GridStateDto } from '../dto/shared/grid-dto.js';
+import { GRID_PAGE_ROW_COUNT_DEFAULT, GRID_PAGE_ROW_COUNT_MAX, GridCellDto, GridCellEnum, GridCommandEnum, GridCustomEnum, GridDto, GridPatchDto, GridPlaneDto, gridPlaneGrids, GridRowDto, GridSortDto, GridStateDto } from '../dto/shared/grid-dto.js';
 import { titleCase } from './util-main.js';
-import { GridConfigColumnDto } from '../dto/grid-config-dto.js';
+import { GridConfigColumnDto, GridConfigTypeEnum } from '../dto/grid-config-dto.js';
 import { gridProjectLoad } from '../grid/grid-project.js';
 import { gridLoadUser } from '../grid/grid-user.js';
 import { gridLoadStorage, gridLoadStoragePreview } from '../grid/grid-storage.js';
@@ -23,15 +23,102 @@ export function gridFindRow(columnNames: (string | undefined)[]): GridRowDto {
 /**
  * Returns the columns to render: if GridStateDto.columnNames is defined only those columns (in columnNames order;
  * names not found in columns are ignored, since they come back from the client), otherwise all columns.
+ * Columns with isHide are never returned, so they are not sent to App.Web (nor accepted from it).
  */
-export function gridColumns(columns: GridConfigColumnDto[], state: GridStateDto | undefined): GridConfigColumnDto[] {
+export function gridColumns(columns: GridConfigColumnDto[], state?: GridStateDto): GridConfigColumnDto[] {
+  const visibleColumns = columns.filter((column) => !column.isHide);
   const columnNames = state?.columnNames;
   if (columnNames === undefined) {
-    return columns;
+    return visibleColumns;
   }
   return columnNames
-    .map((columnName) => columns.find((column) => column.columnName === columnName))
+    .map((columnName) => visibleColumns.find((column) => column.columnName === columnName))
     .filter((column): column is GridConfigColumnDto => column !== undefined);
+}
+
+/**
+ * Filter-Sort-Page: returns the rows of the current page plus the effective paging state (pageIndex, pageCount, pageRowCount; merge it into the response's GridStateDto).
+ * Only the columns rendered by gridColumns(columns, state) take part, since filters and sort come back from the client:
+ * - Filter: every GridStateDto.filters entry must match (see gridFspFilterMatch).
+ * - Sort: by GridStateDto.sort, using the column's columnNameSort value if set. Rows without a value come last; equal values keep their original order.
+ * - Page: pageRowCount defaults to 5 (max 10); pageIndex is clamped to the existing pages; pageCount is the number of pages after the filter (at least 1).
+ */
+export function gridFsp<T extends object>(rows: T[], columns: GridConfigColumnDto[], state: GridStateDto | undefined): { rows: T[]; state: GridStateDto } {
+  const renderedColumns = gridColumns(columns, state);
+  const value = (row: T, columnName: string): unknown => (row as Record<string, unknown>)[columnName];
+
+  // Filter
+  let result = rows;
+  for (const [columnName, filter] of Object.entries(state?.filters ?? {})) {
+    const column = renderedColumns.find((column) => column.columnName === columnName);
+    if (column !== undefined && typeof filter === 'string' && filter.trim() !== '') {
+      result = result.filter((row) => gridFspFilterMatch(value(row, columnName), filter.trim(), column.typeEnum));
+    }
+  }
+
+  // Sort
+  const sortColumn = renderedColumns.find((column) => column.columnName === state?.sort?.columnName);
+  if (sortColumn?.columnName !== undefined) {
+    const sortColumnName = sortColumn.columnNameSort ?? sortColumn.columnName;
+    const typeEnum = columns.find((column) => column.columnName === sortColumnName)?.typeEnum ?? sortColumn.typeEnum;
+    const direction = state?.sort?.isSortAsc === false ? -1 : 1;
+    result = [...result].sort((a, b) => gridFspCompare(value(a, sortColumnName), value(b, sortColumnName), typeEnum, direction));
+  }
+
+  // Page
+  const pageRowCountState = Math.trunc(state?.pageRowCount ?? GRID_PAGE_ROW_COUNT_DEFAULT);
+  const pageRowCount = Number.isFinite(pageRowCountState) ? Math.min(Math.max(pageRowCountState, 1), GRID_PAGE_ROW_COUNT_MAX) : GRID_PAGE_ROW_COUNT_DEFAULT;
+  const pageCount = Math.max(1, Math.ceil(result.length / pageRowCount));
+  const pageIndexState = Math.trunc(state?.pageIndex ?? 0);
+  const pageIndex = Number.isFinite(pageIndexState) ? Math.min(Math.max(pageIndexState, 0), pageCount - 1) : 0;
+
+  return {
+    rows: result.slice(pageIndex * pageRowCount, (pageIndex + 1) * pageRowCount),
+    state: { pageIndex, pageCount, pageRowCount },
+  };
+}
+
+/**
+ * Returns true if value matches filter (trimmed, not empty). Rows without a value never match.
+ * Text: case-insensitive partial match. Number: ">10", ">=10", "<10", "<=10", "=10" compare, "10..20" is an inclusive range;
+ * anything else (e.g. "15") is a partial match on the number's text like a Text column.
+ */
+function gridFspFilterMatch(value: unknown, filter: string, typeEnum: GridConfigTypeEnum | undefined): boolean {
+  if (value === undefined || value === null) {
+    return false;
+  }
+  if (typeEnum === GridConfigTypeEnum.Number && typeof value === 'number') {
+    const numberPattern = '(-?\\d+(?:\\.\\d+)?)';
+    const range = filter.match(new RegExp(`^${numberPattern}\\s*\\.\\.\\s*${numberPattern}$`));
+    if (range !== null) {
+      return value >= Number(range[1]) && value <= Number(range[2]);
+    }
+    const compare = filter.match(new RegExp(`^(>=|<=|>|<|=)\\s*${numberPattern}$`));
+    if (compare !== null) {
+      const number = Number(compare[2]);
+      switch (compare[1]) {
+        case '>=': return value >= number;
+        case '<=': return value <= number;
+        case '>': return value > number;
+        case '<': return value < number;
+        default: return value === number;
+      }
+    }
+  }
+  return String(value).toLowerCase().includes(filter.toLowerCase());
+}
+
+/** Compares a and b for sorting in direction (1 asc, -1 desc). Values are compared as numbers for a Number column, otherwise as text (case-insensitive, digits by numeric value). Missing values come last in both directions. */
+function gridFspCompare(a: unknown, b: unknown, typeEnum: GridConfigTypeEnum | undefined, direction: number): number {
+  const isMissingA = a === undefined || a === null;
+  const isMissingB = b === undefined || b === null;
+  if (isMissingA || isMissingB) {
+    return Number(isMissingA) - Number(isMissingB);
+  }
+  if (typeEnum === GridConfigTypeEnum.Number && typeof a === 'number' && typeof b === 'number') {
+    return (a - b) * direction;
+  }
+  return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' }) * direction;
 }
 
 export function gridHeaderCell(column: string | undefined, sort?: GridSortDto, text?: string): GridCellDto {
@@ -95,7 +182,8 @@ function gridCommandSortClick(gridDto: GridDto): void {
   }
 
   const isSortAsc = !(gridDto.state?.sort?.isSortAsc ?? false);
-  gridDto.state = { ...gridDto.state, sort: { columnName, isSortAsc } };
+  // Sort changed: back to the first page, with no row selected.
+  gridDto.state = { ...gridDto.state, sort: { columnName, isSortAsc }, pageIndex: 0, selected: undefined, isSelectedMulti: undefined };
 }
 
 /** Returns true if one or more GridStateDto.isSelectedMulti entries are true. */
@@ -120,7 +208,8 @@ async function gridPatchDeleteMulti(request: Request, gridDto: GridDto): Promise
  * Returns the multi select "Column Chooser" GridDto (used as lookup, see gridLookupSet) with one row per column; a column is selected
  * initially if it is in state.columnNames (all columns if columnNames is undefined). Its Ok button is handled by gridColumnChooserOk.
  */
-export function gridLoadColumnChooser(columns: GridConfigColumnDto[], state: GridStateDto | undefined): GridDto {
+export function gridLoadColumnChooser(allColumns: GridConfigColumnDto[], state: GridStateDto | undefined): GridDto {
+  const columns = gridColumns(allColumns);
   const headerRow: GridRowDto = { cells: [{ cellEnum: GridCellEnum.Header, text: 'Column Name' }] };
   const columnRows: GridRowDto[] = columns.map((column, rowIndex) => ({
     cells: [{ cellEnum: GridCellEnum.Label, text: column.text ?? titleCase(column.columnName), rowIndex, isSelectMulti: true }],
