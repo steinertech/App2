@@ -20,7 +20,7 @@ export const buttonBarClassName =
 
 /** Icon-only button of a grid toolbar (e.g. Previous/Next page). */
 export const buttonBarIconClassName =
-  'cursor-pointer rounded-md px-2 py-1 text-gray-600 hover:bg-gray-200 disabled:cursor-default disabled:text-gray-300 disabled:hover:bg-transparent';
+  'cursor-pointer rounded-md p-1 text-gray-600 hover:bg-gray-200 disabled:cursor-default disabled:text-gray-300 disabled:hover:bg-transparent';
 
 export const textInputClassName =
   'rounded-md border border-gray-300 px-3 py-1.5 text-base focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500';
