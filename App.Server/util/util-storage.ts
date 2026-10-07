@@ -31,6 +31,9 @@ export async function storageUploadUrls(request: Request, path: string = '', fil
   );
 }
 
+/** Temporary workaround while the Vercel Blob store is suspended: if set, storageDownloadUrls returns this static url (served by App.Web from public/) for every file instead of a presigned Blob url. Set to undefined to undo. */
+const STORAGE_DOWNLOAD_URL_STATIC: string | undefined = '/photo.jpg';
+
 /** Returns one presigned GET url per fileNames entry (paths relative to the sector key, e.g. StorageFileDto.fileName "a/b/my.txt"). Urls are valid for 5 minutes. */
 export async function storageDownloadUrls(request: Request, fileNames: string[]): Promise<string[]> {
   const prefix = await sectorKey(request, true);
@@ -41,6 +44,9 @@ export async function storageDownloadUrls(request: Request, fileNames: string[])
       // fileNames may come back from the client: prepending the sector key keeps the blob inside the caller's sector.
       if (fileName === '' || fileName.startsWith('/') || fileName.endsWith('/')) {
         throw new Error('Invalid file name!');
+      }
+      if (STORAGE_DOWNLOAD_URL_STATIC !== undefined) {
+        return STORAGE_DOWNLOAD_URL_STATIC;
       }
       const pathname = prefix + fileName;
       const signedToken = await issueSignedToken({
