@@ -1,14 +1,21 @@
-import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridRowDto } from '../dto/shared/grid-dto.js';
+import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPlaneDto, GridRowDto } from '../dto/shared/grid-dto.js';
 import { AlertEnum } from '../dto/shared/alert-dto.js';
 import { alertAdd } from '../util/util-main.js';
 import { projectsLoad, projectsLoadByNames, projectsUpdate, projectsInsert, projectsDeleteByNames } from '../util/util-project.js';
-import { userProject } from '../util/util-user.js';
+import { userProject, usersLoad } from '../util/util-user.js';
 import { ProjectDto } from '../dto/project-dto.js';
+import { UserDto } from '../dto/user-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
-import { gridBarRow, gridCellText, gridCellValue, gridColumns, gridFindCommand, gridFindRow, gridFsp, gridHeaderCell, gridIsAnySelectedMulti, gridRemoveCommand, gridTables } from '../util/util-grid.js';
+import { gridBarRow, gridCellText, gridCellValue, gridColumns, gridFindCommand, gridFindRow, gridFsp, gridHeaderCell, gridIsAnySelectedMulti, gridPatchDeleteMulti, gridRemoveCommand, gridTables } from '../util/util-grid.js';
 
 const PROJECT_COLUMNS: GridConfigDto = {
   columns: (['name', 'description'] as const satisfies readonly (keyof ProjectDto)[]).map(
+    (columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text }),
+  ),
+};
+
+const USER_COLUMNS: GridConfigDto = {
+  columns: (['email', 'sectorKey'] as const satisfies readonly (keyof UserDto)[]).map(
     (columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text }),
   ),
 };
@@ -32,7 +39,44 @@ function gridConfirm(text: string): GridDto {
   return { tables: gridTables([], [textRow, buttonRow]) };
 }
 
-export async function gridProjectLoad(request: Request, gridDto: GridDto): Promise<GridDto> {
+/** Loads the "project" plane: the project grid (GridPlaneDto.grids[0]) and the user grid (grids[1]). */
+export async function planeProjectLoad(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
+  const grids = await Promise.all([gridProjectLoadGrid(request, gridPlaneDto.grids?.[0] ?? {}), gridUserLoadGrid(request, gridPlaneDto.grids?.[1] ?? {})]);
+  return { ...gridPlaneDto, grids };
+}
+
+/** Loads the "debug" plane: the project grid (GridPlaneDto.grids[0]) only. */
+export async function planeDebugLoad(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
+  return { ...gridPlaneDto, grids: [await gridProjectLoadGrid(request, gridPlaneDto.grids?.[0] ?? {})] };
+}
+
+/** Patches the "project" and "debug" planes: enables/disables the DeleteMulti button of the project grid (GridPlaneDto.grids[0]). */
+export async function planeProjectPatch(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
+  return { ...gridPlaneDto, grids: [await gridPatchDeleteMulti(request, gridPlaneDto.grids?.[0] ?? {})] };
+}
+
+async function gridUserLoadGrid(request: Request, gridDto: GridDto): Promise<GridDto> {
+  const users = await usersLoad(request);
+
+  const headerRow: GridRowDto = {
+    cells: gridColumns(USER_COLUMNS.columns ?? []).map((column) => gridHeaderCell(column.columnName, gridDto.state?.sort)),
+  };
+  const rows: GridRowDto[] = users.map((user, rowIndex) => ({
+    cells: gridColumns(USER_COLUMNS.columns ?? []).map(
+      (column): GridCellDto => ({
+        cellEnum: GridCellEnum.Edit,
+        text: gridCellText(user[column.columnName as keyof UserDto], column),
+        rowIndex,
+        columnName: column.columnName,
+      }),
+    ),
+  }));
+  const findRow = gridFindRow([...gridColumns(USER_COLUMNS.columns ?? []).map((column) => column.columnName)]);
+
+  return { ...gridDto, title: 'User Data', tables: gridTables([], [headerRow, findRow, ...rows]) };
+}
+
+async function gridProjectLoadGrid(request: Request, gridDto: GridDto): Promise<GridDto> {
   if (gridDto.command?.commandEnum === GridCommandEnum.Save) {
     await gridProjectSaveUpdate(request, gridDto);
     await gridProjectSaveInsert(request, gridDto);

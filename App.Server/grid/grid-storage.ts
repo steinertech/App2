@@ -1,4 +1,4 @@
-import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPatchDto, GridPatchEnum, GridRowDto, gridStatePath } from '../dto/shared/grid-dto.js';
+import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPatchDto, GridPatchEnum, GridPlaneDto, GridRowDto, gridStatePath } from '../dto/shared/grid-dto.js';
 import { storageDelete, storageDownloadUrls, storageFiles, storageNew, storageRename } from '../util/util-storage.js';
 import { StorageFileDto } from '../dto/storage-file-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
@@ -16,7 +16,9 @@ const STORAGE_FILE_COLUMNS: GridConfigDto = {
 /** Storage columns whose values are rendered read-only (GridCellEnum.Label) instead of as text boxes. */
 const STORAGE_FILE_LABEL_COLUMNS = new Set<string | undefined>(['size', 'dateModified', 'isFolder'] satisfies (keyof StorageFileDto)[]);
 
-export async function gridLoadStorage(request: Request, gridDto: GridDto): Promise<GridDto> {
+/** Loads the "storage" plane: the storage grid (GridPlaneDto.grids[0]) and, if a .jpg or .png file is selected, the Image Preview grid (grids[1]). */
+export async function planeStorageLoad(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
+  const gridDto = gridPlaneDto.grids?.[0] ?? {};
   // Column Chooser Ok: apply the chosen columns (GridStateDto.columnNames) before the rows are built.
   gridColumnChooserOk(gridDto, STORAGE_FILE_COLUMNS.columns ?? []);
 
@@ -197,30 +199,33 @@ export async function gridLoadStorage(request: Request, gridDto: GridDto): Promi
     gridStorageNew(result, columns);
   }
 
-  // Lookup (planes[0]): Column Chooser (opened by gridPatchStorage, kept open while planes[0].planeName is columnChooser)
-  // or Filter Multi (opened by gridPatchStorage, kept open while planes[0].planeName is filterMulti).
+  // Lookup (planes[0]): Column Chooser (opened by planeStoragePatch, kept open while planes[0].planeName is columnChooser)
+  // or Filter Multi (opened by planeStoragePatch, kept open while planes[0].planeName is filterMulti).
   gridLookupSet(result, gridColumnChooserLoad(gridDto, STORAGE_FILE_COLUMNS.columns ?? []) ?? gridFilterMultiLoad(gridDto, STORAGE_FILE_COLUMNS.columns ?? [], allFiles));
 
   // Command is transient: clear it so it isn't re-processed on a later request.
   result.command = undefined;
 
-  return result;
+  // Image Preview (grids[1]) depends on the reloaded storage grid (its selected row), so it is built afterwards.
+  const previewGridDto = await gridStoragePreview(request, result);
+  return { ...gridPlaneDto, grids: previewGridDto !== undefined ? [result, previewGridDto] : [result] };
 }
 
 /**
- * Storage grid patch: GridCommandEnum.ColumnChooser opens the Column Chooser lookup (no storage call), GridCommandEnum.FilterMulti the Filter Multi lookup
+ * Patches the "storage" plane's storage grid (GridPlaneDto.grids[0]): GridCommandEnum.ColumnChooser opens the Column Chooser lookup (no storage call), GridCommandEnum.FilterMulti the Filter Multi lookup
  * (distinct texts of its column in the current folder); any other command (MultiClick) enables/disables the DeleteMulti button.
  */
-export async function gridPatchStorage(request: Request, gridDto: GridDto): Promise<GridDto> {
+export async function planeStoragePatch(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
+  const gridDto = gridPlaneDto.grids?.[0] ?? {};
   if (gridDto.command?.commandEnum === GridCommandEnum.ColumnChooser) {
     const lookupPlane = gridColumnChooserLoad(gridDto, STORAGE_FILE_COLUMNS.columns ?? []);
-    return { patches: [{ patchEnum: GridPatchEnum.Lookup, planeName: lookupPlane?.planeName, lookup: lookupPlane?.grids?.[0] } satisfies GridPatchDto] };
+    return { ...gridPlaneDto, grids: [{ patches: [{ patchEnum: GridPatchEnum.Lookup, planeName: lookupPlane?.planeName, lookup: lookupPlane?.grids?.[0] } satisfies GridPatchDto] }] };
   }
   if (gridDto.command?.commandEnum === GridCommandEnum.FilterMulti) {
     const lookupPlane = gridFilterMultiLoad(gridDto, STORAGE_FILE_COLUMNS.columns ?? [], await storageFiles(request, gridStatePath(gridDto.state)));
-    return { patches: [{ patchEnum: GridPatchEnum.Lookup, planeName: lookupPlane?.planeName, lookup: lookupPlane?.grids?.[0] } satisfies GridPatchDto] };
+    return { ...gridPlaneDto, grids: [{ patches: [{ patchEnum: GridPatchEnum.Lookup, planeName: lookupPlane?.planeName, lookup: lookupPlane?.grids?.[0] } satisfies GridPatchDto] }] };
   }
-  return gridPatchDeleteMulti(request, gridDto);
+  return { ...gridPlaneDto, grids: [await gridPatchDeleteMulti(request, gridDto)] };
 }
 
 /** Formats an ISO 8601 date (UTC) as "YYYY-MM-DD HH:mm", e.g. "2026-10-05T14:30:12.000Z" → "2026-10-05 14:30". */
@@ -378,19 +383,17 @@ function gridStorageNew(gridDto: GridDto, columns: GridConfigColumnDto[]): void 
   dataTable.rows = [...rows, newRow];
 }
 
-/** Adds the "Image Preview" grid (GridPlaneDto.grids[1]) if the selected row of the storage grid (grids[0]) is a .jpg or .png file. */
-export async function gridLoadStoragePreview(request: Request, grids: GridDto[]): Promise<GridDto[]> {
-  const storageGridDto = grids[0];
-  const selected = storageGridDto?.state?.selected;
-  const rowKey = selected !== undefined ? storageGridDto?.state?.rowKeys?.[selected] : undefined;
-  if (storageGridDto === undefined || rowKey === undefined || !/\.(jpg|png)$/i.test(rowKey)) {
-    return grids;
+/** Returns the "Image Preview" grid if the selected row of the (loaded) storage grid is a .jpg or .png file. */
+async function gridStoragePreview(request: Request, storageGridDto: GridDto): Promise<GridDto | undefined> {
+  const selected = storageGridDto.state?.selected;
+  const rowKey = selected !== undefined ? storageGridDto.state?.rowKeys?.[selected] : undefined;
+  if (rowKey === undefined || !/\.(jpg|png)$/i.test(rowKey)) {
+    return undefined;
   }
 
   const [imageUrl] = await storageDownloadUrls(request, [rowKey]);
-  const previewGridDto: GridDto = {
+  return {
     title: 'Image Preview',
     tables: gridTables([], [{ cells: [{ cellEnum: GridCellEnum.Custom, customs: [{ customEnum: GridCustomEnum.Image, imageUrl, text: rowKey.split('/').pop() }] }] }]),
   };
-  return [storageGridDto, previewGridDto];
 }

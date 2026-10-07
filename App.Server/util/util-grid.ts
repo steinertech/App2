@@ -1,10 +1,9 @@
 import { GRID_PAGE_ROW_COUNT_DEFAULT, GRID_PAGE_ROW_COUNT_MAX, GridCellDto, GridCellEnum, GridCommandEnum, GridCustomEnum, GridDto, GridPatchDto, GridPatchEnum, GridPlaneDto, gridPlaneGrids, GridRowDto, GridSortDto, GridStateDto, GridTableDto } from '../dto/shared/grid-dto.js';
 import { titleCase } from './util-main.js';
 import { GridConfigColumnDto, GridConfigTypeEnum } from '../dto/grid-config-dto.js';
-import { gridProjectLoad } from '../grid/grid-project.js';
-import { gridLoadUser } from '../grid/grid-user.js';
-import { gridLoadStorage, gridLoadStoragePreview, gridPatchStorage } from '../grid/grid-storage.js';
-import { gridSchemaLoad } from '../grid/grid-schema.js';
+import { planeDebugLoad, planeProjectLoad, planeProjectPatch } from '../grid/grid-project.js';
+import { planeStorageLoad, planeStoragePatch } from '../grid/grid-storage.js';
+import { planeSchemaLoad } from '../grid/grid-schema.js';
 
 /** Returns GridDto.tables: tables[0] toolbarRows, tables[1] dataRows, tables[2] barRows and, if given, tables[3] footerRows (e.g. a dialog's Ok and Cancel buttons). */
 export function gridTables(toolbarRows: GridRowDto[], dataRows: GridRowDto[], barRows: GridRowDto[] = [], footerRows?: GridRowDto[]): GridTableDto[] {
@@ -446,56 +445,44 @@ function gridLoadLookupMulti(
   };
 }
 
-type GridLoader = (request: Request, gridDto: GridDto) => Promise<GridDto>;
+type GridPlaneLoader = (request: Request, gridPlaneDto: GridPlaneDto) => Promise<GridPlaneDto>;
 
-const PLANE_GRID_LOADERS: Record<string, GridLoader[]> = {
-  debug: [gridProjectLoad],
-  project: [gridProjectLoad, gridLoadUser],
-  storage: [gridLoadStorage],
-  schema: [gridSchemaLoad],
-};
-
-/** Returns grids (as loaded by PLANE_GRID_LOADERS) plus any grid that depends on another grid of the plane, e.g. a detail grid of the selected row. */
-type GridPlaneLoader = (request: Request, grids: GridDto[]) => Promise<GridDto[]>;
-
+/**
+ * Loads the plane's grids from the incoming GridPlaneDto (each grid's state and command as sent by App.Web), including any grid that depends
+ * on another grid of the plane, e.g. a detail grid of the selected row.
+ */
 const PLANE_LOADERS: Record<string, GridPlaneLoader> = {
-  storage: gridLoadStoragePreview,
+  debug: planeDebugLoad,
+  project: planeProjectLoad,
+  storage: planeStorageLoad,
+  schema: planeSchemaLoad,
 };
 
 export async function gridPlaneLoad(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
-  const loaders = gridPlaneDto.planeName !== undefined ? (PLANE_GRID_LOADERS[gridPlaneDto.planeName] ?? []) : [];
-  const planeLoader = gridPlaneDto.planeName !== undefined ? PLANE_LOADERS[gridPlaneDto.planeName] : undefined;
-  const incomingGrids = gridPlaneDto.grids ?? [];
+  const loader = gridPlaneDto.planeName !== undefined ? PLANE_LOADERS[gridPlaneDto.planeName] : undefined;
+  if (loader === undefined) {
+    return { grids: [] };
+  }
 
-  const grids = await Promise.all(
-    loaders.map((loader, gridIndex): Promise<GridDto> => {
-      const gridDto: GridDto = incomingGrids[gridIndex] ?? {};
-      gridCommandSortClick(gridDto);
-      return loader(request, gridDto);
-    }),
-  );
+  (gridPlaneDto.grids ?? []).forEach((gridDto) => gridCommandSortClick(gridDto));
 
-  return { grids: planeLoader !== undefined ? await planeLoader(request, grids) : grids };
+  return { grids: (await loader(request, gridPlaneDto)).grids };
 }
 
-type GridPatcher = (request: Request, gridDto: GridDto) => Promise<GridDto>;
+/** Returns the plane's patches: GridPlaneDto.grids[i] carries GridDto.patches for the incoming grids[i]. */
+type GridPlanePatcher = (request: Request, gridPlaneDto: GridPlaneDto) => Promise<GridPlaneDto>;
 
-const PLANE_GRID_PATCHERS: Record<string, GridPatcher[]> = {
-  debug: [gridPatchDeleteMulti],
-  project: [gridPatchDeleteMulti],
-  storage: [gridPatchStorage],
+const PLANE_GRID_PATCHERS: Record<string, GridPlanePatcher> = {
+  debug: planeProjectPatch,
+  project: planeProjectPatch,
+  storage: planeStoragePatch,
 };
 
 export async function gridPlanePatch(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
-  const patchers = gridPlaneDto.planeName !== undefined ? (PLANE_GRID_PATCHERS[gridPlaneDto.planeName] ?? []) : [];
-  const incomingGrids = gridPlaneDto.grids ?? [];
+  const patcher = gridPlaneDto.planeName !== undefined ? PLANE_GRID_PATCHERS[gridPlaneDto.planeName] : undefined;
+  if (patcher === undefined) {
+    return { grids: [] };
+  }
 
-  const grids = await Promise.all(
-    patchers.map((patcher, gridIndex): Promise<GridDto> => {
-      const gridDto: GridDto = incomingGrids[gridIndex] ?? {};
-      return patcher(request, gridDto);
-    }),
-  );
-
-  return { grids };
+  return { grids: (await patcher(request, gridPlaneDto)).grids };
 }

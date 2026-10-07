@@ -1,4 +1,4 @@
-import { GridCellDto, GridCellEnum, GridCommandEnum, GridDto, GridRowDto } from '../dto/shared/grid-dto.js';
+import { GridCellDto, GridCellEnum, GridCommandEnum, GridDto, GridPlaneDto, GridRowDto } from '../dto/shared/grid-dto.js';
 import { schemaLoad, schemaLoadByIds, schemaUpdate, schemaInsert } from '../util/util-schema.js';
 import { SchemaDto } from '../dto/schema-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
@@ -10,7 +10,9 @@ const SCHEMA_COLUMNS: GridConfigDto = {
   ),
 };
 
-export async function gridSchemaLoad(request: Request, gridDto: GridDto): Promise<GridDto> {
+/** Loads the "schema" plane: the schema grid (GridPlaneDto.grids[0]). */
+export async function planeSchemaLoad(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
+  const gridDto = gridPlaneDto.grids?.[0] ?? {};
   if (gridDto.command?.commandEnum === GridCommandEnum.Save) {
     await gridSchemaSaveUpdate(request, gridDto);
     await gridSchemaSaveInsert(request, gridDto);
@@ -51,7 +53,7 @@ export async function gridSchemaLoad(request: Request, gridDto: GridDto): Promis
   // Command is transient: clear it so it isn't re-processed on a later request.
   result.command = undefined;
 
-  return result;
+  return { ...gridPlaneDto, grids: [result] };
 }
 
 async function gridSchemaSaveUpdate(request: Request, gridDto: GridDto): Promise<void> {
