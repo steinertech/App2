@@ -15,6 +15,7 @@ export default function Dynamic() {
     <div className={container}>
       <h1>Dynamic</h1>
       <Grid path={[0]} />
+      <Grid path={[1]} />
     </div>
   );
 }
