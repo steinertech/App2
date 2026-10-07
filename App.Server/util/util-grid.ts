@@ -3,7 +3,7 @@ import { titleCase } from './util-main.js';
 import { GridConfigColumnDto, GridConfigTypeEnum } from '../dto/grid-config-dto.js';
 import { planeDebugLoad, planeProjectLoad, planeProjectPatch } from '../grid/grid-project.js';
 import { planeStorageLoad, planeStoragePatch } from '../grid/grid-storage.js';
-import { planeSchemaLoad } from '../grid/grid-schema.js';
+import { planeSchemaLoad, planeSchemaPatch } from '../grid/grid-schema.js';
 
 /** Returns GridDto.tables: tables[0] toolbarRows, tables[1] dataRows, tables[2] barRows and, if given, tables[3] footerRows (e.g. a dialog's Ok and Cancel buttons). */
 export function gridTables(toolbarRows: GridRowDto[], dataRows: GridRowDto[], barRows: GridRowDto[] = [], footerRows?: GridRowDto[]): GridTableDto[] {
@@ -476,6 +476,7 @@ const PLANE_GRID_PATCHERS: Record<string, GridPlanePatcher> = {
   debug: planeProjectPatch,
   project: planeProjectPatch,
   storage: planeStoragePatch,
+  schema: planeSchemaPatch,
 };
 
 export async function gridPlanePatch(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
