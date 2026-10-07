@@ -237,7 +237,7 @@ export function gridLoadColumnChooser(allColumns: GridConfigColumnDto[], state: 
       rowKeys: columns.map((column) => column.columnName ?? ''),
       isSelectedMulti: columns.map((column) => columnNames === undefined || columnNames.includes(column.columnName ?? '')),
     },
-    setting: { title: 'Column Chooser' },
+    title: 'Column Chooser',
   };
 }
 

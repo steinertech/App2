@@ -182,8 +182,6 @@ export function gridStatePath(state: GridStateDto | undefined): string {
 }
 
 export interface GridSettingDto {
-  /** Heading shown above the grid. */
-  title?: string;
   /** If true, selecting a row sends GridCommandEnum.Reload (with GridStateDto.selected set) to the backend, e.g. to load detail data for the selected row. */
   isSelectReload?: boolean;
   /** If true, changing a GridCellDto.isSelectMulti checkbox sends GridCommandEnum.MultiClick to /api/grid-patch (e.g. to enable a DeleteMulti button); otherwise the new GridStateDto.isSelectedMulti is only kept on the client and sent with the next command. */
@@ -191,6 +189,8 @@ export interface GridSettingDto {
 }
 
 export interface GridDto {
+  /** Heading shown above the grid. Unlike setting, it is sent back to the server with every request. */
+  title?: string;
   /** Rendered as one html table each: tables[0] toolbar rows, tables[1] data rows (header, find and data rows; or a dialog's content), tables[2] GridCustomEnum.Bar rows. */
   tables?: GridTableDto[];
   state?: GridStateDto;

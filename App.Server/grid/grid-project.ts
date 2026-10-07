@@ -128,7 +128,8 @@ export async function gridProjectLoad(request: Request, gridDto: GridDto): Promi
 
   const result: GridDto = {
     ...gridDto,
-    setting: { title: `Project Data (${time})`, isSelectMultiPatch: true },
+    title: `Project Data (${time})`,
+    setting: { isSelectMultiPatch: true },
     tables: gridTables([deleteMultiRow], [headerRow, findRow, ...rows], [gridBarRow()]),
     state: { ...gridDto.state, ...fspState, rowKeys },
   };
@@ -142,7 +143,7 @@ export async function gridProjectLoad(request: Request, gridDto: GridDto): Promi
   }
 
   if (gridRemoveCommand(gridDto, 'Cancel')) {
-    result.setting = { ...result.setting, title: 'Hello World (Cancel)' };
+    result.title = 'Hello World (Cancel)';
   }
 
   const confirmTwoGridDto = gridFindCommand(gridDto, 'ConfirmTwo');

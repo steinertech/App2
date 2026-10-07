@@ -549,7 +549,7 @@ export default function Grid({ path }: GridProps) {
   return (
     <div>
       <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(event) => void handleFileChange(event)} />
-      <h1 className="text-4xl font-bold">{grid?.setting?.title}</h1>
+      <h1 className="text-4xl font-bold">{grid?.title}</h1>
       {/* One html table per GridDto.tables entry: toolbar, data and Bar. */}
       {gridTables.map((gridTable, tableIndex) => (
         <table key={tableIndex} className="w-full">

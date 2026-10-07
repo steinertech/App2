@@ -28,5 +28,5 @@ export async function gridLoadUser(request: Request, gridDto: GridDto): Promise<
   }));
   const findRow = gridFindRow([...gridColumns(USER_COLUMNS.columns ?? []).map((column) => column.columnName)]);
 
-  return { ...gridDto, setting: { title: 'User Data' }, tables: gridTables([], [headerRow, findRow, ...rows]) };
+  return { ...gridDto, title: 'User Data', tables: gridTables([], [headerRow, findRow, ...rows]) };
 }

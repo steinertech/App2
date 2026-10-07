@@ -184,7 +184,8 @@ export async function gridLoadStorage(request: Request, gridDto: GridDto): Promi
     ...gridDto,
     tables: gridTables([toolbarRow, toolbarRow2], [headerRow, findRow, ...fileRows], [gridBarRow()]),
     state: { ...gridDto.state, ...fspState, rowKeys, isSelectedMulti },
-    setting: { title: 'Storage Data', isSelectReload: true, isSelectMultiPatch: true },
+    title: 'Storage Data',
+    setting: { isSelectReload: true, isSelectMultiPatch: true },
   };
 
   if (gridDto.command?.commandEnum === GridCommandEnum.New) {
@@ -305,7 +306,7 @@ function gridStorageDeleteConfirm(rowKeys: unknown): GridDto {
       },
     ],
   };
-  return { setting: { title: 'Confirmation' }, tables: gridTables([], [textRow, buttonRow]), state: { custom: { rowKeys } } };
+  return { title: 'Confirmation', tables: gridTables([], [textRow, buttonRow]), state: { custom: { rowKeys } } };
 }
 
 /** Returns the "New Folder" dialog GridDto (Folder Name label and text box, Save button and client-side GridCustomEnum.Cancel button) carrying path (gridStatePath of the storage grid) in GridStateDto.custom. */
@@ -332,7 +333,7 @@ function gridStorageNewFolder(path: string, folderName?: string): GridDto {
       },
     ],
   };
-  return { setting: { title: 'New Folder' }, tables: gridTables([], [nameRow, buttonRow]), state: { custom: { path } } };
+  return { title: 'New Folder', tables: gridTables([], [nameRow, buttonRow]), state: { custom: { path } } };
 }
 
 /** Deletes rowKeys (paths relative to the sector key; folders end with "/"). rowKeys come back from the client; storageDelete prepends the caller's sector key. */
@@ -381,7 +382,7 @@ export async function gridLoadStoragePreview(request: Request, grids: GridDto[])
 
   const [imageUrl] = await storageDownloadUrls(request, [rowKey]);
   const previewGridDto: GridDto = {
-    setting: { title: 'Image Preview' },
+    title: 'Image Preview',
     tables: gridTables([], [{ cells: [{ cellEnum: GridCellEnum.Custom, customs: [{ customEnum: GridCustomEnum.Image, imageUrl, text: rowKey.split('/').pop() }] }] }]),
   };
   return [storageGridDto, previewGridDto];

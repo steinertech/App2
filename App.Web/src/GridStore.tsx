@@ -46,7 +46,7 @@ export function resolveGrid(rootGrids: GridDto[] | undefined, path: number[]): G
   return resolveGrid(grid?.planes?.[planesIndex]?.grids,[nestedGridIndex, ...rest]);
 }
 
-/** Rebuilds a GridDto for sending to the server: strips tables, setting and patches (the server always recomputes them) and, recursively, applies any override addressed at this node or one nested under it. */
+/** Rebuilds a GridDto for sending to the server: strips tables, setting and patches (the server always recomputes them; title is kept and sent back) and, recursively, applies any override addressed at this node or one nested under it. */
 function buildOutgoingGrid(existingGrid: GridDto, path: number[], entries: GridOverrideEntry[]): GridDto {
   const entry = entries.find((candidate) => samePath(candidate.path, path));
   const grid: GridDto = { ...existingGrid, ...entry?.override };
