@@ -157,10 +157,10 @@ export function gridFindCommand(gridDto: GridDto, customName: string): GridDto |
   return gridPlaneGrids({ grids: [gridDto] }).find((nestedGridDto) => gridIsCommand(nestedGridDto, customName));
 }
 
-/** Sets lookupGridDto (e.g. Column Chooser) as the only grid of gridDto.planes[0], or sets planes[0] to null if undefined. App dialogs at planes[1] and up are kept; planes becomes undefined if all entries are null. */
-export function gridLookupSet(gridDto: GridDto, lookupGridDto: GridDto | undefined): void {
+/** Sets lookupGridDto (e.g. Column Chooser) as the only grid of gridDto.planes[0] (with GridPlaneDto.planeName, if given), or sets planes[0] to null if undefined. App dialogs at planes[1] and up are kept; planes becomes undefined if all entries are null. */
+export function gridLookupSet(gridDto: GridDto, lookupGridDto: GridDto | undefined, planeName?: string): void {
   const planes = [...(gridDto.planes ?? [])];
-  planes[0] = lookupGridDto !== undefined ? { grids: [lookupGridDto] } : null;
+  planes[0] = lookupGridDto !== undefined ? { ...(planeName !== undefined && { planeName }), grids: [lookupGridDto] } : null;
   gridDto.planes = planes.some((gridPlane) => gridPlane !== null) ? planes : undefined;
 }
 

@@ -193,7 +193,7 @@ export async function gridLoadStorage(request: Request, gridDto: GridDto): Promi
   }
 
   // Column chooser lookup (planes[0]) is only shown in the response to the ColumnChooser command; any other command closes it.
-  gridLookupSet(result, gridDto.command?.commandEnum === GridCommandEnum.ColumnChooser ? gridLoadColumnChooser(STORAGE_FILE_COLUMNS.columns ?? [], gridDto.state) : undefined);
+  gridLookupSet(result, gridDto.command?.commandEnum === GridCommandEnum.ColumnChooser ? gridLoadColumnChooser(STORAGE_FILE_COLUMNS.columns ?? [], gridDto.state) : undefined, 'columnChooser');
 
   // Command is transient: clear it so it isn't re-processed on a later request.
   result.command = undefined;
