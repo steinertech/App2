@@ -9,8 +9,9 @@ import SignOut from './page/SignOut.tsx';
 import Project from './page/Project.tsx';
 import Storage from './page/Storage.tsx';
 import Schema from './page/Schema.tsx';
+import Dynamic from './page/Dynamic.tsx';
 
-export const routePaths = ['', 'about', 'debug', 'sign-up', 'sign-in', 'sign-out', 'project', 'storage', 'schema'];
+export const routePaths = ['', 'about', 'debug', 'sign-up', 'sign-in', 'sign-out', 'project', 'storage', 'schema', 'dynamic'];
 
 function pageRoutes() {
   return (
@@ -24,6 +25,7 @@ function pageRoutes() {
       <Route path="project" element={<Project />} />
       <Route path="storage" element={<Storage />} />
       <Route path="schema" element={<Schema />} />
+      <Route path="dynamic" element={<Dynamic />} />
     </>
   );
 }
