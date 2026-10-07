@@ -4,6 +4,7 @@ import { GridConfigColumnDto, GridConfigTypeEnum } from '../dto/grid-config-dto.
 import { gridProjectLoad } from '../grid/grid-project.js';
 import { gridLoadUser } from '../grid/grid-user.js';
 import { gridLoadStorage, gridLoadStoragePreview, gridPatchStorage } from '../grid/grid-storage.js';
+import { gridSchemaLoad } from '../grid/grid-schema.js';
 
 /** Returns GridDto.tables: tables[0] toolbarRows, tables[1] dataRows, tables[2] barRows and, if given, tables[3] footerRows (e.g. a dialog's Ok and Cancel buttons). */
 export function gridTables(toolbarRows: GridRowDto[], dataRows: GridRowDto[], barRows: GridRowDto[] = [], footerRows?: GridRowDto[]): GridTableDto[] {
@@ -451,6 +452,7 @@ const PLANE_GRID_LOADERS: Record<string, GridLoader[]> = {
   debug: [gridProjectLoad],
   project: [gridProjectLoad, gridLoadUser],
   storage: [gridLoadStorage],
+  schema: [gridSchemaLoad],
 };
 
 /** Returns grids (as loaded by PLANE_GRID_LOADERS) plus any grid that depends on another grid of the plane, e.g. a detail grid of the selected row. */

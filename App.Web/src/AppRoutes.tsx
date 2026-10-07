@@ -8,8 +8,9 @@ import SignIn from './page/SignIn.tsx';
 import SignOut from './page/SignOut.tsx';
 import Project from './page/Project.tsx';
 import Storage from './page/Storage.tsx';
+import Schema from './page/Schema.tsx';
 
-export const routePaths = ['', 'about', 'debug', 'sign-up', 'sign-in', 'sign-out', 'project', 'storage'];
+export const routePaths = ['', 'about', 'debug', 'sign-up', 'sign-in', 'sign-out', 'project', 'storage', 'schema'];
 
 function pageRoutes() {
   return (
@@ -22,6 +23,7 @@ function pageRoutes() {
       <Route path="sign-out" element={<SignOut />} />
       <Route path="project" element={<Project />} />
       <Route path="storage" element={<Storage />} />
+      <Route path="schema" element={<Schema />} />
     </>
   );
 }
