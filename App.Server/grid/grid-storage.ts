@@ -2,14 +2,14 @@ import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEn
 import { storageDelete, storageDownloadUrls, storageFiles, storageNew, storageRename } from '../util/util-storage.js';
 import { StorageFileDto } from '../dto/storage-file-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
-import { gridBarRow, gridColumnChooserOk, gridColumnChooserSet, gridColumns, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand, gridPatchDeleteMulti, gridSelectedMultiRowKeys, gridTables } from '../util/util-grid.js';
+import { gridBarRow, gridCellText, gridColumnChooserOk, gridColumnChooserSet, gridColumns, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand, gridPatchDeleteMulti, gridSelectedMultiRowKeys, gridTables } from '../util/util-grid.js';
 
 const STORAGE_FILE_COLUMNS: GridConfigDto = {
   columns: [
     { columnName: 'fileNameOnly' satisfies keyof StorageFileDto, text: 'File Name', typeEnum: GridConfigTypeEnum.Text, columnNameSort: 'fileNameOnlySort' satisfies keyof StorageFileDto },
-    { columnName: 'size' satisfies keyof StorageFileDto, typeEnum: GridConfigTypeEnum.Number },
-    { columnName: 'dateModified' satisfies keyof StorageFileDto, text: 'Date Modified (UTC)', typeEnum: GridConfigTypeEnum.Text },
-    { columnName: 'isFolder' satisfies keyof StorageFileDto, typeEnum: GridConfigTypeEnum.Text },
+    { columnName: 'size' satisfies keyof StorageFileDto, typeEnum: GridConfigTypeEnum.Number, valueToText: (value) => gridFormatSize(value as number), valueFromText: gridParseSize },
+    { columnName: 'dateModified' satisfies keyof StorageFileDto, text: 'Date Modified (UTC)', typeEnum: GridConfigTypeEnum.Text, valueToText: (value) => gridFormatDate(value as string) },
+    { columnName: 'isFolder' satisfies keyof StorageFileDto, typeEnum: GridConfigTypeEnum.Text, valueToText: (value) => (value === true ? 'Yes' : 'No') },
     { columnName: 'fileNameOnlySort' satisfies keyof StorageFileDto, typeEnum: GridConfigTypeEnum.Text, isHide: true },
   ],
 };
@@ -124,7 +124,7 @@ export async function gridLoadStorage(request: Request, gridDto: GridDto): Promi
       ...columns.map(
         (column, columnIndex): GridCellDto => ({
           cellEnum: STORAGE_FILE_LABEL_COLUMNS.has(column.columnName) ? GridCellEnum.Label : GridCellEnum.Edit,
-          text: gridStorageCellText(file, column.columnName as keyof StorageFileDto),
+          text: gridCellText(file[column.columnName as keyof StorageFileDto], column),
           rowIndex,
           columnName: column.columnName,
           isSelectMulti: columnIndex === 0 ? true : undefined,
@@ -211,21 +211,6 @@ export async function gridPatchStorage(request: Request, gridDto: GridDto): Prom
   return gridPatchDeleteMulti(request, gridDto);
 }
 
-/** Returns the text of the cell in column columnName for file. Folders have no size or date: their cells are empty instead of "undefined". */
-function gridStorageCellText(file: StorageFileDto, columnName: keyof StorageFileDto): string {
-  const value = file[columnName];
-  if (value === undefined) {
-    return '';
-  }
-  if (columnName === 'size') {
-    return gridFormatSize(value as number);
-  }
-  if (columnName === 'dateModified') {
-    return gridFormatDate(value as string);
-  }
-  return String(value);
-}
-
 /** Formats an ISO 8601 date (UTC) as "YYYY-MM-DD HH:mm", e.g. "2026-10-05T14:30:12.000Z" → "2026-10-05 14:30". */
 function gridFormatDate(date: string): string {
   return date.slice(0, 16).replace('T', ' ');
@@ -244,6 +229,16 @@ function gridFormatSize(size: number): string {
     unitIndex++;
   }
   return `${value.toFixed(1)} ${units[unitIndex]}`;
+}
+
+/** Parses a size text (as formatted by gridFormatSize, unit optional and case-insensitive) to bytes, e.g. "1.5 KB" → 1536, "512" → 512. Returns undefined if text isn't a size. */
+function gridParseSize(text: string): number | undefined {
+  const match = text.trim().match(/^(\d+(?:\.\d+)?)\s*(B|KB|MB|GB)?$/i);
+  if (match === null) {
+    return undefined;
+  }
+  const exponent = ['B', 'KB', 'MB', 'GB'].indexOf((match[2] ?? 'B').toUpperCase());
+  return Math.round(Number(match[1]) * 1024 ** exponent);
 }
 
 /**

@@ -2,7 +2,7 @@ import { GridCellDto, GridCellEnum, GridDto, GridRowDto } from '../dto/shared/gr
 import { usersLoad } from '../util/util-user.js';
 import { UserDto } from '../dto/user-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
-import { gridColumns, gridFindRow, gridHeaderCell, gridTables } from '../util/util-grid.js';
+import { gridCellText, gridColumns, gridFindRow, gridHeaderCell, gridTables } from '../util/util-grid.js';
 
 const USER_COLUMNS: GridConfigDto = {
   columns: (['email', 'sectorKey'] as const satisfies readonly (keyof UserDto)[]).map(
@@ -20,7 +20,7 @@ export async function gridLoadUser(request: Request, gridDto: GridDto): Promise<
     cells: gridColumns(USER_COLUMNS.columns ?? []).map(
       (column): GridCellDto => ({
         cellEnum: GridCellEnum.Edit,
-        text: user[column.columnName as keyof UserDto] as string | undefined,
+        text: gridCellText(user[column.columnName as keyof UserDto], column),
         rowIndex,
         columnName: column.columnName,
       }),

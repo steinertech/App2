@@ -5,7 +5,7 @@ import { projectsLoad, projectsLoadByNames, projectsUpdate, projectsInsert, proj
 import { userProject } from '../util/util-user.js';
 import { ProjectDto } from '../dto/project-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
-import { gridBarRow, gridColumns, gridFindCommand, gridFindRow, gridFsp, gridHeaderCell, gridIsAnySelectedMulti, gridRemoveCommand, gridTables } from '../util/util-grid.js';
+import { gridBarRow, gridCellText, gridCellValue, gridColumns, gridFindCommand, gridFindRow, gridFsp, gridHeaderCell, gridIsAnySelectedMulti, gridRemoveCommand, gridTables } from '../util/util-grid.js';
 
 const PROJECT_COLUMNS: GridConfigDto = {
   columns: (['name', 'description'] as const satisfies readonly (keyof ProjectDto)[]).map(
@@ -87,7 +87,7 @@ export async function gridProjectLoad(request: Request, gridDto: GridDto): Promi
       ...gridColumns(PROJECT_COLUMNS.columns ?? []).map(
         (column, columnIndex): GridCellDto => ({
           cellEnum: GridCellEnum.Edit,
-          text: project[column.columnName as keyof ProjectDto] as string | undefined,
+          text: gridCellText(project[column.columnName as keyof ProjectDto], column),
           rowIndex,
           columnName: column.columnName,
           isSelectMulti: columnIndex === 0 ? true : undefined,
@@ -172,22 +172,18 @@ async function gridProjectSaveUpdate(request: Request, gridDto: GridDto): Promis
 
   const projects = await projectsLoadByNames(request, names);
 
-  const columnNames = new Set(gridColumns(PROJECT_COLUMNS.columns ?? []).map((column) => column.columnName));
+  const columns = gridColumns(PROJECT_COLUMNS.columns ?? []);
 
   for (const modify of modifies) {
-    if (
-      modify.rowIndex === undefined ||
-      modify.columnName === undefined ||
-      modify.cellEnum !== GridCellEnum.Edit ||
-      !columnNames.has(modify.columnName)
-    ) {
+    const column = columns.find((column) => column.columnName === modify.columnName);
+    if (modify.rowIndex === undefined || modify.columnName === undefined || modify.cellEnum !== GridCellEnum.Edit || column === undefined) {
       continue;
     }
 
     const rowKey = rowKeys[modify.rowIndex];
     const project = projects.find((project) => project.name === rowKey);
     if (project) {
-      (project as Record<string, string | undefined>)[modify.columnName] = modify.textModified;
+      (project as Record<string, unknown>)[modify.columnName] = gridCellValue(modify.textModified, column);
     }
   }
 
@@ -197,22 +193,18 @@ async function gridProjectSaveUpdate(request: Request, gridDto: GridDto): Promis
 async function gridProjectSaveInsert(request: Request, gridDto: GridDto): Promise<void> {
   const modifies = (gridDto.modifies ?? []).filter((modify) => modify.isNew);
 
-  const columnNames = new Set(gridColumns(PROJECT_COLUMNS.columns ?? []).map((column) => column.columnName));
+  const columns = gridColumns(PROJECT_COLUMNS.columns ?? []);
 
   const projectsByRowIndex = new Map<number, ProjectDto>();
 
   for (const modify of modifies) {
-    if (
-      modify.rowIndex === undefined ||
-      modify.columnName === undefined ||
-      modify.cellEnum !== GridCellEnum.Edit ||
-      !columnNames.has(modify.columnName)
-    ) {
+    const column = columns.find((column) => column.columnName === modify.columnName);
+    if (modify.rowIndex === undefined || modify.columnName === undefined || modify.cellEnum !== GridCellEnum.Edit || column === undefined) {
       continue;
     }
 
     const project = projectsByRowIndex.get(modify.rowIndex) ?? {};
-    (project as Record<string, string | undefined>)[modify.columnName] = modify.textModified;
+    (project as Record<string, unknown>)[modify.columnName] = gridCellValue(modify.textModified, column);
     projectsByRowIndex.set(modify.rowIndex, project);
   }
 

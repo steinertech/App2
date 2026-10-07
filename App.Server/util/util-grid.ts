@@ -61,7 +61,7 @@ export function gridFsp<T extends object>(rows: T[], columns: GridConfigColumnDt
   for (const [columnName, filter] of Object.entries(state?.filters ?? {})) {
     const column = renderedColumns.find((column) => column.columnName === columnName);
     if (column !== undefined && typeof filter === 'string' && filter.trim() !== '') {
-      result = result.filter((row) => gridFspFilterMatch(value(row, columnName), filter.trim(), column.typeEnum));
+      result = result.filter((row) => gridFspFilterMatch(value(row, columnName), filter.trim(), column));
     }
   }
 
@@ -87,24 +87,54 @@ export function gridFsp<T extends object>(rows: T[], columns: GridConfigColumnDt
   };
 }
 
+/** Returns the cell text of a column's raw value: "" if the value is missing (undefined or null), otherwise GridConfigColumnDto.valueToText(value) if set, else String(value). */
+export function gridCellText(value: unknown, column: GridConfigColumnDto): string {
+  if (value === undefined || value === null) {
+    return '';
+  }
+  return column.valueToText !== undefined ? column.valueToText(value) : String(value);
+}
+
+/** Returns the column's raw value of a cell text (e.g. GridModifyDto.textModified): GridConfigColumnDto.valueFromText(text) if set, else text itself. undefined stays undefined. */
+export function gridCellValue(text: string | undefined, column: GridConfigColumnDto): unknown {
+  if (text === undefined) {
+    return undefined;
+  }
+  return column.valueFromText !== undefined ? column.valueFromText(text) : text;
+}
+
+/** Returns the number a Number column's filter operand stands for (parsed by GridConfigColumnDto.valueFromText if set, e.g. "5.6kg" → 5600), or undefined if it isn't one. */
+function gridFspFilterNumber(text: string, column: GridConfigColumnDto): number | undefined {
+  let result: unknown;
+  try {
+    result = column.valueFromText !== undefined ? column.valueFromText(text.trim()) : text.trim() !== '' ? Number(text) : undefined;
+  } catch {
+    // Not parsable: the filter falls back to a partial text match.
+    return undefined;
+  }
+  return typeof result === 'number' && Number.isFinite(result) ? result : undefined;
+}
+
 /**
  * Returns true if value matches filter (trimmed, not empty). Rows without a value never match.
- * Text: case-insensitive partial match. Number: ">10", ">=10", "<10", "<=10", "=10" compare, "10..20" is an inclusive range;
- * anything else (e.g. "15") is a partial match on the number's text like a Text column.
+ * Text: case-insensitive partial match on the cell text (see gridCellText, so e.g. "kg" matches a value shown as "5.6kg").
+ * Number: ">10", ">=10", "<10", "<=10", "=10" compare, "10..20" is an inclusive range (operands are parsed by the column's valueFromText
+ * if set, e.g. ">5.6kg"); anything else (e.g. "15") is a partial match on the cell text like a Text column.
  */
-function gridFspFilterMatch(value: unknown, filter: string, typeEnum: GridConfigTypeEnum | undefined): boolean {
+function gridFspFilterMatch(value: unknown, filter: string, column: GridConfigColumnDto): boolean {
   if (value === undefined || value === null) {
     return false;
   }
-  if (typeEnum === GridConfigTypeEnum.Number && typeof value === 'number') {
-    const numberPattern = '(-?\\d+(?:\\.\\d+)?)';
-    const range = filter.match(new RegExp(`^${numberPattern}\\s*\\.\\.\\s*${numberPattern}$`));
-    if (range !== null) {
-      return value >= Number(range[1]) && value <= Number(range[2]);
+  if (column.typeEnum === GridConfigTypeEnum.Number && typeof value === 'number') {
+    const range = filter.match(/^(.+?)\s*\.\.\s*(.+)$/);
+    const rangeFrom = range !== null ? gridFspFilterNumber(range[1], column) : undefined;
+    const rangeTo = range !== null ? gridFspFilterNumber(range[2], column) : undefined;
+    if (rangeFrom !== undefined && rangeTo !== undefined) {
+      return value >= rangeFrom && value <= rangeTo;
     }
-    const compare = filter.match(new RegExp(`^(>=|<=|>|<|=)\\s*${numberPattern}$`));
-    if (compare !== null) {
-      const number = Number(compare[2]);
+    const compare = filter.match(/^(>=|<=|>|<|=)\s*(.+)$/);
+    const number = compare !== null ? gridFspFilterNumber(compare[2], column) : undefined;
+    if (compare !== null && number !== undefined) {
       switch (compare[1]) {
         case '>=': return value >= number;
         case '<=': return value <= number;
@@ -114,7 +144,7 @@ function gridFspFilterMatch(value: unknown, filter: string, typeEnum: GridConfig
       }
     }
   }
-  return String(value).toLowerCase().includes(filter.toLowerCase());
+  return gridCellText(value, column).toLowerCase().includes(filter.toLowerCase());
 }
 
 /** Compares a and b for sorting in direction (1 asc, -1 desc). Values are compared as numbers for a Number column, otherwise as text (case-insensitive, digits by numeric value). Missing values come last in both directions. */
