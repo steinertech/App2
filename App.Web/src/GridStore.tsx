@@ -70,13 +70,13 @@ function buildOutgoingGrid(existingGrid: GridDto, path: number[], entries: GridO
 
 /**
  * Applies responseGrid.patches to grid, then recurses into planes (the response mirrors the request's structure):
- * GridPatchEnum.Button copies isDisabled onto each GridCustomDto whose name matches; GridPatchEnum.Lookup sets GridPatchDto.lookup as the only grid of grid.planes[0].
+ * GridPatchEnum.Button copies isDisabled onto each GridCustomDto whose name matches; GridPatchEnum.Lookup sets GridPatchDto.lookup as the only grid of grid.planes[0] (with GridPatchDto.planeName).
  */
 function applyPatches(grid: GridDto, responseGrid: GridDto): void {
   for (const patch of responseGrid.patches ?? []) {
     if (patch.patchEnum === GridPatchEnum.Lookup) {
       const planes = [...(grid.planes ?? [])];
-      planes[0] = patch.lookup !== undefined ? { grids: [patch.lookup] } : null;
+      planes[0] = patch.lookup !== undefined ? { ...(patch.planeName !== undefined && { planeName: patch.planeName }), grids: [patch.lookup] } : null;
       grid.planes = planes;
       continue;
     }

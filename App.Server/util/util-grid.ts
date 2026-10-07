@@ -191,32 +191,42 @@ export function gridFindCommand(gridDto: GridDto, customName: string): GridDto |
   return gridPlaneGrids({ grids: [gridDto] }).find((nestedGridDto) => gridIsCommand(nestedGridDto, customName));
 }
 
-/** Sets lookupGridDto (e.g. Column Chooser) as the only grid of gridDto.planes[0] (with GridPlaneDto.planeName, if given), or sets planes[0] to null if undefined. App dialogs at planes[1] and up are kept; planes becomes undefined if all entries are null. */
-export function gridLookupSet(gridDto: GridDto, lookupGridDto: GridDto | undefined, planeName?: string): void {
+/**
+ * Sets lookupPlane (e.g. Column Chooser, see gridColumnChooserLoad, or Filter Multi, see gridFilterMultiLoad) as gridDto.planes[0], or sets planes[0] to null if undefined.
+ * App dialogs at planes[1] and up are kept; planes becomes undefined if all entries are null.
+ */
+export function gridLookupSet(gridDto: GridDto, lookupPlane: GridPlaneDto | undefined): void {
   const planes = [...(gridDto.planes ?? [])];
-  planes[0] = lookupGridDto !== undefined ? { ...(planeName !== undefined && { planeName }), grids: [lookupGridDto] } : null;
+  planes[0] = lookupPlane ?? null;
   gridDto.planes = planes.some((gridPlane) => gridPlane !== null) ? planes : undefined;
 }
 
 /** GridPlaneDto.planeName of the Column Chooser lookup (gridDto.planes[0]). */
 export const GRID_PLANE_COLUMN_CHOOSER = 'columnChooser';
 
-/** The Column Chooser's single column (its rows are the parent grid's columns). */
-const GRID_COLUMN_CHOOSER_COLUMNS: GridConfigColumnDto[] = [{ columnName: 'columnChooser', text: 'Column Name', typeEnum: GridConfigTypeEnum.Text }];
+/** GridPlaneDto.planeName of the Filter Multi lookup (gridDto.planes[0]). */
+export const GRID_PLANE_FILTER_MULTI = 'filterMulti';
 
-/** Returns the open Column Chooser lookup grid (gridDto.planes[0] with planeName GRID_PLANE_COLUMN_CHOOSER), or undefined. */
-function gridColumnChooserLookup(gridDto: GridDto): GridDto | undefined {
+/** Returns the open lookup grid gridDto.planes[0] if its GridPlaneDto.planeName is planeName, or undefined. */
+function gridLookup(gridDto: GridDto, planeName: string): GridDto | undefined {
   const lookupPlane = gridDto.planes?.[0];
-  return lookupPlane?.planeName === GRID_PLANE_COLUMN_CHOOSER ? lookupPlane.grids?.[0] : undefined;
+  return lookupPlane?.planeName === planeName ? lookupPlane.grids?.[0] : undefined;
+}
+
+/** One row of a multi select lookup (see gridLoadLookupMulti): rowKey identifies it, text is shown, value is sorted by. */
+interface GridLookupMultiRow {
+  rowKey: string;
+  text: string;
+  value: unknown;
 }
 
 /**
- * Returns the column names selected in the Column Chooser lookupGridDto: GridStateDto.custom.selectedColumnNames (the selection over all pages)
+ * Returns the rowKeys selected in the multi select lookupGridDto (see gridLoadLookupMulti): GridStateDto.custom.selectedRowKeys (the selection over all pages)
  * updated with the checkboxes of the page sent back (GridStateDto.isSelectedMulti by GridStateDto.rowKeys).
  */
-function gridColumnChooserSelected(lookupGridDto: GridDto): Set<string> {
-  const selectedColumnNames = lookupGridDto.state?.custom?.selectedColumnNames;
-  const result = new Set(Array.isArray(selectedColumnNames) ? selectedColumnNames.filter((columnName): columnName is string => typeof columnName === 'string') : []);
+function gridLookupMultiSelected(lookupGridDto: GridDto): Set<string> {
+  const selectedRowKeys = lookupGridDto.state?.custom?.selectedRowKeys;
+  const result = new Set(Array.isArray(selectedRowKeys) ? selectedRowKeys.filter((rowKey): rowKey is string => typeof rowKey === 'string') : []);
   const isSelectedMulti = lookupGridDto.state?.isSelectedMulti;
   if (isSelectedMulti !== undefined) {
     (lookupGridDto.state?.rowKeys ?? []).forEach((rowKey, rowIndex) => (isSelectedMulti[rowIndex] === true ? result.add(rowKey) : result.delete(rowKey)));
@@ -224,30 +234,116 @@ function gridColumnChooserSelected(lookupGridDto: GridDto): Set<string> {
   return result;
 }
 
+/** Returns the Column Chooser's rows: one per column of allColumns (rowKey columnName). */
+function gridColumnChooserRows(allColumns: GridConfigColumnDto[]): GridLookupMultiRow[] {
+  return gridColumns(allColumns).map((column) => {
+    const text = column.text ?? titleCase(column.columnName) ?? '';
+    return { rowKey: column.columnName ?? '', text, value: text };
+  });
+}
+
 /** If the Column Chooser lookup (gridDto.planes[0]) sent GridCommandEnum.Ok, sets gridDto.state.columnNames to its selected columns (in allColumns order). */
 export function gridColumnChooserOk(gridDto: GridDto, allColumns: GridConfigColumnDto[]): void {
-  const lookupGridDto = gridColumnChooserLookup(gridDto);
+  const lookupGridDto = gridLookup(gridDto, GRID_PLANE_COLUMN_CHOOSER);
   if (lookupGridDto?.command?.commandEnum === GridCommandEnum.Ok) {
-    const selected = gridColumnChooserSelected(lookupGridDto);
-    const columnNames = gridColumns(allColumns)
-      .map((column) => column.columnName ?? '')
+    const selected = gridLookupMultiSelected(lookupGridDto);
+    const columnNames = gridColumnChooserRows(allColumns)
+      .map((lookupRow) => lookupRow.rowKey)
       .filter((columnName) => selected.has(columnName));
     gridDto.state = { ...gridDto.state, columnNames };
   }
 }
 
 /**
- * Sets gridDto.planes[0] to the Column Chooser lookup (see gridLoadColumnChooser) if the ColumnChooser command opened it, or if it is open
- * (incoming planes[0].planeName is GRID_PLANE_COLUMN_CHOOSER) and didn't send Ok. Otherwise it is closed.
+ * Returns the Column Chooser lookup plane (set it with gridLookupSet) if the incoming GridCommandEnum.ColumnChooser opened it, or if it is open
+ * (incoming planes[0].planeName is GRID_PLANE_COLUMN_CHOOSER) and didn't send Ok. Otherwise undefined.
+ * A column is selected initially if it is in GridStateDto.columnNames (all columns if columnNames is undefined). Its Ok button is handled by gridColumnChooserOk.
  */
-export function gridColumnChooserSet(gridDto: GridDto, incomingGridDto: GridDto, allColumns: GridConfigColumnDto[]): void {
-  if (incomingGridDto.command?.commandEnum === GridCommandEnum.ColumnChooser) {
-    gridLookupSet(gridDto, gridLoadColumnChooser(allColumns, incomingGridDto.state), GRID_PLANE_COLUMN_CHOOSER);
+export function gridColumnChooserLoad(incomingGridDto: GridDto, allColumns: GridConfigColumnDto[]): GridPlaneDto | undefined {
+  const isOpening = incomingGridDto.command?.commandEnum === GridCommandEnum.ColumnChooser;
+  const lookupGridDto = isOpening ? undefined : gridLookup(incomingGridDto, GRID_PLANE_COLUMN_CHOOSER);
+  if (!isOpening && (lookupGridDto === undefined || lookupGridDto.command?.commandEnum === GridCommandEnum.Ok)) {
+    return undefined;
+  }
+  const lookupRows = gridColumnChooserRows(allColumns);
+  const columnNames = incomingGridDto.state?.columnNames;
+  const selectedInitial = new Set(lookupRows.map((lookupRow) => lookupRow.rowKey).filter((columnName) => columnNames === undefined || columnNames.includes(columnName)));
+  return {
+    planeName: GRID_PLANE_COLUMN_CHOOSER,
+    grids: [gridLoadLookupMulti('Column Chooser', 'columnChooser', 'Column Name', GridConfigTypeEnum.Text, lookupRows, selectedInitial, lookupGridDto)],
+  };
+}
+
+/** Returns the rendered column (see gridColumns) named columnName, or undefined (columnName comes back from the client). */
+function gridFilterMultiColumn(allColumns: GridConfigColumnDto[], state: GridStateDto | undefined, columnName: unknown): GridConfigColumnDto | undefined {
+  return typeof columnName === 'string' ? gridColumns(allColumns, state).find((column) => column.columnName === columnName) : undefined;
+}
+
+/** Returns the Filter Multi's rows: the distinct, not empty cell texts (gridCellText, so GridConfigColumnDto.valueToText) of column in rows (rowKey is the text), sorted by value. */
+function gridFilterMultiRows<T extends object>(rows: T[], column: GridConfigColumnDto): GridLookupMultiRow[] {
+  const result = new Map<string, GridLookupMultiRow>();
+  for (const row of rows) {
+    const value = (row as Record<string, unknown>)[column.columnName ?? ''];
+    const text = gridCellText(value, column);
+    if (text !== '' && !result.has(text)) {
+      result.set(text, { rowKey: text, text, value });
+    }
+  }
+  return [...result.values()].sort((a, b) => gridFspCompare(a.value, b.value, column.typeEnum, 1));
+}
+
+/**
+ * If the Filter Multi lookup (gridDto.planes[0]) sent GridCommandEnum.Ok, sets gridDto.state.filterMultis of its column to the selected texts
+ * (in gridFilterMultiRows order; the entry is removed if all texts of rows are selected) and goes back to the first page.
+ */
+export function gridFilterMultiOk<T extends object>(gridDto: GridDto, allColumns: GridConfigColumnDto[], rows: T[]): void {
+  const lookupGridDto = gridLookup(gridDto, GRID_PLANE_FILTER_MULTI);
+  if (lookupGridDto?.command?.commandEnum !== GridCommandEnum.Ok) {
     return;
   }
-  const lookupGridDto = gridColumnChooserLookup(incomingGridDto);
-  const isOpen = lookupGridDto !== undefined && lookupGridDto.command?.commandEnum !== GridCommandEnum.Ok;
-  gridLookupSet(gridDto, isOpen ? gridLoadColumnChooser(allColumns, incomingGridDto.state, lookupGridDto) : undefined, GRID_PLANE_COLUMN_CHOOSER);
+  const column = gridFilterMultiColumn(allColumns, gridDto.state, lookupGridDto.state?.custom?.columnName);
+  if (column?.columnName === undefined) {
+    return;
+  }
+  const selected = gridLookupMultiSelected(lookupGridDto);
+  const lookupRows = gridFilterMultiRows(rows, column);
+  const filterMultis = { ...gridDto.state?.filterMultis };
+  if (lookupRows.every((lookupRow) => selected.has(lookupRow.rowKey))) {
+    delete filterMultis[column.columnName];
+  } else {
+    filterMultis[column.columnName] = { texts: lookupRows.filter((lookupRow) => selected.has(lookupRow.rowKey)).map((lookupRow) => lookupRow.text) };
+  }
+  gridDto.state = { ...gridDto.state, filterMultis: Object.keys(filterMultis).length > 0 ? filterMultis : undefined, pageIndex: 0 };
+}
+
+/**
+ * Returns the Filter Multi lookup plane (set it with gridLookupSet, or send it as GridPatchEnum.Lookup) if the incoming GridCommandEnum.FilterMulti opened it
+ * (for command.columnName), or if it is open (incoming planes[0].planeName is GRID_PLANE_FILTER_MULTI; its column is GridStateDto.custom.columnName) and didn't send Ok.
+ * Otherwise (or if the column isn't rendered) undefined. Its rows are the distinct cell texts of the column in rows (see gridFilterMultiRows); a text is selected
+ * initially if it is in GridStateDto.filterMultis of the column (all texts if there is no entry). Its Ok button is handled by gridFilterMultiOk.
+ */
+export function gridFilterMultiLoad<T extends object>(incomingGridDto: GridDto, allColumns: GridConfigColumnDto[], rows: T[]): GridPlaneDto | undefined {
+  const isOpening = incomingGridDto.command?.commandEnum === GridCommandEnum.FilterMulti;
+  const lookupGridDto = isOpening ? undefined : gridLookup(incomingGridDto, GRID_PLANE_FILTER_MULTI);
+  if (!isOpening && (lookupGridDto === undefined || lookupGridDto.command?.commandEnum === GridCommandEnum.Ok)) {
+    return undefined;
+  }
+  const columnName = isOpening ? incomingGridDto.command?.columnName : lookupGridDto?.state?.custom?.columnName;
+  const column = gridFilterMultiColumn(allColumns, incomingGridDto.state, columnName);
+  if (column?.columnName === undefined) {
+    return undefined;
+  }
+  const lookupRows = gridFilterMultiRows(rows, column);
+  const texts = incomingGridDto.state?.filterMultis?.[column.columnName]?.texts;
+  const selectedInitial = new Set(Array.isArray(texts) ? texts : lookupRows.map((lookupRow) => lookupRow.rowKey));
+  return {
+    planeName: GRID_PLANE_FILTER_MULTI,
+    grids: [
+      gridLoadLookupMulti('Filter Multi', 'filterMulti', column.text ?? titleCase(column.columnName) ?? '', column.typeEnum, lookupRows, selectedInitial, lookupGridDto, {
+        columnName: column.columnName,
+      }),
+    ],
+  };
 }
 
 export function gridIsCommand(gridDto: GridDto, customName: string): boolean {
@@ -288,32 +384,41 @@ export async function gridPatchDeleteMulti(request: Request, gridDto: GridDto): 
 }
 
 /**
- * Returns the multi select "Column Chooser" GridDto (used as lookup, see gridColumnChooserSet) with one row per column of allColumns, filtered, sorted
- * and paged (gridFsp) by its own state. Without lookupGridDto (just opened) a column is selected if it is in state.columnNames (all columns if
- * columnNames is undefined); otherwise the selection of the open lookupGridDto is kept (see gridColumnChooserSelected) and its SortClick is applied.
- * Its Ok button is handled by gridColumnChooserOk.
+ * Returns a multi select lookup GridDto (title; a single column columnName with header columnText, sorted by GridLookupMultiRow.value as typeEnum) with one row
+ * per lookupRows entry, filtered, sorted and paged (gridFsp) by its own state, plus Ok and Cancel buttons. Used by the Column Chooser (see gridColumnChooserLoad)
+ * and the Filter Multi (see gridFilterMultiLoad). Without lookupGridDto (just opened) the rows of selectedInitial are selected; otherwise the selection of the
+ * open lookupGridDto is kept (see gridLookupMultiSelected) and its SortClick is applied. custom is merged into GridStateDto.custom.
  */
-export function gridLoadColumnChooser(allColumns: GridConfigColumnDto[], state: GridStateDto | undefined, lookupGridDto?: GridDto): GridDto {
-  const columns = gridColumns(allColumns);
-  const selected =
-    lookupGridDto !== undefined
-      ? gridColumnChooserSelected(lookupGridDto)
-      : new Set(columns.map((column) => column.columnName ?? '').filter((columnName) => state?.columnNames === undefined || state.columnNames.includes(columnName)));
+function gridLoadLookupMulti(
+  title: string,
+  columnName: string,
+  columnText: string,
+  typeEnum: GridConfigTypeEnum | undefined,
+  lookupRows: GridLookupMultiRow[],
+  selectedInitial: Set<string>,
+  lookupGridDto: GridDto | undefined,
+  custom?: Record<string, unknown>,
+): GridDto {
+  const selected = lookupGridDto !== undefined ? gridLookupMultiSelected(lookupGridDto) : selectedInitial;
 
   const lookupState: GridDto = { state: lookupGridDto?.state, command: lookupGridDto?.command };
   gridCommandSortClick(lookupState);
 
-  // Filter-Sort-Page: columnRows holds only the rows of the current page.
-  const { rows: columnRows, state: fspState } = gridFsp(
-    columns.map((column) => ({ columnName: column.columnName ?? '', columnChooser: column.text ?? titleCase(column.columnName) })),
-    GRID_COLUMN_CHOOSER_COLUMNS,
+  // Filter-Sort-Page: pageRows holds only the rows of the current page.
+  const columns: GridConfigColumnDto[] = [
+    { columnName, text: columnText, typeEnum: GridConfigTypeEnum.Text, columnNameSort: 'value' },
+    { columnName: 'value', typeEnum, isHide: true },
+  ];
+  const { rows: pageRows, state: fspState } = gridFsp(
+    lookupRows.map((lookupRow) => ({ rowKey: lookupRow.rowKey, [columnName]: lookupRow.text, value: lookupRow.value })),
+    columns,
     lookupState.state,
   );
 
-  const headerRow: GridRowDto = { cells: [gridHeaderCell('columnChooser', lookupState.state?.sort, 'Column Name')] };
-  const findRow = gridFindRow(['columnChooser']);
-  const rows: GridRowDto[] = columnRows.map((columnRow, rowIndex) => ({
-    cells: [{ cellEnum: GridCellEnum.Label, text: columnRow.columnChooser, rowIndex, isSelectMulti: true }],
+  const headerRow: GridRowDto = { cells: [gridHeaderCell(columnName, lookupState.state?.sort, columnText)] };
+  const findRow = gridFindRow([columnName]);
+  const rows: GridRowDto[] = pageRows.map((pageRow, rowIndex) => ({
+    cells: [{ cellEnum: GridCellEnum.Label, text: String(pageRow[columnName]), rowIndex, isSelectMulti: true }],
   }));
   const buttonRow: GridRowDto = {
     cells: [
@@ -326,7 +431,7 @@ export function gridLoadColumnChooser(allColumns: GridConfigColumnDto[], state: 
       },
     ],
   };
-  const rowKeys = columnRows.map((columnRow) => columnRow.columnName);
+  const rowKeys = pageRows.map((pageRow) => pageRow.rowKey);
   return {
     tables: gridTables([], [headerRow, findRow, ...rows], [gridBarRow()], [buttonRow]),
     state: {
@@ -334,9 +439,9 @@ export function gridLoadColumnChooser(allColumns: GridConfigColumnDto[], state: 
       ...fspState,
       rowKeys,
       isSelectedMulti: rowKeys.map((rowKey) => selected.has(rowKey)),
-      custom: { ...lookupState.state?.custom, selectedColumnNames: [...selected] },
+      custom: { ...lookupState.state?.custom, ...custom, selectedRowKeys: [...selected] },
     },
-    title: 'Column Chooser',
+    title,
   };
 }
 

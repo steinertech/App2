@@ -137,9 +137,12 @@ export interface GridPatchDto {
   isDisabled?: boolean;
   /** Lookup grid of a GridPatchEnum.Lookup patch. */
   lookup?: GridDto;
+  /** GridPlaneDto.planeName of the lookup's plane (GridDto.planes[0]) of a GridPatchEnum.Lookup patch, e.g. filterMulti, so the backend keeps it open on later commands. */
+  planeName?: string;
 }
 
 export interface GridStateFilterMultiDto {
+  /** Cell texts (GridConfigColumnDto.valueToText) selected in the Filter Multi lookup. */
   texts?: string[];
 }
 
@@ -155,7 +158,7 @@ export interface GridStateDto {
   columnNames?: string[];
   /** Filter text per column (key: columnName, value: filter text). */
   filters?: Record<string, string>;
-  /** Multi filter per column (key: columnName). */
+  /** Multi filter per column (key: columnName), set by the Filter Multi lookup's Ok button; no entry if all texts are selected. */
   filterMultis?: Record<string, GridStateFilterMultiDto>;
   /** Index of the displayed page (0 = first); changed by the GridCustomEnum.Bar Previous/Next buttons. */
   pageIndex?: number;

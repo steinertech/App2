@@ -2,7 +2,7 @@ import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEn
 import { storageDelete, storageDownloadUrls, storageFiles, storageNew, storageRename } from '../util/util-storage.js';
 import { StorageFileDto } from '../dto/storage-file-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
-import { gridBarRow, gridCellText, gridColumnChooserOk, gridColumnChooserSet, gridColumns, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand, gridPatchDeleteMulti, gridSelectedMultiRowKeys, gridTables } from '../util/util-grid.js';
+import { gridBarRow, gridCellText, gridColumnChooserLoad, gridColumnChooserOk, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand, gridLookupSet, gridPatchDeleteMulti, gridSelectedMultiRowKeys, gridTables } from '../util/util-grid.js';
 
 const STORAGE_FILE_COLUMNS: GridConfigDto = {
   columns: [
@@ -109,8 +109,13 @@ export async function gridLoadStorage(request: Request, gridDto: GridDto): Promi
     await gridStorageSaveInsert(request, gridDto);
   }
 
+  const allFiles = await storageFiles(request, gridStatePath(gridDto.state));
+
+  // Filter Multi Ok: apply the chosen texts (GridStateDto.filterMultis) before the rows are built.
+  gridFilterMultiOk(gridDto, STORAGE_FILE_COLUMNS.columns ?? [], allFiles);
+
   // Filter-Sort-Page: files holds only the rows of the current page.
-  const { rows: files, state: fspState } = gridFsp(await storageFiles(request, gridStatePath(gridDto.state)), STORAGE_FILE_COLUMNS.columns ?? [], gridDto.state);
+  const { rows: files, state: fspState } = gridFsp(allFiles, STORAGE_FILE_COLUMNS.columns ?? [], gridDto.state);
   const columns = gridColumns(STORAGE_FILE_COLUMNS.columns ?? [], gridDto.state);
 
   const headerRow: GridRowDto = {
@@ -192,8 +197,9 @@ export async function gridLoadStorage(request: Request, gridDto: GridDto): Promi
     gridStorageNew(result, columns);
   }
 
-  // Column chooser lookup (planes[0]): opened by the ColumnChooser command, kept open while planes[0].planeName is columnChooser.
-  gridColumnChooserSet(result, gridDto, STORAGE_FILE_COLUMNS.columns ?? []);
+  // Lookup (planes[0]): Column Chooser (opened by the ColumnChooser command, kept open while planes[0].planeName is columnChooser)
+  // or Filter Multi (opened by gridPatchStorage, kept open while planes[0].planeName is filterMulti).
+  gridLookupSet(result, gridColumnChooserLoad(gridDto, STORAGE_FILE_COLUMNS.columns ?? []) ?? gridFilterMultiLoad(gridDto, STORAGE_FILE_COLUMNS.columns ?? [], allFiles));
 
   // Command is transient: clear it so it isn't re-processed on a later request.
   result.command = undefined;
@@ -201,12 +207,11 @@ export async function gridLoadStorage(request: Request, gridDto: GridDto): Promi
   return result;
 }
 
-/** Storage grid patch: GridCommandEnum.FilterMulti opens the filter lookup; any other command (MultiClick) enables/disables the DeleteMulti button. */
+/** Storage grid patch: GridCommandEnum.FilterMulti opens the Filter Multi lookup (distinct texts of its column in the current folder); any other command (MultiClick) enables/disables the DeleteMulti button. */
 export async function gridPatchStorage(request: Request, gridDto: GridDto): Promise<GridDto> {
   if (gridDto.command?.commandEnum === GridCommandEnum.FilterMulti) {
-    const rows: GridRowDto[] = ['Hello', 'World'].map((text, rowIndex) => ({ cells: [{ cellEnum: GridCellEnum.Label, text, rowIndex }] }));
-    const lookup: GridDto = { tables: gridTables([], rows) };
-    return { patches: [{ patchEnum: GridPatchEnum.Lookup, lookup } satisfies GridPatchDto] };
+    const lookupPlane = gridFilterMultiLoad(gridDto, STORAGE_FILE_COLUMNS.columns ?? [], await storageFiles(request, gridStatePath(gridDto.state)));
+    return { patches: [{ patchEnum: GridPatchEnum.Lookup, planeName: lookupPlane?.planeName, lookup: lookupPlane?.grids?.[0] } satisfies GridPatchDto] };
   }
   return gridPatchDeleteMulti(request, gridDto);
 }
