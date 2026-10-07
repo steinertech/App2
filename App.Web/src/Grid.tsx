@@ -593,13 +593,13 @@ export default function Grid({ path }: GridProps) {
           </tbody>
         </table>
       ))}
-      {/* Lookup grid (e.g. Column Chooser) at planes[0] as overlay; clicking outside it sends Reload, which closes it (the server only returns a lookup for the command that opened it). */}
+      {/* Lookup grid (e.g. Column Chooser) at planes[0] as overlay; clicking outside it closes it without a server call (like its Cancel button). */}
       {grid?.planes?.[0]?.grids?.[0] !== undefined && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 p-4"
           role="dialog"
           aria-modal="true"
-          onClick={() => void handleReloadClick()}
+          onClick={() => closePlane([...path, 0, 0])}
         >
           <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl" onClick={(event) => event.stopPropagation()}>
             <Grid path={[...path, 0, 0]} />

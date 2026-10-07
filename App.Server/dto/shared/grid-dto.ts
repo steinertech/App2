@@ -191,7 +191,7 @@ export interface GridSettingDto {
 export interface GridDto {
   /** Heading shown above the grid. Unlike setting, it is sent back to the server with every request. */
   title?: string;
-  /** Rendered as one html table each: tables[0] toolbar rows, tables[1] data rows (header, find and data rows; or a dialog's content), tables[2] GridCustomEnum.Bar rows. */
+  /** Rendered as one html table each: tables[0] toolbar rows, tables[1] data rows (header, find and data rows; or a dialog's content), tables[2] GridCustomEnum.Bar rows, optional tables[3] footer rows (e.g. a dialog's Ok and Cancel buttons). */
   tables?: GridTableDto[];
   state?: GridStateDto;
   /** Not sent back to the server (stripped by App.Web), so the backend must set it on every response. */
