@@ -10,9 +10,9 @@ const DYNAMIC_COLUMNS: GridConfigDto = {
   ),
 };
 
-/** Columns of the Data grid: stored as additional fields of the DynamicDto document, not declared on DynamicDto. */
+/** Columns of the Data grid: DynamicDto.tableName, then the column values (e.g. A, B) stored as additional fields of the DynamicDto document, not declared on DynamicDto. */
 const DYNAMIC_DATA_COLUMNS: GridConfigDto = {
-  columns: ['A', 'B'].map((columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text })),
+  columns: ['tableName' satisfies keyof DynamicDto, 'A', 'B'].map((columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text })),
 };
 
 /**

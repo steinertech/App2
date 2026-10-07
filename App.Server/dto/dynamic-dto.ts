@@ -4,6 +4,7 @@ import { ObjectId } from 'mongodb';
 export interface DynamicDto {
   _id?: ObjectId;
   name?: string;
+  tableName?: string;
   sectorKey?: string;
   type?: string;
 }
