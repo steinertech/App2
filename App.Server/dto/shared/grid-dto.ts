@@ -43,7 +43,7 @@ export enum GridCommandEnum {
   New = 5,
   /** A GridCellDto.isSelectMulti checkbox changed; rowIndex is the changed row, GridStateDto.isSelectedMulti the new selection. */
   MultiClick = 6,
-  /** Command to open the column chooser. */
+  /** Command to open the column chooser; sent to /api/grid-patch. */
   ColumnChooser = 7,
   /** A GridCustomEnum.Ok button was clicked; App.Web closes the plane containing the grid afterwards. */
   Ok = 8,
@@ -126,7 +126,7 @@ export enum GridPatchEnum {
   None = 0,
   /** Patches the GridCustomDto with GridCustomDto.name = GridPatchDto.name. */
   Button = 1,
-  /** Opens GridPatchDto.lookup as lookup grid (the only grid of GridDto.planes[0]), e.g. for GridCommandEnum.FilterMulti. */
+  /** Opens GridPatchDto.lookup as lookup grid (the only grid of GridDto.planes[0]), e.g. for GridCommandEnum.ColumnChooser or FilterMulti. */
   Lookup = 2,
 }
 

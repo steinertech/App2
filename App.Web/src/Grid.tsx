@@ -544,8 +544,9 @@ export default function Grid({ path }: GridProps) {
     searchTimerRef.current = setTimeout(() => void handleReloadClick(), 300);
   };
 
+  /** Sends GridCommandEnum.ColumnChooser to /api/grid-patch (which returns a GridPatchEnum.Lookup patch), so the grid's rows aren't reloaded. */
   const handleColumnChooserClick = async () => {
-    await sendGridCommand({ command: { commandEnum: GridCommandEnum.ColumnChooser } });
+    await sendPatch(path, { command: { commandEnum: GridCommandEnum.ColumnChooser } });
   };
 
   return (

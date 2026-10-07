@@ -197,7 +197,7 @@ export async function gridLoadStorage(request: Request, gridDto: GridDto): Promi
     gridStorageNew(result, columns);
   }
 
-  // Lookup (planes[0]): Column Chooser (opened by the ColumnChooser command, kept open while planes[0].planeName is columnChooser)
+  // Lookup (planes[0]): Column Chooser (opened by gridPatchStorage, kept open while planes[0].planeName is columnChooser)
   // or Filter Multi (opened by gridPatchStorage, kept open while planes[0].planeName is filterMulti).
   gridLookupSet(result, gridColumnChooserLoad(gridDto, STORAGE_FILE_COLUMNS.columns ?? []) ?? gridFilterMultiLoad(gridDto, STORAGE_FILE_COLUMNS.columns ?? [], allFiles));
 
@@ -207,8 +207,15 @@ export async function gridLoadStorage(request: Request, gridDto: GridDto): Promi
   return result;
 }
 
-/** Storage grid patch: GridCommandEnum.FilterMulti opens the Filter Multi lookup (distinct texts of its column in the current folder); any other command (MultiClick) enables/disables the DeleteMulti button. */
+/**
+ * Storage grid patch: GridCommandEnum.ColumnChooser opens the Column Chooser lookup (no storage call), GridCommandEnum.FilterMulti the Filter Multi lookup
+ * (distinct texts of its column in the current folder); any other command (MultiClick) enables/disables the DeleteMulti button.
+ */
 export async function gridPatchStorage(request: Request, gridDto: GridDto): Promise<GridDto> {
+  if (gridDto.command?.commandEnum === GridCommandEnum.ColumnChooser) {
+    const lookupPlane = gridColumnChooserLoad(gridDto, STORAGE_FILE_COLUMNS.columns ?? []);
+    return { patches: [{ patchEnum: GridPatchEnum.Lookup, planeName: lookupPlane?.planeName, lookup: lookupPlane?.grids?.[0] } satisfies GridPatchDto] };
+  }
   if (gridDto.command?.commandEnum === GridCommandEnum.FilterMulti) {
     const lookupPlane = gridFilterMultiLoad(gridDto, STORAGE_FILE_COLUMNS.columns ?? [], await storageFiles(request, gridStatePath(gridDto.state)));
     return { patches: [{ patchEnum: GridPatchEnum.Lookup, planeName: lookupPlane?.planeName, lookup: lookupPlane?.grids?.[0] } satisfies GridPatchDto] };

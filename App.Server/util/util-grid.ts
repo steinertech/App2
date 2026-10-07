@@ -255,7 +255,7 @@ export function gridColumnChooserOk(gridDto: GridDto, allColumns: GridConfigColu
 }
 
 /**
- * Returns the Column Chooser lookup plane (set it with gridLookupSet) if the incoming GridCommandEnum.ColumnChooser opened it, or if it is open
+ * Returns the Column Chooser lookup plane (set it with gridLookupSet, or send it as GridPatchEnum.Lookup) if the incoming GridCommandEnum.ColumnChooser opened it, or if it is open
  * (incoming planes[0].planeName is GRID_PLANE_COLUMN_CHOOSER) and didn't send Ok. Otherwise undefined.
  * A column is selected initially if it is in GridStateDto.columnNames (all columns if columnNames is undefined). Its Ok button is handled by gridColumnChooserOk.
  */
