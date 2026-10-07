@@ -192,7 +192,7 @@ export async function planeStorageLoad(request: Request, gridPlaneDto: GridPlane
     tables: gridTables([toolbarRow, toolbarRow2], [headerRow, findRow, ...fileRows], [gridBarRow()]),
     state: { ...gridDto.state, ...fspState, rowKeys, isSelectedMulti },
     title: 'Storage Data',
-    setting: { isSelectReload: true, isSelectMultiPatch: true },
+    setting: { isSelectPatch: true, isSelectMultiPatch: true },
   };
 
   if (gridDto.command?.commandEnum === GridCommandEnum.New) {
@@ -213,10 +213,16 @@ export async function planeStorageLoad(request: Request, gridPlaneDto: GridPlane
 
 /**
  * Patches the "storage" plane's storage grid (GridPlaneDto.grids[0]): GridCommandEnum.ColumnChooser opens the Column Chooser lookup (no storage call), GridCommandEnum.FilterMulti the Filter Multi lookup
- * (distinct texts of its column in the current folder); any other command (MultiClick) enables/disables the DeleteMulti button.
+ * (distinct texts of its column in the current folder), GridCommandEnum.Select replaces the Image Preview grid (grids[1]) with the one of the selected row (no storage listing);
+ * any other command (MultiClick) enables/disables the DeleteMulti button.
  */
 export async function planeStoragePatch(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
   const gridDto = gridPlaneDto.grids?.[0] ?? {};
+  if (gridDto.command?.commandEnum === GridCommandEnum.Select) {
+    // The incoming state carries selected and the rowKeys of the loaded rows; grid undefined removes a shown preview.
+    const previewGridDto = await gridStoragePreview(request, gridDto);
+    return { ...gridPlaneDto, grids: [{}, { patches: [{ patchEnum: GridPatchEnum.Grid, grid: previewGridDto } satisfies GridPatchDto] }] };
+  }
   if (gridDto.command?.commandEnum === GridCommandEnum.ColumnChooser) {
     const lookupPlane = gridColumnChooserLoad(gridDto, STORAGE_FILE_COLUMNS.columns ?? []);
     return { ...gridPlaneDto, grids: [{ patches: [{ patchEnum: GridPatchEnum.Lookup, planeName: lookupPlane?.planeName, lookup: lookupPlane?.grids?.[0] } satisfies GridPatchDto] }] };
@@ -383,7 +389,7 @@ function gridStorageNew(gridDto: GridDto, columns: GridConfigColumnDto[]): void 
   dataTable.rows = [...rows, newRow];
 }
 
-/** Returns the "Image Preview" grid if the selected row of the (loaded) storage grid is a .jpg or .png file. */
+/** Returns the "Image Preview" grid if the selected row of the storage grid (loaded, or incoming with its state.rowKeys) is a .jpg or .png file. */
 async function gridStoragePreview(request: Request, storageGridDto: GridDto): Promise<GridDto | undefined> {
   const selected = storageGridDto.state?.selected;
   const rowKey = selected !== undefined ? storageGridDto.state?.rowKeys?.[selected] : undefined;

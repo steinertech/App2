@@ -19,7 +19,7 @@ interface GridStoreValue {
   load: (planeName: string) => Promise<GridPlaneDto | undefined>;
   /** Returns the reloaded plane, or undefined if the server call failed (the store is kept as is). */
   sendCommand: (path: number[], override: GridOverride) => Promise<GridPlaneDto | undefined>;
-  /** Posts the plane with override applied at path to /api/grid-patch and applies the returned GridDto.patches to the loaded grids (rows aren't reloaded). override.state is also kept on the grid at path. */
+  /** Posts the plane with override applied at path to /api/grid-patch and applies the returned GridDto.patches to the loaded grids (rows aren't reloaded; a GridPatchEnum.Grid patch replaces a whole root grid). override.state is also kept on the grid at path. */
   sendPatch: (path: number[], override: GridOverride) => Promise<GridPlaneDto>;
   /** Merges state into GridDto.state of the grid at path without a server call; it is sent with the next command. */
   setState: (path: number[], state: GridStateDto) => void;
@@ -199,13 +199,20 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
     const data = (await response.json()) as GridPlaneDto;
 
     // Patch the loaded grids in place; gridVersion is left as is so unsaved input text isn't reset.
-    (gridPlaneDtoRef.current.grids ?? []).forEach((grid, gridIndex) => {
-      const responseGrid = data.grids?.[gridIndex];
-      if (responseGrid !== undefined) {
+    // A GridPatchEnum.Grid patch instead replaces (or adds, or with grid undefined removes) the whole grid at its index.
+    const patchedGrids: (GridDto | undefined)[] = [...(gridPlaneDtoRef.current.grids ?? [])];
+    (data.grids ?? []).forEach((responseGrid, gridIndex) => {
+      const gridPatch = responseGrid.patches?.find((patch) => patch.patchEnum === GridPatchEnum.Grid);
+      if (gridPatch !== undefined) {
+        patchedGrids[gridIndex] = gridPatch.grid;
+        return;
+      }
+      const grid = patchedGrids[gridIndex];
+      if (grid !== undefined) {
         applyPatches(grid, responseGrid);
       }
     });
-    gridPlaneDtoRef.current = { ...gridPlaneDtoRef.current };
+    gridPlaneDtoRef.current = { ...gridPlaneDtoRef.current, grids: patchedGrids.filter((grid): grid is GridDto => grid !== undefined) };
     setGridPlaneDto(gridPlaneDtoRef.current);
 
     return data;

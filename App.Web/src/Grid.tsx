@@ -480,8 +480,8 @@ export default function Grid({ path }: GridProps) {
       return;
     }
     setRowIndexSelected(rowIndex);
-    if (grid?.setting?.isSelectReload === true) {
-      await sendGridCommand({ command: { commandEnum: GridCommandEnum.Reload, rowIndex }, state: { ...grid.state, selected: rowIndex } });
+    if (grid?.setting?.isSelectPatch === true) {
+      await sendPatch(path, { command: { commandEnum: GridCommandEnum.Select, rowIndex }, state: { ...grid.state, selected: rowIndex } });
     }
   };
 
