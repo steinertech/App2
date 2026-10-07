@@ -215,7 +215,7 @@ export async function gridPatchDeleteMulti(request: Request, gridDto: GridDto): 
  */
 export function gridLoadColumnChooser(allColumns: GridConfigColumnDto[], state: GridStateDto | undefined): GridDto {
   const columns = gridColumns(allColumns);
-  const headerRow: GridRowDto = { cells: [{ cellEnum: GridCellEnum.Header, text: 'Column Name' }] };
+  const headerRow: GridRowDto = { cells: [{ cellEnum: GridCellEnum.Header, text: 'Column Name', columnName: 'columnChooser' }] };
   const columnRows: GridRowDto[] = columns.map((column, rowIndex) => ({
     cells: [{ cellEnum: GridCellEnum.Label, text: column.text ?? titleCase(column.columnName), rowIndex, isSelectMulti: true }],
   }));
