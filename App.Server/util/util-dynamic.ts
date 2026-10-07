@@ -15,6 +15,14 @@ export async function dynamicTableLoad(request: Request): Promise<DynamicTableNa
   return tableNames.map((tableName): DynamicTableNameDto => ({ tableName }));
 }
 
+/** Returns the SchemaDto.columnName values of tableName, in creation order. */
+export async function dynamicColumnNameLoad(request: Request, tableName: string): Promise<string[]> {
+  const key = await sectorKey(request, true);
+  const collection = client.db().collection<SchemaDto>('myCollection');
+  const schemas = await collection.find({ sectorKey: key, type: 'SchemaDto', tableName }).sort({ _id: 1 }).toArray();
+  return schemas.map((schema) => schema.columnName);
+}
+
 // DynamicDto documents carry their column values (e.g. A, B) as additional fields, which are read and written along with the declared ones.
 
 /** Returns the rows with tableName, or all rows if tableName is undefined. */

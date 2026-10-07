@@ -1,5 +1,5 @@
 import { GridCellDto, GridCellEnum, GridCommandEnum, GridDto, GridPatchDto, GridPatchEnum, GridPlaneDto, GridRowDto } from '../dto/shared/grid-dto.js';
-import { dynamicInsert, dynamicLoad, dynamicLoadByIds, dynamicTableLoad, dynamicUpdate } from '../util/util-dynamic.js';
+import { dynamicColumnNameLoad, dynamicInsert, dynamicLoad, dynamicLoadByIds, dynamicTableLoad, dynamicUpdate } from '../util/util-dynamic.js';
 import { DynamicDto, DynamicTableNameDto } from '../dto/dynamic-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
 import { gridBarRow, gridCellText, gridCellValue, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridLookupSet, gridTables } from '../util/util-grid.js';
@@ -10,10 +10,21 @@ const DYNAMIC_COLUMNS: GridConfigDto = {
   ),
 };
 
-/** Columns of the Data grid: DynamicDto.tableName, then the column values (e.g. A, B) stored as additional fields of the DynamicDto document, not declared on DynamicDto. */
-const DYNAMIC_DATA_COLUMNS: GridConfigDto = {
-  columns: ['tableName' satisfies keyof DynamicDto, 'A', 'B'].map((columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text })),
-};
+/** DynamicDto fields: a SchemaDto.columnName with one of these names is not a Data grid column, so saving it can't overwrite them. */
+const DYNAMIC_FIELD_NAMES = new Set<string>(['_id', 'name', 'sectorKey', 'type', 'tableName'] satisfies (keyof DynamicDto)[]);
+
+/**
+ * Columns of the Data grid: DynamicDto.tableName, then the column values stored as additional fields of the DynamicDto document (not declared on DynamicDto):
+ * the SchemaDto.columnName list of tableName, or the standard columns A, B if no tableName is selected.
+ * Column names that aren't plain MongoDB field names (starting with "$" or containing ".") or that are DynamicDto fields are skipped.
+ */
+async function gridDynamicDataColumns(request: Request, tableName: string | undefined): Promise<GridConfigColumnDto[]> {
+  const columnNames =
+    tableName !== undefined
+      ? (await dynamicColumnNameLoad(request, tableName)).filter((columnName) => !DYNAMIC_FIELD_NAMES.has(columnName) && !columnName.startsWith('$') && !columnName.includes('.'))
+      : ['A', 'B'];
+  return ['tableName' satisfies keyof DynamicDto, ...new Set(columnNames)].map((columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text }));
+}
 
 /**
  * Loads the "dynamic" plane: the read-only dynamic grid (GridPlaneDto.grids[0]) with the distinct SchemaDto.tableName values,
@@ -79,24 +90,25 @@ async function gridDynamicLoad(request: Request, gridDto: GridDto): Promise<Grid
 
 /** tableName (the selected row of the dynamic grid) filters the rows and is the default tableName of inserted rows; undefined shows all rows. */
 async function gridDynamicDataLoad(request: Request, gridDto: GridDto, tableName: string | undefined): Promise<GridDto> {
+  const dataColumns = await gridDynamicDataColumns(request, tableName);
   if (gridDto.command?.commandEnum === GridCommandEnum.Save) {
-    await gridDynamicDataSaveUpdate(request, gridDto);
-    await gridDynamicDataSaveInsert(request, gridDto, tableName);
+    await gridDynamicDataSaveUpdate(request, gridDto, dataColumns);
+    await gridDynamicDataSaveInsert(request, gridDto, tableName, dataColumns);
   }
 
   const allDynamics = await dynamicLoad(request, tableName);
 
   // Filter Multi Ok: apply the chosen texts (GridStateDto.filterMultis) before the rows are built.
-  gridFilterMultiOk(gridDto, DYNAMIC_DATA_COLUMNS.columns ?? [], allDynamics);
+  gridFilterMultiOk(gridDto, dataColumns, allDynamics);
 
   // Filter-Sort-Page: dynamics holds only the rows of the current page.
-  const { rows: dynamics, state: fspState } = gridFsp(allDynamics, DYNAMIC_DATA_COLUMNS.columns ?? [], gridDto.state);
+  const { rows: dynamics, state: fspState } = gridFsp(allDynamics, dataColumns, gridDto.state);
 
   const headerRow: GridRowDto = {
-    cells: gridColumns(DYNAMIC_DATA_COLUMNS.columns ?? []).map((column) => gridHeaderCell(column.columnName, gridDto.state?.sort)),
+    cells: gridColumns(dataColumns).map((column) => gridHeaderCell(column.columnName, gridDto.state?.sort)),
   };
   const rows: GridRowDto[] = dynamics.map((dynamic, rowIndex) => ({
-    cells: gridColumns(DYNAMIC_DATA_COLUMNS.columns ?? []).map(
+    cells: gridColumns(dataColumns).map(
       (column): GridCellDto => ({
         cellEnum: GridCellEnum.Edit,
         text: gridCellText((dynamic as Record<string, unknown>)[column.columnName ?? ''], column),
@@ -108,7 +120,7 @@ async function gridDynamicDataLoad(request: Request, gridDto: GridDto, tableName
 
   // rowKey is the _id (ObjectId hex).
   const rowKeys: string[] = dynamics.map((dynamic) => dynamic._id?.toHexString() ?? '');
-  const findRow = gridFindRow(gridColumns(DYNAMIC_DATA_COLUMNS.columns ?? []).map((column) => column.columnName));
+  const findRow = gridFindRow(gridColumns(dataColumns).map((column) => column.columnName));
 
   const result: GridDto = {
     ...gridDto,
@@ -118,11 +130,11 @@ async function gridDynamicDataLoad(request: Request, gridDto: GridDto, tableName
   };
 
   if (gridDto.command?.commandEnum === GridCommandEnum.New) {
-    gridDynamicDataNew(result);
+    gridDynamicDataNew(result, dataColumns);
   }
 
   // Lookup (planes[0]): Filter Multi (opened by planeDynamicPatch, kept open while planes[0].planeName is filterMulti).
-  gridLookupSet(result, gridFilterMultiLoad(gridDto, DYNAMIC_DATA_COLUMNS.columns ?? [], allDynamics));
+  gridLookupSet(result, gridFilterMultiLoad(gridDto, dataColumns, allDynamics));
 
   // Command is transient: clear it so it isn't re-processed on a later request.
   result.command = undefined;
@@ -141,12 +153,13 @@ export async function planeDynamicPatch(request: Request, gridPlaneDto: GridPlan
   // The incoming state carries selected and the rowKeys of the loaded rows.
   const tableName = gridDynamicSelectedTableName(gridDto);
   if (gridDto.command?.commandEnum === GridCommandEnum.Select) {
-    // Other rows are shown: start on the first page with no selection, and drop the pending command and unsaved modifies.
+    // Other rows and columns are shown: start on the first page with no selection, sort or filter, and drop the pending command, unsaved modifies and an open lookup.
     const dataGridDtoSelect: GridDto = {
       ...dataGridDto,
       command: undefined,
       modifies: undefined,
-      state: { ...dataGridDto.state, selected: undefined, isSelectedMulti: undefined, pageIndex: 0 },
+      planes: undefined,
+      state: { ...dataGridDto.state, selected: undefined, isSelectedMulti: undefined, pageIndex: 0, sort: undefined, filters: undefined, filterMultis: undefined },
     };
     const grid = await gridDynamicDataLoad(request, dataGridDtoSelect, tableName);
     return { ...gridPlaneDto, grids: [{}, { patches: [{ patchEnum: GridPatchEnum.Grid, grid } satisfies GridPatchDto] }] };
@@ -156,13 +169,13 @@ export async function planeDynamicPatch(request: Request, gridPlaneDto: GridPlan
     return { ...gridPlaneDto, grids: [{ patches: [{ patchEnum: GridPatchEnum.Lookup, planeName: lookupPlane?.planeName, lookup: lookupPlane?.grids?.[0] } satisfies GridPatchDto] }, {}] };
   }
   if (dataGridDto.command?.commandEnum === GridCommandEnum.FilterMulti) {
-    const lookupPlane = gridFilterMultiLoad(dataGridDto, DYNAMIC_DATA_COLUMNS.columns ?? [], await dynamicLoad(request, tableName));
+    const lookupPlane = gridFilterMultiLoad(dataGridDto, await gridDynamicDataColumns(request, tableName), await dynamicLoad(request, tableName));
     return { ...gridPlaneDto, grids: [{}, { patches: [{ patchEnum: GridPatchEnum.Lookup, planeName: lookupPlane?.planeName, lookup: lookupPlane?.grids?.[0] } satisfies GridPatchDto] }] };
   }
   return { ...gridPlaneDto, grids: [{}, {}] };
 }
 
-async function gridDynamicDataSaveUpdate(request: Request, gridDto: GridDto): Promise<void> {
+async function gridDynamicDataSaveUpdate(request: Request, gridDto: GridDto, dataColumns: GridConfigColumnDto[]): Promise<void> {
   const modifies = (gridDto.modifies ?? []).filter((modify) => !modify.isNew);
   const rowKeys = gridDto.state?.rowKeys ?? [];
 
@@ -176,7 +189,7 @@ async function gridDynamicDataSaveUpdate(request: Request, gridDto: GridDto): Pr
 
   const dynamics = await dynamicLoadByIds(request, ids);
 
-  const columns = gridColumns(DYNAMIC_DATA_COLUMNS.columns ?? []);
+  const columns = gridColumns(dataColumns);
 
   for (const modify of modifies) {
     const column = columns.find((column) => column.columnName === modify.columnName);
@@ -195,10 +208,10 @@ async function gridDynamicDataSaveUpdate(request: Request, gridDto: GridDto): Pr
 }
 
 /** New rows get tableName (the selected tableName) unless their tableName cell is entered. */
-async function gridDynamicDataSaveInsert(request: Request, gridDto: GridDto, tableName: string | undefined): Promise<void> {
+async function gridDynamicDataSaveInsert(request: Request, gridDto: GridDto, tableName: string | undefined, dataColumns: GridConfigColumnDto[]): Promise<void> {
   const modifies = (gridDto.modifies ?? []).filter((modify) => modify.isNew);
 
-  const columns = gridColumns(DYNAMIC_DATA_COLUMNS.columns ?? []);
+  const columns = gridColumns(dataColumns);
 
   const dynamicsByRowIndex = new Map<number, DynamicDto>();
 
@@ -218,7 +231,7 @@ async function gridDynamicDataSaveInsert(request: Request, gridDto: GridDto, tab
 }
 
 /** Appends one empty, editable new row to the data table (GridDto.tables[1]). */
-function gridDynamicDataNew(gridDto: GridDto): void {
+function gridDynamicDataNew(gridDto: GridDto, dataColumns: GridConfigColumnDto[]): void {
   const dataTable = gridDto.tables?.[1];
   if (dataTable === undefined) {
     return;
@@ -227,7 +240,7 @@ function gridDynamicDataNew(gridDto: GridDto): void {
   const rowIndex = rows.length;
 
   const newRow: GridRowDto = {
-    cells: gridColumns(DYNAMIC_DATA_COLUMNS.columns ?? []).map(
+    cells: gridColumns(dataColumns).map(
       (column): GridCellDto => ({
         cellEnum: GridCellEnum.Edit,
         columnName: column.columnName,
