@@ -3,9 +3,9 @@ import client from './util-db.js';
 import { SchemaDto } from '../dto/schema-dto.js';
 import { sectorKey } from './util-main.js';
 
-/** Returns SchemaDto.name: "{tableName}.{fieldName}". */
+/** Returns SchemaDto.name: "{tableName}.{columnName}". */
 function schemaName(schemaDto: SchemaDto): string {
-  return `${schemaDto.tableName ?? ''}.${schemaDto.fieldName ?? ''}`;
+  return `${schemaDto.tableName ?? ''}.${schemaDto.columnName ?? ''}`;
 }
 
 // Schemas are per project: sectorKey(request, true) also asserts the user is signed in (redirects to /sign-in otherwise).
@@ -40,7 +40,7 @@ export async function schemaInsert(request: Request, schemaDtos: SchemaDto[]): P
   return schemas;
 }
 
-/** Updates schemaDtos by _id (not by name, since name changes with tableName or fieldName). */
+/** Updates schemaDtos by _id (not by name, since name changes with tableName or columnName). */
 export async function schemaUpdate(request: Request, schemaDtos: SchemaDto[]): Promise<SchemaDto[]> {
   const key = await sectorKey(request, true);
   const collection = client.db().collection<SchemaDto>('myCollection');

@@ -5,7 +5,7 @@ import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/g
 import { gridBarRow, gridCellText, gridCellValue, gridColumns, gridFindRow, gridFsp, gridHeaderCell, gridTables } from '../util/util-grid.js';
 
 const SCHEMA_COLUMNS: GridConfigDto = {
-  columns: (['tableName', 'fieldName'] as const satisfies readonly (keyof SchemaDto)[]).map(
+  columns: (['tableName', 'columnName'] as const satisfies readonly (keyof SchemaDto)[]).map(
     (columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text }),
   ),
 };
@@ -33,7 +33,7 @@ export async function gridSchemaLoad(request: Request, gridDto: GridDto): Promis
     ),
   }));
 
-  // rowKey is the _id (ObjectId hex), since name ("{tableName}.{fieldName}") changes when a row is edited.
+  // rowKey is the _id (ObjectId hex), since name ("{tableName}.{columnName}") changes when a row is edited.
   const rowKeys: string[] = schemas.map((schema) => schema._id?.toHexString() ?? '');
   const findRow = gridFindRow(gridColumns(SCHEMA_COLUMNS.columns ?? []).map((column) => column.columnName));
 
@@ -99,7 +99,7 @@ async function gridSchemaSaveInsert(request: Request, gridDto: GridDto): Promise
       continue;
     }
 
-    const schema = schemasByRowIndex.get(modify.rowIndex) ?? { tableName: '', fieldName: '' };
+    const schema = schemasByRowIndex.get(modify.rowIndex) ?? { tableName: '', columnName: '' };
     (schema as unknown as Record<string, unknown>)[modify.columnName] = gridCellValue(modify.textModified, column);
     schemasByRowIndex.set(modify.rowIndex, schema);
   }
