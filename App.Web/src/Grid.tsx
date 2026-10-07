@@ -266,7 +266,13 @@ function gridCellContent(
   return content;
 }
 
+/** Remounts GridContent whenever a GridPatchEnum.Grid patch replaces its root grid, so its local state (e.g. unsaved modifies, selected row) and inputs start from the new grid. */
 export default function Grid({ path }: GridProps) {
+  const { gridReplaceCounts } = useGridStore();
+  return <GridContent key={gridReplaceCounts[path[0] ?? 0] ?? 0} path={path} />;
+}
+
+function GridContent({ path }: GridProps) {
   const { gridPlaneDto, gridVersion, sendCommand, sendPatch, setState, closePlane } = useGridStore();
 
   const grid = resolveGrid(gridPlaneDto.grids, path);

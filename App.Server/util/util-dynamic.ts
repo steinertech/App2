@@ -17,10 +17,11 @@ export async function dynamicTableLoad(request: Request): Promise<DynamicTableNa
 
 // DynamicDto documents carry their column values (e.g. A, B) as additional fields, which are read and written along with the declared ones.
 
-export async function dynamicLoad(request: Request): Promise<DynamicDto[]> {
+/** Returns the rows with tableName, or all rows if tableName is undefined. */
+export async function dynamicLoad(request: Request, tableName?: string): Promise<DynamicDto[]> {
   const key = await sectorKey(request, true);
   const collection = client.db().collection<DynamicDto>('myCollection');
-  return collection.find({ sectorKey: key, type: 'DynamicDto' }).toArray();
+  return collection.find({ sectorKey: key, type: 'DynamicDto', ...(tableName !== undefined && { tableName }) }).toArray();
 }
 
 /** ids are ObjectId hex strings (the grid's rowKeys); invalid ones are ignored. */

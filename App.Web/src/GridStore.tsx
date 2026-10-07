@@ -15,6 +15,8 @@ interface GridOverrideEntry {
 interface GridStoreValue {
   gridPlaneDto: GridPlaneDto;
   gridVersion: number;
+  /** Per root grid index: increased whenever a GridPatchEnum.Grid patch replaces that grid (Grid remounts it). */
+  gridReplaceCounts: number[];
   /** Returns the loaded plane, or undefined if the server call failed (the store is kept as is). */
   load: (planeName: string) => Promise<GridPlaneDto | undefined>;
   /** Returns the reloaded plane, or undefined if the server call failed (the store is kept as is). */
@@ -111,6 +113,7 @@ function applyPatches(grid: GridDto, responseGrid: GridDto): void {
 export function GridStoreProvider({ children }: { children: ReactNode }) {
   const [gridPlaneDto, setGridPlaneDto] = useState<GridPlaneDto>({});
   const [gridVersion, setGridVersion] = useState(0);
+  const [gridReplaceCounts, setGridReplaceCounts] = useState<number[]>([]);
   const gridPlaneDtoRef = useRef<GridPlaneDto>(gridPlaneDto);
   const planeNameRef = useRef<string | undefined>(undefined);
   const overridesRef = useRef<Map<string, GridOverrideEntry>>(new Map());
@@ -201,10 +204,12 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
     // Patch the loaded grids in place; gridVersion is left as is so unsaved input text isn't reset.
     // A GridPatchEnum.Grid patch instead replaces (or adds, or with grid undefined removes) the whole grid at its index.
     const patchedGrids: (GridDto | undefined)[] = [...(gridPlaneDtoRef.current.grids ?? [])];
+    const replacedGridIndexes: number[] = [];
     (data.grids ?? []).forEach((responseGrid, gridIndex) => {
       const gridPatch = responseGrid.patches?.find((patch) => patch.patchEnum === GridPatchEnum.Grid);
       if (gridPatch !== undefined) {
         patchedGrids[gridIndex] = gridPatch.grid;
+        replacedGridIndexes.push(gridIndex);
         return;
       }
       const grid = patchedGrids[gridIndex];
@@ -214,6 +219,13 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
     });
     gridPlaneDtoRef.current = { ...gridPlaneDtoRef.current, grids: patchedGrids.filter((grid): grid is GridDto => grid !== undefined) };
     setGridPlaneDto(gridPlaneDtoRef.current);
+    if (replacedGridIndexes.length > 0) {
+      setGridReplaceCounts((counts) => {
+        const next = [...counts];
+        replacedGridIndexes.forEach((gridIndex) => (next[gridIndex] = (next[gridIndex] ?? 0) + 1));
+        return next;
+      });
+    }
 
     return data;
   }, [setState]);
@@ -229,7 +241,7 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
     setGridPlaneDto(gridPlaneDtoRef.current);
   }, []);
 
-  return <GridStoreContext.Provider value={{ gridPlaneDto, gridVersion, load, sendCommand, sendPatch, setState, closePlane }}>{children}</GridStoreContext.Provider>;
+  return <GridStoreContext.Provider value={{ gridPlaneDto, gridVersion, gridReplaceCounts, load, sendCommand, sendPatch, setState, closePlane }}>{children}</GridStoreContext.Provider>;
 }
 
 export function useGridStore(): GridStoreValue {
