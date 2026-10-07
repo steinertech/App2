@@ -226,19 +226,21 @@ function gridCellContent(
     content = (
       <span className="flex items-center justify-between gap-2">
         <span>{`${gridCell.text ?? ''}${arrow}`}</span>
-        <button
-          type="button"
-          aria-label="Filter"
-          title="Filter"
-          onClick={(event) => {
-            // Don't also trigger the header's SortClick.
-            event.stopPropagation();
-            onFilterMultiClick(gridCell);
-          }}
-          className="cursor-pointer px-1 font-normal hover:text-blue-200"
-        >
-          ▼
-        </button>
+        {gridCell.columnName !== undefined && (
+          <button
+            type="button"
+            aria-label="Filter"
+            title="Filter"
+            onClick={(event) => {
+              // Don't also trigger the header's SortClick.
+              event.stopPropagation();
+              onFilterMultiClick(gridCell);
+            }}
+            className="cursor-pointer px-1 font-normal hover:text-blue-200"
+          >
+            ▼
+          </button>
+        )}
       </span>
     );
   } else if (gridCell.cellEnum === GridCellEnum.Label) {
