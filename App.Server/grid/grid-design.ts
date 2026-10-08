@@ -1,8 +1,8 @@
-import { GridCellDto, GridCellEnum, GridCommandEnum, GridDto, GridPlaneDto, GridRowDto } from '../dto/shared/grid-dto.js';
+import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPlaneDto, GridRowDto } from '../dto/shared/grid-dto.js';
 import { GridConfigColumnDto, GridConfigDto, GridConfigTypeEnum } from '../dto/grid-config-dto.js';
 import { DesignDto } from '../dto/design-dto.js';
-import { designInsert, designLoad, designLoadByNames, designUpdate } from '../util/util-design.js';
-import { gridBarRow, gridCellText, gridCellValue, gridColumns, gridFsp, gridTables } from '../util/util-grid.js';
+import { designDeleteByNames, designInsert, designLoad, designLoadByNames, designUpdate } from '../util/util-design.js';
+import { gridBarRow, gridCellText, gridCellValue, gridColumns, gridFsp, gridIsCommand, gridTables } from '../util/util-grid.js';
 
 /** Parses a Sort cell text: "" is 0, anything else must be a number. */
 function designSortFromText(text: string): number {
@@ -25,25 +25,40 @@ export async function planeDesignLoad(request: Request, gridPlaneDto: GridPlaneD
   return { ...gridPlaneDto, grids: [await gridDesignLoad(request, gridPlaneDto.grids?.[0] ?? {})] };
 }
 
-/** Editable data rows (no toolbar, header or find row) and the bottom Bar (New, Save, Reload). */
+/** Editable data rows (no toolbar, header or find row), each with a Delete button in the third column, and the bottom Bar (New, Save, Reload). */
 async function gridDesignLoad(request: Request, gridDto: GridDto): Promise<GridDto> {
   if (gridDto.command?.commandEnum === GridCommandEnum.Save) {
     await gridDesignSaveUpdate(request, gridDto);
     await gridDesignSaveInsert(request, gridDto);
   }
 
+  if (gridIsCommand(gridDto, 'Delete')) {
+    const rowIndex = gridDto.command?.rowIndex;
+    const name = rowIndex !== undefined ? gridDto.state?.rowKeys?.[rowIndex] : undefined;
+    if (name !== undefined) {
+      await designDeleteByNames(request, [name]);
+    }
+  }
+
   // Page only: there is no header (sort) or find (filter) row. designs holds only the rows of the current page.
   const { rows: designs, state: fspState } = gridFsp(await designLoad(request), DESIGN_COLUMNS.columns ?? [], { ...gridDto.state, sort: undefined, filters: undefined });
 
   const rows: GridRowDto[] = designs.map((design, rowIndex) => ({
-    cells: gridColumns(DESIGN_COLUMNS.columns ?? []).map(
-      (column: GridConfigColumnDto): GridCellDto => ({
-        cellEnum: GridCellEnum.Edit,
-        text: gridCellText(design[column.columnName as keyof DesignDto], column),
+    cells: [
+      ...gridColumns(DESIGN_COLUMNS.columns ?? []).map(
+        (column: GridConfigColumnDto): GridCellDto => ({
+          cellEnum: GridCellEnum.Edit,
+          text: gridCellText(design[column.columnName as keyof DesignDto], column),
+          rowIndex,
+          columnName: column.columnName,
+        }),
+      ),
+      {
+        cellEnum: GridCellEnum.Custom,
+        customs: [{ text: 'Delete', name: 'Delete', customEnum: GridCustomEnum.Button, rowIndex } satisfies GridCustomDto],
         rowIndex,
-        columnName: column.columnName,
-      }),
-    ),
+      },
+    ],
   }));
 
   // rowKey is DesignDto.name (random UUID, set on insert).

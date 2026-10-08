@@ -58,3 +58,10 @@ export async function designUpdate(request: Request, designDtos: DesignDto[]): P
 
   return designs;
 }
+
+/** Deletes the rows by name (the grid's rowKeys). */
+export async function designDeleteByNames(request: Request, names: string[]): Promise<void> {
+  const key = await sectorKey(request, true);
+  const collection = client.db().collection<DesignDto>('myCollection');
+  await collection.deleteMany({ sectorKey: key, type: 'DesignDto', name: { $in: names } });
+}
