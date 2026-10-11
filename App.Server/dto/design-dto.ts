@@ -1,11 +1,5 @@
 import { ObjectId } from 'mongodb';
-
-export enum DesignBandEnum {
-  None = 0,
-  Header = 1,
-  Table = 2,
-  Form = 3,
-}
+import { LayoutBandEnum } from './shared/layout-dto.js';
 
 export interface DesignBandDto {
   _id?: ObjectId;
@@ -13,7 +7,7 @@ export interface DesignBandDto {
   name?: string;
   sectorKey?: string;
   type?: string;
-  bandEnum?: DesignBandEnum;
+  bandEnum?: LayoutBandEnum;
   sort?: number;
   layoutName?: string;
 }
@@ -31,10 +25,10 @@ export interface DesignBandPropertyDto {
   propertyValue?: string;
 }
 
-/** The DesignBandPropertyDto.propertyName list of each DesignBandEnum. */
-export const DESIGN_BAND_PROPERTY_NAMES: Record<DesignBandEnum, string[]> = {
-  [DesignBandEnum.None]: [],
-  [DesignBandEnum.Header]: ['Text'],
-  [DesignBandEnum.Table]: ['TableName'],
-  [DesignBandEnum.Form]: ['RowCount', 'ColumnCount'],
+/** The DesignBandPropertyDto.propertyName list of each LayoutBandEnum. */
+export const DESIGN_BAND_PROPERTY_NAMES: Record<LayoutBandEnum, string[]> = {
+  [LayoutBandEnum.None]: [],
+  [LayoutBandEnum.Header]: ['Text'],
+  [LayoutBandEnum.Table]: ['TableName'],
+  [LayoutBandEnum.Form]: ['RowCount', 'ColumnCount'],
 };

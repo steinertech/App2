@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { ObjectId } from 'mongodb';
 import client from './util-db.js';
-import { DESIGN_BAND_PROPERTY_NAMES, DesignBandDto, DesignBandEnum, DesignBandPropertyDto } from '../dto/design-dto.js';
+import { DESIGN_BAND_PROPERTY_NAMES, DesignBandDto, DesignBandPropertyDto } from '../dto/design-dto.js';
+import { LayoutBandEnum } from '../dto/shared/layout-dto.js';
 import { sectorKey } from './util-main.js';
 
 // Design bands are per project: sectorKey(request, true) also asserts the user is signed in (redirects to /sign-in otherwise).
@@ -104,7 +105,7 @@ export async function designPropertySync(request: Request, band: DesignBandDto):
   const key = await sectorKey(request, true);
   const collection = client.db().collection<DesignBandPropertyDto>('myCollection');
 
-  const propertyNames = DESIGN_BAND_PROPERTY_NAMES[band.bandEnum ?? DesignBandEnum.None] ?? [];
+  const propertyNames = DESIGN_BAND_PROPERTY_NAMES[band.bandEnum ?? LayoutBandEnum.None] ?? [];
   const existingNames = new Set((await designPropertyLoad(request, band.name)).map((property) => property.propertyName));
 
   const inserts = propertyNames
