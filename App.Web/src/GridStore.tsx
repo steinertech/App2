@@ -17,8 +17,8 @@ interface GridStoreValue {
   gridVersion: number;
   /** Per root grid index: increased whenever a GridPatchEnum.Grid patch replaces that grid (Grid remounts it). */
   gridReplaceCounts: number[];
-  /** Returns the loaded plane, or undefined if the server call failed (the store is kept as is). */
-  load: (planeName: string) => Promise<GridPlaneDto | undefined>;
+  /** Returns the loaded plane, or undefined if the server call failed (the store is kept as is). grids are sent as the initial grids (e.g. with GridStateDto.custom). */
+  load: (planeName: string, grids?: GridDto[]) => Promise<GridPlaneDto | undefined>;
   /** Returns the reloaded plane, or undefined if the server call failed (the store is kept as is). */
   sendCommand: (path: number[], override: GridOverride) => Promise<GridPlaneDto | undefined>;
   /** Posts the plane with override applied at path to /api/grid-patch and applies the returned GridDto.patches to the loaded grids (rows aren't reloaded; a GridPatchEnum.Grid patch replaces a whole root grid). override.state is also kept on the grid at path. */
@@ -148,9 +148,9 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const load = useCallback(
-    (planeName: string): Promise<GridPlaneDto | undefined> => {
+    (planeName: string, grids?: GridDto[]): Promise<GridPlaneDto | undefined> => {
       planeNameRef.current = planeName;
-      gridPlaneDtoRef.current = {};
+      gridPlaneDtoRef.current = grids !== undefined ? { grids } : {};
       overridesRef.current.clear();
       return fetchPlane();
     },

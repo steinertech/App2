@@ -13,6 +13,12 @@ export const DESIGN_BAND_PROPERTY_NAMES: Record<ContentBandEnum, string[]> = {
   [ContentBandEnum.Form]: ['RowCount', 'ColumnCount'],
 };
 
+/** GridPlaneDto.planeName of a ContentBandEnum.Table band's grid: the Data grid of the "dynamic" plane as its only grid (grids[0]). */
+export const CONTENT_TABLE_PLANE_NAME = 'contentTable';
+
+/** GridStateDto.custom key holding the tableName (the band's TableName property) whose DynamicDto rows the CONTENT_TABLE_PLANE_NAME grid shows; missing or '' shows all rows. */
+export const CONTENT_TABLE_CUSTOM_TABLE_NAME = 'tableName';
+
 export interface ContentBandDto {
   bandEnum: ContentBandEnum;
   /** DesignBandPropertyDto.propertyValue of each DESIGN_BAND_PROPERTY_NAMES[bandEnum], in that order ('' if missing). */
