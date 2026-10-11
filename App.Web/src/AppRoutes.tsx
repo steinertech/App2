@@ -11,9 +11,9 @@ import Storage from './page/Storage.tsx';
 import Schema from './page/Schema.tsx';
 import Dynamic from './page/Dynamic.tsx';
 import Design from './page/Design.tsx';
-import Doc from './page/Doc.tsx';
+import ContentPage from './page/Content.tsx';
 
-export const routePaths = ['', 'about', 'debug', 'sign-up', 'sign-in', 'sign-out', 'project', 'storage', 'schema', 'dynamic', 'design', 'doc'];
+export const routePaths = ['', 'about', 'debug', 'sign-up', 'sign-in', 'sign-out', 'project', 'storage', 'schema', 'dynamic', 'design', 'content'];
 
 function pageRoutes() {
   return (
@@ -29,7 +29,7 @@ function pageRoutes() {
       <Route path="schema" element={<Schema />} />
       <Route path="dynamic" element={<Dynamic />} />
       <Route path="design" element={<Design />} />
-      <Route path="doc" element={<Doc />} />
+      <Route path="content" element={<ContentPage />} />
     </>
   );
 }

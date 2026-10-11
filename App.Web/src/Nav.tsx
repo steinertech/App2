@@ -11,7 +11,7 @@ const linkList: { to: string; key: string; label: string; isSignIn?: boolean }[]
   { to: '/schema', key: 'schema', label: 'Schema', isSignIn: true },
   { to: '/dynamic', key: 'dynamic', label: 'Dynamic', isSignIn: true },
   { to: '/design', key: 'design', label: 'Design', isSignIn: true },
-  { to: '/doc', key: 'doc', label: 'Doc', isSignIn: true },
+  { to: '/content', key: 'content', label: 'Content', isSignIn: true },
   { to: '/project', key: 'project', label: 'Project' },
   { to: '/debug', key: 'debug', label: 'Debug' },
   { to: '/sign-out', key: 'sign-out', label: 'Sign Out', isSignIn: true },
