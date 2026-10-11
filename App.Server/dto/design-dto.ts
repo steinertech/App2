@@ -1,5 +1,5 @@
 import { ObjectId } from 'mongodb';
-import { LayoutBandEnum } from './shared/layout-dto.js';
+import { ContentBandEnum } from './shared/content-dto.js';
 
 export interface DesignBandDto {
   _id?: ObjectId;
@@ -7,9 +7,9 @@ export interface DesignBandDto {
   name?: string;
   sectorKey?: string;
   type?: string;
-  bandEnum?: LayoutBandEnum;
+  bandEnum?: ContentBandEnum;
   sort?: number;
-  layoutName?: string;
+  contentName?: string;
 }
 
 /** Property of a DesignBandDto, created and removed by designPropertySync according to the band's bandEnum (DESIGN_BAND_PROPERTY_NAMES). */
@@ -25,10 +25,10 @@ export interface DesignBandPropertyDto {
   propertyValue?: string;
 }
 
-/** The DesignBandPropertyDto.propertyName list of each LayoutBandEnum. */
-export const DESIGN_BAND_PROPERTY_NAMES: Record<LayoutBandEnum, string[]> = {
-  [LayoutBandEnum.None]: [],
-  [LayoutBandEnum.Header]: ['Text'],
-  [LayoutBandEnum.Table]: ['TableName'],
-  [LayoutBandEnum.Form]: ['RowCount', 'ColumnCount'],
+/** The DesignBandPropertyDto.propertyName list of each ContentBandEnum. */
+export const DESIGN_BAND_PROPERTY_NAMES: Record<ContentBandEnum, string[]> = {
+  [ContentBandEnum.None]: [],
+  [ContentBandEnum.Header]: ['Text'],
+  [ContentBandEnum.Table]: ['TableName'],
+  [ContentBandEnum.Form]: ['RowCount', 'ColumnCount'],
 };

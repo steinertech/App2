@@ -1,22 +1,22 @@
 import { GridCellDto, GridCellEnum, GridCommandEnum, GridDto, GridPatchDto, GridPatchEnum, GridPlaneDto, GridRowDto } from '../dto/shared/grid-dto.js';
 import { designBandInsert, designBandLoad, designBandLoadByIds, designBandUpdate, designPropertyLoad, designPropertyLoadByIds, designPropertySync, designPropertyUpdate } from '../util/util-design.js';
 import { DesignBandDto, DesignBandPropertyDto } from '../dto/design-dto.js';
-import { LayoutBandEnum } from '../dto/shared/layout-dto.js';
+import { ContentBandEnum } from '../dto/shared/content-dto.js';
 import { GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
 import { gridBarRow, gridCellText, gridCellValue, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridLookupSet, gridTables } from '../util/util-grid.js';
 
-/** The names of LayoutBandEnum, e.g. "Header". */
-const DESIGN_BAND_ENUM_NAMES = Object.keys(LayoutBandEnum).filter((key) => isNaN(Number(key)));
+/** The names of ContentBandEnum, e.g. "Header". */
+const DESIGN_BAND_ENUM_NAMES = Object.keys(ContentBandEnum).filter((key) => isNaN(Number(key)));
 
-/** Parses a LayoutBandEnum name (case-insensitive, e.g. "header") or number (e.g. "1"). "" is LayoutBandEnum.None. */
-function designBandEnumFromText(text: string): LayoutBandEnum {
+/** Parses a ContentBandEnum name (case-insensitive, e.g. "header") or number (e.g. "1"). "" is ContentBandEnum.None. */
+function designBandEnumFromText(text: string): ContentBandEnum {
   const value = text.trim();
   if (value === '') {
-    return LayoutBandEnum.None;
+    return ContentBandEnum.None;
   }
   const name = DESIGN_BAND_ENUM_NAMES.find((name) => name.toLowerCase() === value.toLowerCase());
-  const result = name !== undefined ? LayoutBandEnum[name as keyof typeof LayoutBandEnum] : Number(value);
-  if (!Number.isInteger(result) || LayoutBandEnum[result] === undefined) {
+  const result = name !== undefined ? ContentBandEnum[name as keyof typeof ContentBandEnum] : Number(value);
+  if (!Number.isInteger(result) || ContentBandEnum[result] === undefined) {
     throw new Error(`Band "${text}" is not one of: ${DESIGN_BAND_ENUM_NAMES.join(', ')}!`);
   }
   return result;
@@ -41,12 +41,12 @@ const DESIGN_PROPERTY_NUMBER_NAMES = new Set(['RowCount', 'ColumnCount']);
 // name is not a column, so it's never sent to App.Web (designBandInsert sets it to a random UUID).
 const DESIGN_BAND_COLUMNS: GridConfigDto = {
   columns: [
-    { columnName: 'layoutName' satisfies keyof DesignBandDto, text: 'Layout', typeEnum: GridConfigTypeEnum.Text },
+    { columnName: 'contentName' satisfies keyof DesignBandDto, text: 'Content', typeEnum: GridConfigTypeEnum.Text },
     {
       columnName: 'bandEnum' satisfies keyof DesignBandDto,
       text: 'Band',
       typeEnum: GridConfigTypeEnum.Number,
-      valueToText: (value) => LayoutBandEnum[value as LayoutBandEnum] ?? String(value),
+      valueToText: (value) => ContentBandEnum[value as ContentBandEnum] ?? String(value),
       valueFromText: designBandEnumFromText,
     },
     { columnName: 'sort' satisfies keyof DesignBandDto, typeEnum: GridConfigTypeEnum.Number, valueFromText: designSortFromText },
