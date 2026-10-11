@@ -10,7 +10,7 @@ export const DESIGN_BAND_PROPERTY_NAMES: Record<ContentBandEnum, string[]> = {
   [ContentBandEnum.None]: [],
   [ContentBandEnum.Header]: ['Text'],
   [ContentBandEnum.Table]: ['TableName'],
-  [ContentBandEnum.Form]: ['RowCount', 'ColumnCount'],
+  [ContentBandEnum.Form]: ['RowCount', 'ColumnCount', 'TableName'],
 };
 
 /** GridPlaneDto.planeName of a ContentBandEnum.Table band's grid: the Data grid of the "dynamic" plane as its only grid (grids[0]). */
