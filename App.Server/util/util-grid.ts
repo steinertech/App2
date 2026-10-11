@@ -5,7 +5,7 @@ import { planeDebugLoad, planeProjectLoad, planeProjectPatch } from '../grid/gri
 import { planeStorageLoad, planeStoragePatch } from '../grid/grid-storage.js';
 import { planeSchemaLoad, planeSchemaPatch } from '../grid/grid-schema.js';
 import { planeDynamicLoad, planeDynamicPatch } from '../grid/grid-dynamic.js';
-import { planeDesignLoad } from '../grid/grid-design.js';
+import { planeDesignLoad, planeDesignPatch } from '../grid/grid-design.js';
 
 /** Returns GridDto.tables: tables[0] toolbarRows, tables[1] dataRows, tables[2] barRows and, if given, tables[3] footerRows (e.g. a dialog's Ok and Cancel buttons). */
 export function gridTables(toolbarRows: GridRowDto[], dataRows: GridRowDto[], barRows: GridRowDto[] = [], footerRows?: GridRowDto[]): GridTableDto[] {
@@ -482,6 +482,7 @@ const PLANE_GRID_PATCHERS: Record<string, GridPlanePatcher> = {
   storage: planeStoragePatch,
   schema: planeSchemaPatch,
   dynamic: planeDynamicPatch,
+  design: planeDesignPatch,
 };
 
 export async function gridPlanePatch(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
