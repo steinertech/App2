@@ -15,6 +15,7 @@ export default function Design() {
     <div className={container}>
       <h1>Design</h1>
       <Grid path={[0]} />
+      <Grid path={[1]} />
     </div>
   );
 }

@@ -14,6 +14,7 @@ import {
   type GridDto,
   type GridModifyDto,
   type GridPathSegmentDto,
+  type GridSettingDto,
   type GridStateDto,
   gridStatePath,
   GRID_PAGE_ROW_COUNT_DEFAULT,
@@ -57,6 +58,7 @@ function gridCustomContent(
   onBarClick: (commandEnum: GridCommandEnum) => void,
   onPageChange: (statePage: GridStatePage) => void,
   gridState: GridStateDto | undefined,
+  gridSetting: GridSettingDto | undefined,
 ): ReactNode {
   if (gridCustom.customEnum === GridCustomEnum.Bar) {
     const pageIndex = gridState?.pageIndex ?? 0;
@@ -64,9 +66,11 @@ function gridCustomContent(
     return (
       <div key={key} className={gridBarClassName}>
         <span className="flex items-center gap-2">
-          <button type="button" onClick={() => onBarClick(GridCommandEnum.New)} className={buttonBarPrimaryClassName}>
-            + New
-          </button>
+          {!gridSetting?.isNewHide && (
+            <button type="button" onClick={() => onBarClick(GridCommandEnum.New)} className={buttonBarPrimaryClassName}>
+              + New
+            </button>
+          )}
           <button type="button" onClick={() => onBarClick(GridCommandEnum.Save)} className={buttonBarClassName}>
             Save
           </button>
@@ -189,12 +193,13 @@ function gridCellContent(
   onSearchChange: (gridCell: GridCellDto, text: string) => void,
   filters: Record<string, string>,
   gridState: GridStateDto | undefined,
+  gridSetting: GridSettingDto | undefined,
   onFilterMultiClick: (gridCell: GridCellDto) => void,
 ): ReactNode {
   let content: ReactNode;
   if (gridCell.cellEnum === GridCellEnum.Custom) {
     content = (gridCell.customs ?? []).map((gridCustom, index) =>
-      gridCustomContent(gridCustom, index, gridVersion, onCustomClick, onCustomTextChange, pathSegments, onBarClick, onPageChange, gridState),
+      gridCustomContent(gridCustom, index, gridVersion, onCustomClick, onCustomTextChange, pathSegments, onBarClick, onPageChange, gridState, gridSetting),
     );
   } else if (gridCell.cellEnum === GridCellEnum.Empty) {
     content = null;
@@ -591,6 +596,7 @@ function GridContent({ path }: GridProps) {
                       handleSearchChange,
                       grid?.state?.filters ?? {},
                       grid?.state,
+                      grid?.setting,
                       (gridCell) => void handleFilterMultiClick(gridCell),
                     )}
                   </td>
