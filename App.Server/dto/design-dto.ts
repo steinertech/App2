@@ -24,11 +24,3 @@ export interface DesignBandPropertyDto {
   propertyName?: string;
   propertyValue?: string;
 }
-
-/** The DesignBandPropertyDto.propertyName list of each ContentBandEnum. */
-export const DESIGN_BAND_PROPERTY_NAMES: Record<ContentBandEnum, string[]> = {
-  [ContentBandEnum.None]: [],
-  [ContentBandEnum.Header]: ['Text'],
-  [ContentBandEnum.Table]: ['TableName'],
-  [ContentBandEnum.Form]: ['RowCount', 'ColumnCount'],
-};

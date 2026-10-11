@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { ObjectId } from 'mongodb';
 import client from './util-db.js';
-import { DESIGN_BAND_PROPERTY_NAMES, DesignBandDto, DesignBandPropertyDto } from '../dto/design-dto.js';
-import { ContentBandEnum } from '../dto/shared/content-dto.js';
+import { DesignBandDto, DesignBandPropertyDto } from '../dto/design-dto.js';
+import { ContentBandEnum, DESIGN_BAND_PROPERTY_NAMES } from '../dto/shared/content-dto.js';
 import { sectorKey } from './util-main.js';
 
 // Design bands are per project: sectorKey(request, true) also asserts the user is signed in (redirects to /sign-in otherwise).

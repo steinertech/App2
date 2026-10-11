@@ -1,8 +1,15 @@
 import { useState } from 'react';
 import { apiFetch, useEffectOnce } from './util/util-main.ts';
-import type { ContentDto, ContentRequestDto } from '../../App.Server/dto/shared/content-dto.ts';
+import { ContentBandEnum, DESIGN_BAND_PROPERTY_NAMES } from '../../App.Server/dto/shared/content-dto.ts';
+import type { ContentBandDto, ContentDto, ContentRequestDto } from '../../App.Server/dto/shared/content-dto.ts';
 
-/** Loads the content named contentName from /api/content and renders the ContentBandEnum (as number) of every band. */
+/** propertyValue of band's property propertyName (one of DESIGN_BAND_PROPERTY_NAMES[band.bandEnum]); '' if not found. */
+function propertyValue(band: ContentBandDto, propertyName: string): string {
+  const index = (DESIGN_BAND_PROPERTY_NAMES[band.bandEnum] ?? []).indexOf(propertyName);
+  return band.propertyValues[index] ?? '';
+}
+
+/** Loads the content named contentName from /api/content and renders every band: Header as h1 (property Text), others as their ContentBandEnum (as number). */
 export default function Content({ contentName }: { contentName: string }) {
   const [content, setContent] = useState<ContentDto>();
 
@@ -26,9 +33,9 @@ export default function Content({ contentName }: { contentName: string }) {
 
   return (
     <div>
-      {content?.bands.map((band, index) => (
-        <div key={index}>{band.bandEnum}</div>
-      ))}
+      {content?.bands.map((band, index) =>
+        band.bandEnum === ContentBandEnum.Header ? <h1 key={index}>{propertyValue(band, 'Text')}</h1> : <div key={index}>{band.bandEnum}</div>,
+      )}
     </div>
   );
 }
