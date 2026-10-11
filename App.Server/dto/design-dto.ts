@@ -19,7 +19,7 @@ export interface DesignBandDto {
 }
 
 /** Property of a DesignBandDto, created and removed by designPropertySync according to the band's bandEnum (DESIGN_BAND_PROPERTY_NAMES). */
-export interface DesignPropertyDto {
+export interface DesignBandPropertyDto {
   _id?: ObjectId;
   /** Random UUID, set by the backend when the property is inserted (see designPropertySync). Not shown in App.Web. */
   name?: string;
@@ -31,7 +31,7 @@ export interface DesignPropertyDto {
   propertyValue?: string;
 }
 
-/** The DesignPropertyDto.propertyName list of each DesignBandEnum. */
+/** The DesignBandPropertyDto.propertyName list of each DesignBandEnum. */
 export const DESIGN_BAND_PROPERTY_NAMES: Record<DesignBandEnum, string[]> = {
   [DesignBandEnum.None]: [],
   [DesignBandEnum.Header]: ['Text'],
