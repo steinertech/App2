@@ -40,6 +40,7 @@ const DESIGN_PROPERTY_NUMBER_NAMES = new Set(['RowCount', 'ColumnCount']);
 // name is not a column, so it's never sent to App.Web (designBandInsert sets it to a random UUID).
 const DESIGN_BAND_COLUMNS: GridConfigDto = {
   columns: [
+    { columnName: 'layoutName' satisfies keyof DesignBandDto, text: 'Layout', typeEnum: GridConfigTypeEnum.Text },
     {
       columnName: 'bandEnum' satisfies keyof DesignBandDto,
       text: 'Band',

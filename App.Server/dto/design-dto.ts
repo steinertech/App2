@@ -15,6 +15,7 @@ export interface DesignBandDto {
   type?: string;
   bandEnum?: DesignBandEnum;
   sort?: number;
+  layoutName?: string;
 }
 
 /** Property of a DesignBandDto, created and removed by designPropertySync according to the band's bandEnum (DESIGN_BAND_PROPERTY_NAMES). */
