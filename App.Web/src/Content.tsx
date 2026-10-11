@@ -22,7 +22,36 @@ function ContentTable({ tableName }: { tableName: string }) {
   return <Grid path={[0]} />;
 }
 
-/** Loads the content named contentName from /api/content and renders every band: Header as h1 (property Text), Table as Data grid of its TableName, others as their ContentBandEnum (as number). */
+/** Max RowCount and ColumnCount rendered by ContentForm, so a large value doesn't render a huge table. */
+const CONTENT_FORM_COUNT_MAX = 50;
+
+/** Whole number of a RowCount or ColumnCount propertyValue, clamped to 0..CONTENT_FORM_COUNT_MAX; '' or invalid is 0. */
+function contentFormCount(text: string): number {
+  const count = Math.trunc(Number(text));
+  return Number.isFinite(count) ? Math.min(Math.max(count, 0), CONTENT_FORM_COUNT_MAX) : 0;
+}
+
+/** Form layout: a table of rowCount rows by columnCount columns of empty cells. Renders nothing if either is 0. */
+function ContentForm({ rowCount, columnCount }: { rowCount: number; columnCount: number }) {
+  if (rowCount === 0 || columnCount === 0) {
+    return null;
+  }
+  return (
+    <table className="my-2 border-collapse">
+      <tbody>
+        {Array.from({ length: rowCount }, (_, rowIndex) => (
+          <tr key={rowIndex}>
+            {Array.from({ length: columnCount }, (_, columnIndex) => (
+              <td key={columnIndex} className="h-8 w-32 border border-gray-300" />
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+/** Loads the content named contentName from /api/content and renders every band: Header as h1 (property Text), Table as Data grid of its TableName, Form as RowCount x ColumnCount table, others as their ContentBandEnum (as number). */
 export default function Content({ contentName }: { contentName: string }) {
   const [content, setContent] = useState<ContentDto>();
 
@@ -57,6 +86,8 @@ export default function Content({ contentName }: { contentName: string }) {
                 <ContentTable tableName={propertyValue(band, 'TableName')} />
               </GridStoreProvider>
             );
+          case ContentBandEnum.Form:
+            return <ContentForm key={index} rowCount={contentFormCount(propertyValue(band, 'RowCount'))} columnCount={contentFormCount(propertyValue(band, 'ColumnCount'))} />;
           default:
             return <div key={index}>{band.bandEnum}</div>;
         }
