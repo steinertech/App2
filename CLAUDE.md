@@ -49,6 +49,7 @@ Shared logic lives in `App.Server/util/` (not directly in `api/`):
 - `util-main.ts` — `VERSION_SERVER`, `domainName(request)`, `sectorKey(request, isProject)`, `corsHeaders(request, method)`, `jsonResponse(...)`, `apiHandler(method, handler)`, `alertAdd(request, alertEnum, text)`
 - `util-db.ts` — the shared MongoDB `client` (via `@vercel/functions` `attachDatabasePool`)
 - `util-user.ts` — user sign-up/sign-in/session/sign-out
+- `util-debug.ts` — `debugSave`/`debugLoad` of `DebugDto` (`name` + `text`, signed-in only), served by `api/debug.ts` (`POST` `DebugRequestDto` with `DebugRequestEnum.Save` or `Load`, `dto/shared/debug-request-dto.ts`)
 - `util-storage.ts` — blob upload/download via `@vercel/blob` (blob paths are prefixed with `sectorKey(request, true)`)
 - `util-grid.ts` — shared grid helpers plus the plane registry (`PLANE_LOADERS`, `PLANE_GRID_PATCHERS`) behind `api/grid-load.ts` / `api/grid-patch.ts`
 
