@@ -62,7 +62,7 @@ A content is the `DesignBandDto` rows of one `contentName`: `loadContent(request
 
 DTOs (plain interfaces, not classes) live under `App.Server/dto/`, split by whether `App.Web` uses them:
 - `App.Server/dto/shared/` — DTOs used by both `App.Server` and `App.Web` (must have no Node-only fields such as `ObjectId`). `App.Web` and `App.Server` share the same git repo, so these are imported directly by `App.Web` via a relative path (`import type { GridDto } from '../../../App.Server/dto/shared/grid-dto.ts'`) instead of being duplicated.
-- `App.Server/dto/` (top level) — backend-only DTOs (`ProjectDto`, `SessionDto`, `UserDto`, `DesignBandDto`, `DesignBandPropertyDto`, `GridConfigDto`, `StorageFileDto`). `App.Web` never imports from here — those carrying `ObjectId` couldn't be imported anyway, since `ObjectId` isn't installed in `App.Web` (and serializes to a plain string over JSON). They reach the frontend only indirectly, e.g. converted into a `GridDto` by `util-grid.ts`.
+- `App.Server/dto/` (top level) — backend-only DTOs (`ProjectDto`, `SessionDto`, `UserDto`, `DesignBandDto`, `DesignBandPropertyDto`, `DebugDto`, `GridConfigDto`, `StorageFileDto`). `App.Web` never imports from here — those carrying `ObjectId` couldn't be imported anyway, since `ObjectId` isn't installed in `App.Web` (and serializes to a plain string over JSON). They reach the frontend only indirectly, e.g. converted into a `GridDto` by `util-grid.ts`.
 
 New DTOs go in `dto/shared/` only if `App.Web` actually imports them (and they have no `ObjectId` or other Node-only field); otherwise directly in `dto/`.
 
@@ -70,7 +70,7 @@ New DTOs go in `dto/shared/` only if `App.Web` actually imports them (and they h
 The app version is stored in two places: `VERSION_CLIENT` in `App.Web/src/util/util-main.ts` and `VERSION_SERVER` in `App.Server/util/util-main.ts`. **Both values must always be identical** — whenever one is bumped, bump the other to the same value in the same change. (`App.Web/src/page/About.tsx` displays both side by side.)
 
 ### Single-collection MongoDB pattern
-All persisted DTOs (`UserDto`, `SessionDto`, `ProjectDto`, `DesignBandDto`, `DesignBandPropertyDto` — the ones with `_id`/`type` fields; not e.g. `GridConfigDto` or `StorageFileDto`) are stored in one MongoDB collection (`'myCollection'`), disambiguated by a `type` field (e.g. `type: 'UserDto'`) and scoped by a `sectorKey` field. Adding a new entity means adding a new DTO interface plus a `type` discriminator, not a new collection.
+All persisted DTOs (`UserDto`, `SessionDto`, `ProjectDto`, `DesignBandDto`, `DesignBandPropertyDto`, `DebugDto` — the ones with `_id`/`type` fields; not e.g. `GridConfigDto` or `StorageFileDto`) are stored in one MongoDB collection (`'myCollection'`), disambiguated by a `type` field (e.g. `type: 'UserDto'`) and scoped by a `sectorKey` field. Adding a new entity means adding a new DTO interface plus a `type` discriminator, not a new collection.
 
 ### sectorKey scoping
 `sectorKey(request, isProject)` in `util-main.ts` builds the key used for both persistence layers:
