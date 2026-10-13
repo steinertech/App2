@@ -1,17 +1,61 @@
+import { randomUUID } from 'crypto';
+import { ObjectId } from 'mongodb';
 import client from './util-db.js';
 import { DebugDto } from '../dto/debug-dto.js';
 import { sectorKey } from './util-main.js';
 
-/** Saves text into the DebugDto named name (inserted if it doesn't exist yet). Signed-in only. */
-export async function debugSave(request: Request, name: string, text: string): Promise<void> {
+// Debug rows are per project: sectorKey(request, true) also asserts the user is signed in (redirects to /sign-in otherwise).
+
+export async function debugLoad(request: Request): Promise<DebugDto[]> {
   const key = await sectorKey(request, true);
   const collection = client.db().collection<DebugDto>('myCollection');
-  await collection.updateOne({ sectorKey: key, type: 'DebugDto', name }, { $set: { text } }, { upsert: true });
+  return collection.find({ sectorKey: key, type: 'DebugDto' }).toArray();
 }
 
-/** Returns the DebugDto named name, or null if there is none. Signed-in only. */
-export async function debugLoad(request: Request, name: string): Promise<DebugDto | null> {
+/** ids are ObjectId hex strings (the grid's rowKeys); invalid ones are ignored. */
+export async function debugLoadByIds(request: Request, ids: string[]): Promise<DebugDto[]> {
   const key = await sectorKey(request, true);
   const collection = client.db().collection<DebugDto>('myCollection');
-  return collection.findOne({ sectorKey: key, type: 'DebugDto', name });
+  const objectIds = ids.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
+  return collection.find({ sectorKey: key, type: 'DebugDto', _id: { $in: objectIds } }).toArray();
+}
+
+/** Sets each row's name to a random UUID. */
+export async function debugInsert(request: Request, debugDtos: DebugDto[]): Promise<DebugDto[]> {
+  const key = await sectorKey(request, true);
+  const collection = client.db().collection<DebugDto>('myCollection');
+
+  const debugs = debugDtos.map((debugDto): DebugDto => {
+    const { _id, ...rest } = debugDto;
+    return { ...rest, name: randomUUID(), sectorKey: key, type: 'DebugDto' };
+  });
+
+  if (debugs.length > 0) {
+    await collection.insertMany(debugs);
+  }
+
+  return debugs;
+}
+
+/** Updates debugDtos by _id. */
+export async function debugUpdate(request: Request, debugDtos: DebugDto[]): Promise<DebugDto[]> {
+  const key = await sectorKey(request, true);
+  const collection = client.db().collection<DebugDto>('myCollection');
+
+  const debugs = debugDtos
+    .filter((debugDto) => debugDto._id !== undefined)
+    .map((debugDto): DebugDto => ({ ...debugDto, sectorKey: key, type: 'DebugDto' }));
+
+  if (debugs.length > 0) {
+    await collection.bulkWrite(
+      debugs.map(({ _id, ...debug }) => ({
+        updateOne: {
+          filter: { _id, sectorKey: key, type: 'DebugDto' },
+          update: { $set: debug },
+        },
+      })),
+    );
+  }
+
+  return debugs;
 }
