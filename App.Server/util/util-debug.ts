@@ -55,3 +55,13 @@ export async function debugUpdate(request: Request, debugDtos: DebugDto[]): Prom
 
   return debugs;
 }
+
+/** Deletes the debugs by ids (ObjectId hex strings, the grid's rowKeys); invalid ones are ignored. */
+export async function debugDelete(request: Request, ids: string[]): Promise<void> {
+  const key = await sectorKey(request, false);
+  const collection = client.db().collection<DebugDto>('myCollection');
+  const objectIds = ids.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
+  if (objectIds.length > 0) {
+    await collection.deleteMany({ sectorKey: key, type: 'DebugDto', _id: { $in: objectIds } });
+  }
+}

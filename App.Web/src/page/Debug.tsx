@@ -4,17 +4,21 @@ import { addAlert, getIsProgress, setIsProgress, useEffectOnce } from '../util/u
 import { UserRequestEnum } from '../../../App.Server/dto/shared/user-request-dto.ts';
 import { AlertEnum } from '../../../App.Server/dto/shared/alert-dto.ts';
 import Grid from '../Grid.tsx';
-import { useGridStore } from '../GridStore.tsx';
+import { resolveGrid, useGridStore } from '../GridStore.tsx';
 import { buttonPrimaryClassName, container, textInputClassName } from '../style.ts';
 
 export default function Debug() {
   const [email, setEmail] = useState('');
   const [result, setResult] = useState('');
-  const { load } = useGridStore();
+  const { gridPlaneDto, load } = useGridStore();
 
   useEffectOnce(() => {
     void load('debug');
   }, [load]);
+
+  // Delete confirmation, opened by the server at GridPlaneDto.grids[0].planes[1].grids[0].
+  const modalPath = [0, 1, 0];
+  const isModal = resolveGrid(gridPlaneDto.grids, modalPath) !== undefined;
 
   const handleSessionClick = async () => {
     try {
@@ -70,6 +74,13 @@ export default function Debug() {
       <div className="mt-4">
         <Grid path={[0]} />
       </div>
+      {isModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 p-4" role="dialog" aria-modal="true">
+          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+            <Grid path={modalPath} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
