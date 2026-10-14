@@ -45,12 +45,7 @@ export async function planeProjectLoad(request: Request, gridPlaneDto: GridPlane
   return { ...gridPlaneDto, grids };
 }
 
-/** Loads the "debug" plane: the project grid (GridPlaneDto.grids[0]) only. */
-export async function planeDebugLoad(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
-  return { ...gridPlaneDto, grids: [await gridProjectLoadGrid(request, gridPlaneDto.grids?.[0] ?? {})] };
-}
-
-/** Patches the "project" and "debug" planes: enables/disables the DeleteMulti button of the project grid (GridPlaneDto.grids[0]). */
+/** Patches the "project" plane: enables/disables the DeleteMulti button of the project grid (GridPlaneDto.grids[0]). */
 export async function planeProjectPatch(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
   return { ...gridPlaneDto, grids: [await gridPatchDeleteMulti(request, gridPlaneDto.grids?.[0] ?? {})] };
 }

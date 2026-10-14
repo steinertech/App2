@@ -1,7 +1,8 @@
 import { GRID_PAGE_ROW_COUNT_DEFAULT, GRID_PAGE_ROW_COUNT_MAX, GridCellDto, GridCellEnum, GridCommandEnum, GridCustomEnum, GridDto, GridPatchDto, GridPatchEnum, GridPlaneDto, gridPlaneGrids, GridRowDto, GridSortDto, GridStateDto, GridTableDto } from '../dto/shared/grid-dto.js';
 import { titleCase } from './util-main.js';
 import { GridConfigColumnDto, GridConfigTypeEnum } from '../dto/grid-config-dto.js';
-import { planeDebugLoad, planeProjectLoad, planeProjectPatch } from '../grid/grid-project.js';
+import { planeProjectLoad, planeProjectPatch } from '../grid/grid-project.js';
+import { planeDebugLoad, planeDebugPatch } from '../grid/grid-debug.js';
 import { planeStorageLoad, planeStoragePatch } from '../grid/grid-storage.js';
 import { planeSchemaLoad, planeSchemaPatch } from '../grid/grid-schema.js';
 import { planeContentTableLoad, planeContentTablePatch, planeDynamicLoad, planeDynamicPatch } from '../grid/grid-dynamic.js';
@@ -479,7 +480,7 @@ export async function gridPlaneLoad(request: Request, gridPlaneDto: GridPlaneDto
 type GridPlanePatcher = (request: Request, gridPlaneDto: GridPlaneDto) => Promise<GridPlaneDto>;
 
 const PLANE_GRID_PATCHERS: Record<string, GridPlanePatcher> = {
-  debug: planeProjectPatch,
+  debug: planeDebugPatch,
   project: planeProjectPatch,
   storage: planeStoragePatch,
   schema: planeSchemaPatch,
