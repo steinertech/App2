@@ -48,7 +48,7 @@ export default function Debug() {
       <button onClick={() => addAlert(AlertEnum.Error, 'Hello error!')} className={`${buttonPrimaryClassName} mt-2`}>
         Error
       </button>
-      <label className="mt-4 whitespace-pre-wrap">{result}</label>
+      <label className="mt-4 block whitespace-pre-wrap">{result}</label>
       <div className="mt-4">
         <Grid path={[0]} />
       </div>
