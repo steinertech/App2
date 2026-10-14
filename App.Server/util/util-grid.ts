@@ -298,7 +298,7 @@ function gridFilterMultiRows<T extends object>(rows: T[], column: GridConfigColu
 
 /**
  * If the Filter Multi lookup (gridDto.planes[0]) sent GridCommandEnum.Ok, sets gridDto.state.filterMultis of its column to the selected texts
- * (in gridFilterMultiRows order; the entry is removed if all texts of rows are selected) and goes back to the first page.
+ * (in gridFilterMultiRows order; the entry is removed if all texts of rows are selected) and goes back to the first page, with no row selected.
  */
 export function gridFilterMultiOk<T extends object>(gridDto: GridDto, allColumns: GridConfigColumnDto[], rows: T[]): void {
   const lookupGridDto = gridLookup(gridDto, GRID_PLANE_FILTER_MULTI);
@@ -317,7 +317,14 @@ export function gridFilterMultiOk<T extends object>(gridDto: GridDto, allColumns
   } else {
     filterMultis[column.columnName] = { texts: lookupRows.filter((lookupRow) => selected.has(lookupRow.rowKey)).map((lookupRow) => lookupRow.text) };
   }
-  gridDto.state = { ...gridDto.state, filterMultis: Object.keys(filterMultis).length > 0 ? filterMultis : undefined, pageIndex: 0 };
+  gridDto.state = {
+    ...gridDto.state,
+    filterMultis: Object.keys(filterMultis).length > 0 ? filterMultis : undefined,
+    pageIndex: 0,
+    selectedRowIndex: undefined,
+    selectedColumnName: undefined,
+    isSelectedMulti: undefined,
+  };
 }
 
 /**
@@ -366,7 +373,7 @@ function gridCommandSortClick(gridDto: GridDto): void {
 
   const isSortAsc = !(gridDto.state?.sort?.isSortAsc ?? false);
   // Sort changed: back to the first page, with no row selected.
-  gridDto.state = { ...gridDto.state, sort: { columnName, isSortAsc }, pageIndex: 0, selected: undefined, isSelectedMulti: undefined };
+  gridDto.state = { ...gridDto.state, sort: { columnName, isSortAsc }, pageIndex: 0, selectedRowIndex: undefined, selectedColumnName: undefined, isSelectedMulti: undefined };
 }
 
 /** Returns true if one or more GridStateDto.isSelectedMulti entries are true. */

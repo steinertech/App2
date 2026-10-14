@@ -40,7 +40,7 @@ export async function planeDynamicLoad(request: Request, gridPlaneDto: GridPlane
 
 /** Returns the tableName of the selected row of the dynamic grid (its rowKey), or undefined if no row is selected. */
 function gridDynamicSelectedTableName(gridDto: GridDto): string | undefined {
-  const selected = gridDto.state?.selected;
+  const selected = gridDto.state?.selectedRowIndex;
   return selected !== undefined ? gridDto.state?.rowKeys?.[selected] : undefined;
 }
 
@@ -160,7 +160,7 @@ export async function planeDynamicPatch(request: Request, gridPlaneDto: GridPlan
       command: undefined,
       modifies: undefined,
       planes: undefined,
-      state: { ...dataGridDto.state, selected: undefined, isSelectedMulti: undefined, pageIndex: 0, sort: undefined, filters: undefined, filterMultis: undefined },
+      state: { ...dataGridDto.state, selectedRowIndex: undefined, selectedColumnName: undefined, isSelectedMulti: undefined, pageIndex: 0, sort: undefined, filters: undefined, filterMultis: undefined },
     };
     const grid = await gridDynamicDataLoad(request, dataGridDtoSelect, tableName);
     return { ...gridPlaneDto, grids: [{}, { patches: [{ patchEnum: GridPatchEnum.Grid, grid } satisfies GridPatchDto] }] };

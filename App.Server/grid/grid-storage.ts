@@ -391,7 +391,7 @@ function gridStorageNew(gridDto: GridDto, columns: GridConfigColumnDto[]): void 
 
 /** Returns the "Image Preview" grid if the selected row of the storage grid (loaded, or incoming with its state.rowKeys) is a .jpg or .png file. */
 async function gridStoragePreview(request: Request, storageGridDto: GridDto): Promise<GridDto | undefined> {
-  const selected = storageGridDto.state?.selected;
+  const selected = storageGridDto.state?.selectedRowIndex;
   const rowKey = selected !== undefined ? storageGridDto.state?.rowKeys?.[selected] : undefined;
   if (rowKey === undefined || !/\.(jpg|png)$/i.test(rowKey)) {
     return undefined;

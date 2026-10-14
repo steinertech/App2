@@ -74,7 +74,7 @@ export async function planeDesignLoad(request: Request, gridPlaneDto: GridPlaneD
 
 /** Returns the band of the selected row of the design band grid (its rowKey is the _id), or undefined if no row is selected. */
 async function gridDesignBandSelected(request: Request, gridDto: GridDto): Promise<DesignBandDto | undefined> {
-  const selected = gridDto.state?.selected;
+  const selected = gridDto.state?.selectedRowIndex;
   const rowKey = selected !== undefined ? gridDto.state?.rowKeys?.[selected] : undefined;
   return rowKey !== undefined ? (await designBandLoadByIds(request, [rowKey]))[0] : undefined;
 }
@@ -200,7 +200,7 @@ export async function planeDesignPatch(request: Request, gridPlaneDto: GridPlane
       command: undefined,
       modifies: undefined,
       planes: undefined,
-      state: { ...propertyGridDto.state, selected: undefined, isSelectedMulti: undefined, pageIndex: 0, sort: undefined, filters: undefined, filterMultis: undefined },
+      state: { ...propertyGridDto.state, selectedRowIndex: undefined, selectedColumnName: undefined, isSelectedMulti: undefined, pageIndex: 0, sort: undefined, filters: undefined, filterMultis: undefined },
     };
     // The incoming state carries selected and the rowKeys of the loaded rows.
     const grid = await gridDesignPropertyLoad(request, propertyGridDtoSelect, await gridDesignBandSelected(request, gridDto));

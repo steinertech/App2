@@ -35,12 +35,15 @@ interface GridProps {
 /** Paging part of GridStateDto changed by a GridCustomEnum.Bar. */
 type GridStatePage = Pick<GridStateDto, 'pageIndex' | 'pageRowCount'>;
 
-function gridCellClassName(gridCell: GridCellDto, rowSelected: boolean): string {
+function gridCellClassName(gridCell: GridCellDto, rowSelected: boolean, columnSelected: boolean): string {
   if (gridCell.cellEnum === GridCellEnum.Header) {
     return 'font-bold text-white bg-blue-600';
   }
   if (gridCell.cellEnum === GridCellEnum.Search || gridCell.cellEnum === GridCellEnum.Empty) {
     return 'bg-blue-50';
+  }
+  if (rowSelected && columnSelected) {
+    return 'bg-blue-200';
   }
   if (rowSelected) {
     return 'bg-blue-100';
@@ -282,11 +285,12 @@ function GridContent({ path }: GridProps) {
 
   const grid = resolveGrid(gridPlaneDto.grids, path);
   const gridTables = grid?.tables ?? [];
-  const [rowIndexSelected, setRowIndexSelected] = useState(grid?.state?.selected);
+  const [rowIndexSelected, setRowIndexSelected] = useState(grid?.state?.selectedRowIndex);
   const [modifies, setModifies] = useState<GridModifyDto[]>(grid?.modifies ?? []);
   const [customModifies, setCustomModifies] = useState<GridCustomModifyDto[]>(grid?.customModifies ?? []);
   // Read from the store (not local state) so it follows server changes, e.g. cleared after DeleteMulti.
   const isSelectedMulti = grid?.state?.isSelectedMulti ?? [];
+  const selectedColumnName = grid?.state?.selectedColumnName;
 
   const handleSelectMultiChange = async (rowIndex: number, checked: boolean) => {
     const next = [...isSelectedMulti];
@@ -458,10 +462,10 @@ function GridContent({ path }: GridProps) {
     await sendGridCommand({ command: gridCommand });
   };
 
-  /** Filter, sort or paging changed, so the rows shown change: clears the selected row and the multi select checkboxes. */
+  /** Filter, sort or paging changed, so the rows shown change: clears the selected row (and column) and the multi select checkboxes. */
   const resetSelection = () => {
     setRowIndexSelected(undefined);
-    setState(path, { selected: undefined, isSelectedMulti: undefined });
+    setState(path, { selectedRowIndex: undefined, selectedColumnName: undefined, isSelectedMulti: undefined });
   };
 
   const handleHeaderClick = async (gridCell: GridCellDto) => {
@@ -486,13 +490,20 @@ function GridContent({ path }: GridProps) {
     await sendGridCommand({ command: { commandEnum: GridCommandEnum.Reload } });
   };
 
-  const handleRowSelect = async (rowIndex: number) => {
+  /** Click on a data cell: selects its row and its column (GridStateDto.selectedColumnName, sent with the next command). Only a row change sends GridCommandEnum.Select. */
+  const handleCellSelect = async (rowIndex: number, columnName: string | undefined) => {
+    if (columnName !== selectedColumnName) {
+      setState(path, { selectedColumnName: columnName });
+    }
     if (rowIndex === rowIndexSelected) {
       return;
     }
     setRowIndexSelected(rowIndex);
     if (grid?.setting?.isSelectPatch === true) {
-      await sendPatch(path, { command: { commandEnum: GridCommandEnum.Select, rowIndex }, state: { ...grid.state, selected: rowIndex } });
+      await sendPatch(path, {
+        command: { commandEnum: GridCommandEnum.Select, rowIndex },
+        state: { ...grid.state, selectedRowIndex: rowIndex, selectedColumnName: columnName },
+      });
     }
   };
 
@@ -573,12 +584,16 @@ function GridContent({ path }: GridProps) {
                 {(gridRow.cells ?? []).map((gridCell, cellIndex) => (
                   <td
                     key={cellIndex}
-                    className={gridCellClassName(gridCell, gridCell.rowIndex !== undefined && gridCell.rowIndex === rowIndexSelected)}
+                    className={gridCellClassName(
+                      gridCell,
+                      gridCell.rowIndex !== undefined && gridCell.rowIndex === rowIndexSelected,
+                      gridCell.columnName !== undefined && gridCell.columnName === selectedColumnName,
+                    )}
                     onClick={() => {
                       if (gridCell.cellEnum === GridCellEnum.Header) {
                         void handleHeaderClick(gridCell);
                       } else if (gridCell.rowIndex !== undefined) {
-                        void handleRowSelect(gridCell.rowIndex);
+                        void handleCellSelect(gridCell.rowIndex, gridCell.columnName);
                       }
                     }}
                   >

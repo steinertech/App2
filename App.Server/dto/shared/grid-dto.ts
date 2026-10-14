@@ -49,7 +49,7 @@ export enum GridCommandEnum {
   Ok = 8,
   /** The filter (triangle down) button of a GridCellEnum.Header was clicked (columnName); sent to /api/grid-patch. */
   FilterMulti = 9,
-  /** A row was selected (rowIndex, GridStateDto.selected); sent to /api/grid-patch if GridSettingDto.isSelectPatch, e.g. to load a detail grid for the selected row. */
+  /** A row was selected (rowIndex, GridStateDto.selectedRowIndex); sent to /api/grid-patch if GridSettingDto.isSelectPatch, e.g. to load a detail grid for the selected row. */
   Select = 10,
 }
 
@@ -154,7 +154,9 @@ export interface GridStateFilterMultiDto {
 
 export interface GridStateDto {
   /** rowIndex of selected row. Explicitly undefined allowed, so App.Web can clear it (on filter, sort or paging). */
-  selected?: number | undefined;
+  selectedRowIndex?: number | undefined;
+  /** columnName of selected column (the clicked data cell, together with selectedRowIndex). Explicitly undefined allowed, so App.Web can clear it (on filter, sort or paging). */
+  selectedColumnName?: string | undefined;
   /** rowIndex of selected rows. Explicitly undefined allowed, so App.Web can clear it (on filter, sort or paging). */
   isSelectedMulti?: boolean[] | undefined;
   sort?: GridSortDto;
@@ -191,7 +193,7 @@ export function gridStatePath(state: GridStateDto | undefined): string {
 }
 
 export interface GridSettingDto {
-  /** If true, selecting a row sends GridCommandEnum.Select (with GridStateDto.selected set) to /api/grid-patch, e.g. to load a detail grid for the selected row (GridPatchEnum.Grid) without reloading the grid's rows; otherwise selecting a row only highlights it on the client. */
+  /** If true, selecting a row sends GridCommandEnum.Select (with GridStateDto.selectedRowIndex set) to /api/grid-patch, e.g. to load a detail grid for the selected row (GridPatchEnum.Grid) without reloading the grid's rows; otherwise selecting a row only highlights it on the client. */
   isSelectPatch?: boolean;
   /** If true, changing a GridCellDto.isSelectMulti checkbox sends GridCommandEnum.MultiClick to /api/grid-patch (e.g. to enable a DeleteMulti button); otherwise the new GridStateDto.isSelectedMulti is only kept on the client and sent with the next command. */
   isSelectMultiPatch?: boolean;
