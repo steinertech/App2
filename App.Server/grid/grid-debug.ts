@@ -2,7 +2,7 @@ import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEn
 import { debugLoad, debugLoadByIds, debugUpdate, debugInsert, debugDelete } from '../util/util-debug.js';
 import { DebugDto } from '../dto/debug-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
-import { gridBarRow, gridCellText, gridCellValue, gridColumnChooserLoad, gridColumnChooserOk, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand, gridLookupSet, gridTables } from '../util/util-grid.js';
+import { gridBarRow, gridCellText, gridCellValue, gridColumnChooserLoad, gridColumnChooserOk, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand, gridLookupSet, gridPatchDeleteMulti, gridSelectedMultiRowKeys, gridTables } from '../util/util-grid.js';
 
 const DEBUG_COLUMNS: GridConfigDto = {
   columns: (['name', 'text'] as const satisfies readonly (keyof DebugDto)[]).map(
@@ -16,7 +16,10 @@ export async function planeDebugLoad(request: Request, gridPlaneDto: GridPlaneDt
   // Column Chooser Ok: apply the chosen columns (GridStateDto.columnNames) before the rows are built.
   gridColumnChooserOk(gridDto, DEBUG_COLUMNS.columns ?? []);
 
-  // Delete confirmation (opened by a row's Delete button below) lives at gridDto.planes[1].grids[0] (planes[0] is the lookup), carrying GridStateDto.custom.rowKeys.
+  // Selection is by rowIndex: remember it by rowKey so it can be mapped onto the reloaded rows (deleted rows drop out).
+  const selectedMultiRowKeys = new Set(gridSelectedMultiRowKeys(gridDto));
+
+  // Delete confirmation (opened by a row's Delete button or the toolbar's DeleteMulti button below) lives at gridDto.planes[1].grids[0] (planes[0] is the lookup), carrying GridStateDto.custom.rowKeys.
   const confirmGridDto = gridDto.planes?.[1]?.grids?.[0];
   if (confirmGridDto !== undefined) {
     // Its Cancel button (GridCustomEnum.Cancel) closes the dialog in App.Web without a server call.
@@ -38,6 +41,10 @@ export async function planeDebugLoad(request: Request, gridPlaneDto: GridPlaneDt
     if (rowKey !== undefined) {
       gridDto.planes = [null, { grids: [gridDebugDeleteConfirm([rowKey])] }];
     }
+  }
+
+  if (gridIsCommand(gridDto, 'DeleteMulti') && selectedMultiRowKeys.size > 0) {
+    gridDto.planes = [null, { grids: [gridDebugDeleteConfirm([...selectedMultiRowKeys])] }];
   }
 
   if (gridDto.command?.commandEnum === GridCommandEnum.Save) {
@@ -63,11 +70,12 @@ export async function planeDebugLoad(request: Request, gridPlaneDto: GridPlaneDt
   const rows: GridRowDto[] = debugs.map((debug, rowIndex) => ({
     cells: [
       ...columns.map(
-        (column): GridCellDto => ({
+        (column, columnIndex): GridCellDto => ({
           cellEnum: GridCellEnum.Edit,
           text: gridCellText(debug[column.columnName as keyof DebugDto], column),
           rowIndex,
           columnName: column.columnName,
+          isSelectMulti: columnIndex === 0 ? true : undefined,
         }),
       ),
       {
@@ -80,13 +88,22 @@ export async function planeDebugLoad(request: Request, gridPlaneDto: GridPlaneDt
 
   // rowKey is the _id (ObjectId hex), since name is editable and not unique.
   const rowKeys: string[] = debugs.map((debug) => debug._id?.toHexString() ?? '');
+  const isSelectedMulti = rowKeys.map((rowKey) => selectedMultiRowKeys.has(rowKey));
   const findRow = gridFindRow([...columns.map((column) => column.columnName), undefined]);
 
   const toolbarRow: GridRowDto = {
     cells: [
       {
         cellEnum: GridCellEnum.Custom,
-        customs: [{ text: 'Column Chooser', name: 'ColumnChooser', customEnum: GridCustomEnum.ColumnChooser }],
+        customs: [
+          { text: 'Column Chooser', name: 'ColumnChooser', customEnum: GridCustomEnum.ColumnChooser },
+          {
+            text: 'Delete',
+            name: 'DeleteMulti',
+            customEnum: GridCustomEnum.Button,
+            isDisabled: !isSelectedMulti.some((isSelected) => isSelected),
+          },
+        ],
       },
     ],
   };
@@ -97,7 +114,8 @@ export async function planeDebugLoad(request: Request, gridPlaneDto: GridPlaneDt
     ...gridDto,
     title: `Debug Data (${time})`,
     tables: gridTables([toolbarRow], [headerRow, findRow, ...rows], [gridBarRow()]),
-    state: { ...gridDto.state, ...fspState, rowKeys },
+    state: { ...gridDto.state, ...fspState, rowKeys, isSelectedMulti },
+    setting: { isSelectMultiPatch: true },
   };
 
   if (gridDto.command?.commandEnum === GridCommandEnum.New) {
@@ -116,7 +134,7 @@ export async function planeDebugLoad(request: Request, gridPlaneDto: GridPlaneDt
 
 /**
  * Patches the "debug" plane's debug grid (GridPlaneDto.grids[0]): GridCommandEnum.ColumnChooser opens the Column Chooser lookup,
- * GridCommandEnum.FilterMulti the Filter Multi lookup (distinct texts of its column); any other command has no patches.
+ * GridCommandEnum.FilterMulti the Filter Multi lookup (distinct texts of its column); any other command (MultiClick) enables/disables the DeleteMulti button.
  */
 export async function planeDebugPatch(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
   const gridDto = gridPlaneDto.grids?.[0] ?? {};
@@ -128,7 +146,7 @@ export async function planeDebugPatch(request: Request, gridPlaneDto: GridPlaneD
     const lookupPlane = gridFilterMultiLoad(gridDto, DEBUG_COLUMNS.columns ?? [], await debugLoad(request));
     return { ...gridPlaneDto, grids: [{ patches: [{ patchEnum: GridPatchEnum.Lookup, planeName: lookupPlane?.planeName, lookup: lookupPlane?.grids?.[0] } satisfies GridPatchDto] }] };
   }
-  return { ...gridPlaneDto, grids: [{}] };
+  return { ...gridPlaneDto, grids: [await gridPatchDeleteMulti(request, gridDto)] };
 }
 
 async function gridDebugSaveUpdate(request: Request, gridDto: GridDto): Promise<void> {
