@@ -16,6 +16,7 @@ export default function Design() {
       <h1>Design</h1>
       <Grid path={[0]} />
       <Grid path={[1]} />
+      <Grid path={[2]} />
     </div>
   );
 }

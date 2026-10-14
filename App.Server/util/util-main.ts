@@ -35,6 +35,26 @@ export function titleCase(text?: string): string | undefined {
     .join(' ');
 }
 
+/** Zero based column index to Excel column name (0 → A, 25 → Z, 26 → AA, 51 → AZ). */
+export function indexToColumnNameExcel(value: number): string {
+  if (!Number.isInteger(value) || value < 0) throw new Error(`Invalid column index ${value}!`);
+  let result = '';
+  for (let index = value + 1; index > 0; index = Math.floor((index - 1) / 26)) {
+    result = String.fromCharCode(65 + ((index - 1) % 26)) + result;
+  }
+  return result;
+}
+
+/** Excel column name to zero based column index (A → 0, Z → 25, AA → 26, AZ → 51). Case insensitive. */
+export function indexFromColumnNameExcel(value: string): number {
+  if (!/^[A-Za-z]+$/.test(value)) throw new Error(`Invalid column name ${value}!`);
+  let result = 0;
+  for (const char of value.toUpperCase()) {
+    result = result * 26 + (char.charCodeAt(0) - 64);
+  }
+  return result - 1;
+}
+
 export type ApiMethod = 'GET' | 'POST';
 
 export function corsHeaders(request: Request, method: ApiMethod): Record<string, string> {
