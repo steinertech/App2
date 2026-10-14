@@ -108,11 +108,9 @@ export async function planeDebugLoad(request: Request, gridPlaneDto: GridPlaneDt
     ],
   };
 
-  const time = new Date().toISOString().slice(11, 19);
-
   const result: GridDto = {
     ...gridDto,
-    title: `Debug Data (${time})`,
+    title: 'Debug Data',
     tables: gridTables([toolbarRow], [headerRow, findRow, ...rows], [gridBarRow()]),
     state: { ...gridDto.state, ...fspState, rowKeys, isSelectedMulti },
     setting: { isSelectMultiPatch: true },
