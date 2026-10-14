@@ -5,10 +5,9 @@ import { UserRequestEnum } from '../../../App.Server/dto/shared/user-request-dto
 import { AlertEnum } from '../../../App.Server/dto/shared/alert-dto.ts';
 import Grid from '../Grid.tsx';
 import { resolveGrid, useGridStore } from '../GridStore.tsx';
-import { buttonPrimaryClassName, container, textInputClassName } from '../style.ts';
+import { buttonPrimaryClassName, container } from '../style.ts';
 
 export default function Debug() {
-  const [email, setEmail] = useState('');
   const [result, setResult] = useState('');
   const { gridPlaneDto, load } = useGridStore();
 
@@ -30,15 +29,6 @@ export default function Debug() {
     }
   };
 
-  const handleGridClick = async () => {
-    try {
-      const data = await load('debug');
-      setResult(JSON.stringify(data, null, 2));
-    } catch {
-      setResult('Error fetching grid');
-    }
-  };
-
   const handleProgressClick = () => {
     setIsProgress(getIsProgress() === 0 ? 1 : 0);
   };
@@ -46,20 +36,8 @@ export default function Debug() {
   return (
     <div className={container}>
       <h1>Debug</h1>
-      <label className="mb-2">
-        Email
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className={`${textInputClassName} ml-2`}
-        />
-      </label>
       <button onClick={handleSessionClick} className={buttonPrimaryClassName}>
         Session
-      </button>
-      <button onClick={handleGridClick} className={`${buttonPrimaryClassName} mt-2`}>
-        Grid
       </button>
       <button onClick={handleProgressClick} className={`${buttonPrimaryClassName} mt-2`}>
         Progress
