@@ -124,7 +124,7 @@ async function gridDebugLoad(request: Request, gridDto: GridDto): Promise<GridDt
     title: 'Debug Data',
     tables: gridTables([toolbarRow], [headerRow, findRow, ...rows], [gridBarRow()]),
     state: { ...gridDto.state, ...fspState, rowKeys, isSelectedMulti },
-    setting: { isSelectMultiPatch: true },
+    setting: { isSelectPatch: true, isSelectMultiPatch: true },
   };
 
   if (gridDto.command?.commandEnum === GridCommandEnum.New) {
@@ -225,7 +225,8 @@ async function gridDebugPropertySaveUpdate(request: Request, gridDto: GridDto): 
 
 /**
  * Patches the "debug" plane's grids (debug grid GridPlaneDto.grids[0], debug property grid grids[1]): GridCommandEnum.ColumnChooser opens the Column Chooser lookup,
- * GridCommandEnum.FilterMulti the Filter Multi lookup (distinct texts of its column); any other command of the debug grid (MultiClick) enables/disables the DeleteMulti button.
+ * GridCommandEnum.FilterMulti the Filter Multi lookup (distinct texts of its column), GridCommandEnum.Select of a debug grid row (GridSettingDto.isSelectPatch) changes nothing yet;
+ * any other command of the debug grid (MultiClick) enables/disables the DeleteMulti button.
  */
 export async function planeDebugPatch(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
   const gridDto = gridPlaneDto.grids?.[0] ?? {};
@@ -240,6 +241,10 @@ export async function planeDebugPatch(request: Request, gridPlaneDto: GridPlaneD
     return { ...gridPlaneDto, grids: [{}, { patches: [{ patchEnum: GridPatchEnum.Lookup, planeName: lookupPlane?.planeName, lookup: lookupPlane?.grids?.[0] } satisfies GridPatchDto] }] };
   }
   if (propertyGridDto.command !== undefined) {
+    return { ...gridPlaneDto, grids: [{}, {}] };
+  }
+  // Select: the debug property grid isn't linked to the selected debug row (yet), so nothing is patched.
+  if (gridDto.command?.commandEnum === GridCommandEnum.Select) {
     return { ...gridPlaneDto, grids: [{}, {}] };
   }
   if (gridDto.command?.commandEnum === GridCommandEnum.ColumnChooser) {
