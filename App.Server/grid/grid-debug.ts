@@ -124,7 +124,7 @@ async function gridDebugLoad(request: Request, gridDto: GridDto): Promise<GridDt
     title: 'Debug Data',
     tables: gridTables([toolbarRow], [headerRow, findRow, ...rows], [gridBarRow()]),
     state: { ...gridDto.state, ...fspState, rowKeys, isSelectedMulti },
-    setting: { isSelectMultiPatch: true, isReloadPatch: true },
+    setting: { isSelectMultiPatch: true },
   };
 
   if (gridDto.command?.commandEnum === GridCommandEnum.New) {
@@ -230,11 +230,7 @@ async function gridDebugPropertySaveUpdate(request: Request, gridDto: GridDto): 
 export async function planeDebugPatch(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
   const gridDto = gridPlaneDto.grids?.[0] ?? {};
   const propertyGridDto = gridPlaneDto.grids?.[1] ?? {};
-  // Reload (GridSettingDto.isReloadPatch): the two grids are independent, so only the reloaded one is rebuilt.
-  if (gridDto.command?.commandEnum === GridCommandEnum.Reload) {
-    const grid = await gridDebugLoad(request, gridDto);
-    return { ...gridPlaneDto, grids: [{ patches: [{ patchEnum: GridPatchEnum.Grid, grid } satisfies GridPatchDto] }, {}] };
-  }
+  // Reload of the debug property grid (GridSettingDto.isReloadPatch): no other grid depends on it, so only it is rebuilt.
   if (propertyGridDto.command?.commandEnum === GridCommandEnum.Reload) {
     const grid = await gridDebugPropertyLoad(request, propertyGridDto);
     return { ...gridPlaneDto, grids: [{}, { patches: [{ patchEnum: GridPatchEnum.Grid, grid } satisfies GridPatchDto] }] };
