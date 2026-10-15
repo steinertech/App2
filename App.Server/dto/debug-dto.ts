@@ -1,18 +1,10 @@
-import { ObjectId } from 'mongodb';
+import { DbDto } from './db-dto.js';
 
-export interface DebugDto {
-  _id?: ObjectId;
-  sectorKey?: string;
-  type?: string;
-  name?: string;
+export interface DebugDto extends DbDto {
   text?: string;
 }
 
-export interface DebugPropertyDto {
-  _id?: ObjectId;
-  sectorKey?: string;
-  type?: string;
-  name?: string;
+export interface DebugPropertyDto extends DbDto {
   text?: string;
   propertyName?: string;
   propertyValue?: string;

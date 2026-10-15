@@ -1,12 +1,8 @@
-import { ObjectId } from 'mongodb';
+import { DbDto } from './db-dto.js';
 
-export interface UserDto {
-  _id?: ObjectId;
+export interface UserDto extends DbDto {
   email?: string;
-  name?: string;
   password?: string;
   projectNames?: string[];
   projectName?: string;
-  sectorKey?: string;
-  type?: string;
 }

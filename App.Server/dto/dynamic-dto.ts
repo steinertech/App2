@@ -1,12 +1,8 @@
-import { ObjectId } from 'mongodb';
+import { DbDto } from './db-dto.js';
 
 /** One row of the Data grid on the Dynamic page. Its column values (e.g. A, B) are stored as additional fields of the document, not declared here. */
-export interface DynamicDto {
-  _id?: ObjectId;
-  name?: string;
+export interface DynamicDto extends DbDto {
   tableName?: string;
-  sectorKey?: string;
-  type?: string;
 }
 
 /** One row of the Dynamic grid: a distinct SchemaDto.tableName (not persisted). */

@@ -1,9 +1,5 @@
-import { ObjectId } from 'mongodb';
+import { DbDto } from './db-dto.js';
 
-export interface ProjectDto {
-  _id?: ObjectId;
-  name?: string;
+export interface ProjectDto extends DbDto {
   description?: string;
-  sectorKey?: string;
-  type?: string;
 }

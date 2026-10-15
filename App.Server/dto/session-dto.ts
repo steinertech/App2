@@ -1,12 +1,8 @@
-import { ObjectId } from 'mongodb';
+import { DbDto } from './db-dto.js';
 
-export interface SessionDto {
-  _id?: ObjectId;
+export interface SessionDto extends DbDto {
   email?: string;
-  name?: string;
   projectName?: string;
-  sectorKey?: string;
-  type?: string;
   isSignIn?: boolean;
   sessionId?: string;
 }
