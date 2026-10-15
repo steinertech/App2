@@ -498,16 +498,20 @@ function GridContent({ path }: GridProps) {
     await sendGridCommand({ command: { commandEnum: GridCommandEnum.Reload } });
   };
 
-  /** Click on a data cell: selects its row and its column (GridStateDto.selectedColumnName, sent with the next command). Only a row change sends GridCommandEnum.Select. */
+  /**
+   * Click on a data cell: selects its row and its column (GridStateDto.selectedColumnName, sent with the next command).
+   * Sends GridCommandEnum.Select once if the row changed (GridSettingDto.isSelectPatch) or the column changed (GridSettingDto.isSelectColumnPatch).
+   */
   const handleCellSelect = async (rowIndex: number, columnName: string | undefined) => {
-    if (columnName !== selectedColumnName) {
+    const isColumnChanged = columnName !== selectedColumnName;
+    const isRowChanged = rowIndex !== rowIndexSelected;
+    if (isColumnChanged) {
       setState(path, { selectedColumnName: columnName });
     }
-    if (rowIndex === rowIndexSelected) {
-      return;
+    if (isRowChanged) {
+      setRowIndexSelected(rowIndex);
     }
-    setRowIndexSelected(rowIndex);
-    if (grid?.setting?.isSelectPatch === true) {
+    if ((isRowChanged && grid?.setting?.isSelectPatch === true) || (isColumnChanged && grid?.setting?.isSelectColumnPatch === true)) {
       await sendPatch(path, {
         command: { commandEnum: GridCommandEnum.Select, rowIndex },
         state: { ...grid.state, selectedRowIndex: rowIndex, selectedColumnName: columnName },
