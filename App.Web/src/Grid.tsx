@@ -281,7 +281,9 @@ export default function Grid({ path }: GridProps) {
 }
 
 function GridContent({ path }: GridProps) {
-  const { gridPlaneDto, gridVersion, sendCommand, sendPatch, setState, closePlane } = useGridStore();
+  const { gridPlaneDto, gridVersion: gridVersionPlane, gridReloadCounts, sendCommand, sendPatch, setState, closePlane } = useGridStore();
+  // Both only increase, so the sum changes on a plane reload (sendCommand) and on a reload of this grid only (isReloadPatch).
+  const gridVersion = gridVersionPlane + (gridReloadCounts[path[0] ?? 0] ?? 0);
 
   const grid = resolveGrid(gridPlaneDto.grids, path);
   const gridTables = grid?.tables ?? [];
@@ -486,7 +488,13 @@ function GridContent({ path }: GridProps) {
     await sendPatch(path, { command: gridCommand });
   };
 
+  /** GridSettingDto.isReloadPatch: reloads only this grid via /api/grid-patch; otherwise the whole plane. */
   const handleReloadClick = async () => {
+    if (grid?.setting?.isReloadPatch === true) {
+      await sendPatch(path, { command: { commandEnum: GridCommandEnum.Reload }, customModifies });
+      setCustomModifies([]);
+      return;
+    }
     await sendGridCommand({ command: { commandEnum: GridCommandEnum.Reload } });
   };
 
