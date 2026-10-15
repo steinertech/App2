@@ -124,7 +124,7 @@ async function gridDebugLoad(request: Request, gridDto: GridDto): Promise<GridDt
     title: 'Debug Data',
     tables: gridTables([toolbarRow], [headerRow, findRow, ...rows], [gridBarRow()]),
     state: { ...gridDto.state, ...fspState, rowKeys, isSelectedMulti },
-    setting: { isSelectPatch: true, isSelectMultiPatch: true },
+    setting: { isSelectPatch: true, isSelectColumnPatch: true, isSelectMultiPatch: true },
   };
 
   if (gridDto.command?.commandEnum === GridCommandEnum.New) {
@@ -225,7 +225,7 @@ async function gridDebugPropertySaveUpdate(request: Request, gridDto: GridDto): 
 
 /**
  * Patches the "debug" plane's grids (debug grid GridPlaneDto.grids[0], debug property grid grids[1]): GridCommandEnum.ColumnChooser opens the Column Chooser lookup,
- * GridCommandEnum.FilterMulti the Filter Multi lookup (distinct texts of its column), GridCommandEnum.Select of a debug grid row (GridSettingDto.isSelectPatch) changes nothing yet;
+ * GridCommandEnum.FilterMulti the Filter Multi lookup (distinct texts of its column), GridCommandEnum.Select of a debug grid cell (GridSettingDto.isSelectPatch, isSelectColumnPatch) changes nothing yet;
  * any other command of the debug grid (MultiClick) enables/disables the DeleteMulti button.
  */
 export async function planeDebugPatch(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
