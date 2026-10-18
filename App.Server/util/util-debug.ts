@@ -80,6 +80,22 @@ export async function debugPropertyLoadByIds(request: Request, ids: string[]): P
   return collection.find({ sectorKey: key, type: 'DebugPropertyDto', _id: { $in: objectIds } }).toArray();
 }
 
+export async function debugPropertyInsert(request: Request, debugPropertyDtos: DebugPropertyDto[]): Promise<DebugPropertyDto[]> {
+  const key = await sectorKey(request, false);
+  const collection = client.db().collection<DebugPropertyDto>('myCollection');
+
+  const properties = debugPropertyDtos.map((debugPropertyDto): DebugPropertyDto => {
+    const { _id, ...rest } = debugPropertyDto;
+    return { ...rest, sectorKey: key, type: 'DebugPropertyDto' };
+  });
+
+  if (properties.length > 0) {
+    await collection.insertMany(properties);
+  }
+
+  return properties;
+}
+
 /** Updates debugPropertyDtos by _id. */
 export async function debugPropertyUpdate(request: Request, debugPropertyDtos: DebugPropertyDto[]): Promise<DebugPropertyDto[]> {
   const key = await sectorKey(request, false);

@@ -1,5 +1,5 @@
 import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPatchDto, GridPatchEnum, GridPlaneDto, GridRowDto } from '../dto/shared/grid-dto.js';
-import { debugLoad, debugLoadByIds, debugUpdate, debugInsert, debugDelete, debugPropertyLoad, debugPropertyLoadByIds, debugPropertyUpdate } from '../util/util-debug.js';
+import { debugLoad, debugLoadByIds, debugUpdate, debugInsert, debugDelete, debugPropertyLoad, debugPropertyLoadByIds, debugPropertyUpdate, debugPropertyInsert } from '../util/util-debug.js';
 import { DebugDto, DebugPropertyDto } from '../dto/debug-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
 import { gridBarRow, gridCellText, gridCellValue, gridColumnChooserLoad, gridColumnChooserOk, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand, gridLookupSet, gridPatchDeleteMulti, gridSelectedMultiRowKeys, gridTables } from '../util/util-grid.js';
@@ -141,10 +141,11 @@ async function gridDebugLoad(request: Request, gridDto: GridDto): Promise<GridDt
   return result;
 }
 
-/** Debug property grid: rows can only be edited and saved; no Column Chooser, no Delete and no New. */
+/** Debug property grid: rows can be added (New), edited and saved; no Column Chooser and no Delete. */
 async function gridDebugPropertyLoad(request: Request, gridDto: GridDto): Promise<GridDto> {
   if (gridDto.command?.commandEnum === GridCommandEnum.Save) {
     await gridDebugPropertySaveUpdate(request, gridDto);
+    await gridDebugPropertySaveInsert(request, gridDto);
   }
 
   const allProperties = await debugPropertyLoad(request);
@@ -179,8 +180,12 @@ async function gridDebugPropertyLoad(request: Request, gridDto: GridDto): Promis
     title: 'Debug Property',
     tables: gridTables([], [headerRow, findRow, ...rows], [gridBarRow()]),
     state: { ...gridDto.state, ...fspState, rowKeys },
-    setting: { isNewHide: true, isReloadPatch: true },
+    setting: { isReloadPatch: true },
   };
+
+  if (gridDto.command?.commandEnum === GridCommandEnum.New) {
+    gridDebugNew(result, columns);
+  }
 
   // Lookup (planes[0]): Filter Multi (opened by planeDebugPatch, kept open while planes[0].planeName is filterMulti).
   gridLookupSet(result, gridFilterMultiLoad(gridDto, DEBUG_PROPERTY_COLUMNS.columns ?? [], allProperties));
@@ -221,6 +226,27 @@ async function gridDebugPropertySaveUpdate(request: Request, gridDto: GridDto): 
   }
 
   await debugPropertyUpdate(request, properties);
+}
+
+async function gridDebugPropertySaveInsert(request: Request, gridDto: GridDto): Promise<void> {
+  const modifies = (gridDto.modifies ?? []).filter((modify) => modify.isNew);
+
+  const columns = gridColumns(DEBUG_PROPERTY_COLUMNS.columns ?? []);
+
+  const propertiesByRowIndex = new Map<number, DebugPropertyDto>();
+
+  for (const modify of modifies) {
+    const column = columns.find((column) => column.columnName === modify.columnName);
+    if (modify.rowIndex === undefined || modify.columnName === undefined || modify.cellEnum !== GridCellEnum.Edit || column === undefined) {
+      continue;
+    }
+
+    const property = propertiesByRowIndex.get(modify.rowIndex) ?? {};
+    (property as Record<string, unknown>)[modify.columnName] = gridCellValue(modify.textModified, column);
+    propertiesByRowIndex.set(modify.rowIndex, property);
+  }
+
+  await debugPropertyInsert(request, [...propertiesByRowIndex.values()]);
 }
 
 /**
