@@ -72,6 +72,21 @@ export async function debugPropertyLoad(request: Request): Promise<DebugProperty
   return collection.find({ sectorKey: key, type: 'DebugPropertyDto' }).toArray();
 }
 
+/** Returns the properties attached to any of the owners (matching both ownerName and ownerType); none if owners is empty. */
+export async function debugPropertyLoadByOwners(
+  request: Request,
+  owners: Required<Pick<DebugPropertyDto, 'ownerName' | 'ownerType'>>[],
+): Promise<DebugPropertyDto[]> {
+  if (owners.length === 0) {
+    return [];
+  }
+  const key = await sectorKey(request, false);
+  const collection = client.db().collection<DebugPropertyDto>('myCollection');
+  return collection
+    .find({ sectorKey: key, type: 'DebugPropertyDto', $or: owners.map(({ ownerName, ownerType }) => ({ ownerName, ownerType })) })
+    .toArray();
+}
+
 /** ids are ObjectId hex strings (the grid's rowKeys); invalid ones are ignored. */
 export async function debugPropertyLoadByIds(request: Request, ids: string[]): Promise<DebugPropertyDto[]> {
   const key = await sectorKey(request, false);
