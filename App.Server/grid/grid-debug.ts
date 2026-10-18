@@ -1,5 +1,5 @@
 import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPatchDto, GridPatchEnum, GridPlaneDto, GridRowDto } from '../dto/shared/grid-dto.js';
-import { debugLoad, debugLoadByIds, debugUpdate, debugInsert, debugDelete, debugPropertyLoad, debugPropertyLoadByIds, debugPropertyUpdate, debugPropertyInsert } from '../util/util-debug.js';
+import { debugLoad, debugLoadByIds, debugUpdate, debugInsert, debugDelete, debugPropertyLoadByIds, debugPropertyLoadByOwners, debugPropertyUpdate, debugPropertyInsert } from '../util/util-debug.js';
 import { DebugDto, DebugPropertyDto } from '../dto/debug-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
 import { gridBarRow, gridCellText, gridCellValue, gridColumnChooserLoad, gridColumnChooserOk, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand, gridLookupSet, gridPatchDeleteMulti, gridSelectedMultiRowKeys, gridTables } from '../util/util-grid.js';
@@ -18,9 +18,30 @@ const DEBUG_PROPERTY_COLUMNS: GridConfigDto = {
 
 /** Loads the "debug" plane: the debug grid (GridPlaneDto.grids[0]) and the debug property grid (grids[1]). */
 export async function planeDebugLoad(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
+  // The debug property grid depends on the reloaded debug grid (its selected row and column), so it is built afterwards.
   const gridDto = await gridDebugLoad(request, gridPlaneDto.grids?.[0] ?? {});
-  const propertyGridDto = await gridDebugPropertyLoad(request, gridPlaneDto.grids?.[1] ?? {});
+  const owners = await gridDebugSelectedOwners(request, gridDto);
+  const propertyGridDto = await gridDebugPropertyLoad(request, gridPlaneDto.grids?.[1] ?? {}, owners);
   return { ...gridPlaneDto, grids: [gridDto, propertyGridDto] };
+}
+
+type DebugPropertyOwner = Parameters<typeof debugPropertyLoadByOwners>[1][number];
+
+/**
+ * Returns the owners of the debug property grid's rows for the selected cell of the debug grid (its rowKey is the _id):
+ * the selected row (ownerName is its name, ownerType "Row") and, if a column is selected, the selected cell (ownerName is name + "." + columnName, ownerType "Cell").
+ * None if no row is selected.
+ */
+async function gridDebugSelectedOwners(request: Request, gridDto: GridDto): Promise<DebugPropertyOwner[]> {
+  const selected = gridDto.state?.selectedRowIndex;
+  const rowKey = selected !== undefined ? gridDto.state?.rowKeys?.[selected] : undefined;
+  const debug = rowKey !== undefined ? (await debugLoadByIds(request, [rowKey]))[0] : undefined;
+  if (debug === undefined) {
+    return [];
+  }
+  const name = debug.name ?? '';
+  const columnName = gridDto.state?.selectedColumnName;
+  return [{ ownerName: name, ownerType: 'Row' }, ...(columnName !== undefined ? [{ ownerName: name + '.' + columnName, ownerType: 'Cell' }] : [])];
 }
 
 async function gridDebugLoad(request: Request, gridDto: GridDto): Promise<GridDto> {
@@ -141,14 +162,14 @@ async function gridDebugLoad(request: Request, gridDto: GridDto): Promise<GridDt
   return result;
 }
 
-/** Debug property grid: rows can be added (New), edited and saved; no Column Chooser and no Delete. */
-async function gridDebugPropertyLoad(request: Request, gridDto: GridDto): Promise<GridDto> {
+/** Debug property grid: the properties of owners (see gridDebugSelectedOwners); rows can be added (New), edited and saved; no Column Chooser and no Delete. */
+async function gridDebugPropertyLoad(request: Request, gridDto: GridDto, owners: DebugPropertyOwner[]): Promise<GridDto> {
   if (gridDto.command?.commandEnum === GridCommandEnum.Save) {
     await gridDebugPropertySaveUpdate(request, gridDto);
     await gridDebugPropertySaveInsert(request, gridDto);
   }
 
-  const allProperties = await debugPropertyLoad(request);
+  const allProperties = await debugPropertyLoadByOwners(request, owners);
 
   // Filter Multi Ok: apply the chosen texts (GridStateDto.filterMultis) before the rows are built.
   gridFilterMultiOk(gridDto, DEBUG_PROPERTY_COLUMNS.columns ?? [], allProperties);
@@ -251,27 +272,38 @@ async function gridDebugPropertySaveInsert(request: Request, gridDto: GridDto): 
 
 /**
  * Patches the "debug" plane's grids (debug grid GridPlaneDto.grids[0], debug property grid grids[1]): GridCommandEnum.ColumnChooser opens the Column Chooser lookup,
- * GridCommandEnum.FilterMulti the Filter Multi lookup (distinct texts of its column), GridCommandEnum.Select of a debug grid cell (GridSettingDto.isSelectPatch, isSelectColumnPatch) changes nothing yet;
+ * GridCommandEnum.FilterMulti the Filter Multi lookup (distinct texts of its column), GridCommandEnum.Select of a debug grid cell (GridSettingDto.isSelectPatch, isSelectColumnPatch)
+ * replaces the debug property grid with the properties of the selected row and cell;
  * any other command of the debug grid (MultiClick) enables/disables the DeleteMulti button.
  */
 export async function planeDebugPatch(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
   const gridDto = gridPlaneDto.grids?.[0] ?? {};
   const propertyGridDto = gridPlaneDto.grids?.[1] ?? {};
+  // The incoming state of the debug grid carries the selected row and column and the rowKeys of the loaded rows.
+  const owners = await gridDebugSelectedOwners(request, gridDto);
   // Reload of the debug property grid (GridSettingDto.isReloadPatch): no other grid depends on it, so only it is rebuilt.
   if (propertyGridDto.command?.commandEnum === GridCommandEnum.Reload) {
-    const grid = await gridDebugPropertyLoad(request, propertyGridDto);
+    const grid = await gridDebugPropertyLoad(request, propertyGridDto, owners);
     return { ...gridPlaneDto, grids: [{}, { patches: [{ patchEnum: GridPatchEnum.Grid, grid } satisfies GridPatchDto] }] };
   }
   if (propertyGridDto.command?.commandEnum === GridCommandEnum.FilterMulti) {
-    const lookupPlane = gridFilterMultiLoad(propertyGridDto, DEBUG_PROPERTY_COLUMNS.columns ?? [], await debugPropertyLoad(request));
+    const lookupPlane = gridFilterMultiLoad(propertyGridDto, DEBUG_PROPERTY_COLUMNS.columns ?? [], await debugPropertyLoadByOwners(request, owners));
     return { ...gridPlaneDto, grids: [{}, { patches: [{ patchEnum: GridPatchEnum.Lookup, planeName: lookupPlane?.planeName, lookup: lookupPlane?.grids?.[0] } satisfies GridPatchDto] }] };
   }
   if (propertyGridDto.command !== undefined) {
     return { ...gridPlaneDto, grids: [{}, {}] };
   }
-  // Select: the debug property grid isn't linked to the selected debug row (yet), so nothing is patched.
   if (gridDto.command?.commandEnum === GridCommandEnum.Select) {
-    return { ...gridPlaneDto, grids: [{}, {}] };
+    // Other rows are shown: start on the first page with no selection, sort or filter, and drop the pending command, unsaved modifies and an open lookup.
+    const propertyGridDtoSelect: GridDto = {
+      ...propertyGridDto,
+      command: undefined,
+      modifies: undefined,
+      planes: undefined,
+      state: { ...propertyGridDto.state, selectedRowIndex: undefined, selectedColumnName: undefined, isSelectedMulti: undefined, pageIndex: 0, sort: undefined, filters: undefined, filterMultis: undefined },
+    };
+    const grid = await gridDebugPropertyLoad(request, propertyGridDtoSelect, owners);
+    return { ...gridPlaneDto, grids: [{}, { patches: [{ patchEnum: GridPatchEnum.Grid, grid } satisfies GridPatchDto] }] };
   }
   if (gridDto.command?.commandEnum === GridCommandEnum.ColumnChooser) {
     const lookupPlane = gridColumnChooserLoad(gridDto, DEBUG_COLUMNS.columns ?? []);
