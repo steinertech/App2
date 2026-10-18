@@ -72,7 +72,17 @@ export async function debugPropertyLoad(request: Request): Promise<DebugProperty
   return collection.find({ sectorKey: key, type: 'DebugPropertyDto' }).toArray();
 }
 
-/** Returns the properties attached to any of the owners (matching both ownerName and ownerType); none if owners is empty. */
+/** Property names every owner of an ownerType has; missing ones are inserted by debugPropertyLoadByOwners. */
+const DEBUG_PROPERTY_OWNER_PROPERTY_NAMES: Record<string, string[]> = {
+  Row: ['ColumnCount', 'RowCount'],
+  Cell: ['IsReadOnly'],
+  CellTable: ['Color', 'IsDisabled'],
+};
+
+/**
+ * Returns the properties attached to any of the owners (matching both ownerName and ownerType); none if owners is empty.
+ * An owner's missing DEBUG_PROPERTY_OWNER_PROPERTY_NAMES[ownerType] properties are inserted first (name by gridDebugPropertyName).
+ */
 export async function debugPropertyLoadByOwners(
   request: Request,
   owners: Required<Pick<DebugPropertyDto, 'ownerName' | 'ownerType'>>[],
@@ -82,9 +92,38 @@ export async function debugPropertyLoadByOwners(
   }
   const key = await sectorKey(request, false);
   const collection = client.db().collection<DebugPropertyDto>('myCollection');
-  return collection
-    .find({ sectorKey: key, type: 'DebugPropertyDto', $or: owners.map(({ ownerName, ownerType }) => ({ ownerName, ownerType })) })
-    .toArray();
+  const load = () =>
+    collection.find({ sectorKey: key, type: 'DebugPropertyDto', $or: owners.map(({ ownerName, ownerType }) => ({ ownerName, ownerType })) }).toArray();
+
+  const properties = await load();
+
+  const missing = owners.flatMap(({ ownerName, ownerType }) =>
+    (DEBUG_PROPERTY_OWNER_PROPERTY_NAMES[ownerType] ?? []).filter(
+      (propertyName) =>
+        !properties.some((property) => property.ownerName === ownerName && property.ownerType === ownerType && property.propertyName === propertyName),
+    ).map((propertyName): DebugPropertyDto => {
+      const property: DebugPropertyDto = { ownerName, ownerType, propertyName };
+      property.name = gridDebugPropertyName(property);
+      return property;
+    }),
+  );
+  if (missing.length === 0) {
+    return properties;
+  }
+
+  await debugPropertyInsert(request, missing);
+  return load();
+}
+
+/**
+ * Derives a property's name from its owner and property: ownerName + "." + propertyName if ownerType is "CellTable"
+ * (ownerName being the debug table cell, see gridDebugPropertyOwners), otherwise ownerName + "." + ownerType + "." + propertyName.
+ */
+export function gridDebugPropertyName(property: DebugPropertyDto): string {
+  if (property.ownerType === 'CellTable') {
+    return (property.ownerName ?? '') + '.' + (property.propertyName ?? '');
+  }
+  return (property.ownerName ?? '') + '.' + (property.ownerType ?? '') + '.' + (property.propertyName ?? '');
 }
 
 /** ids are ObjectId hex strings (the grid's rowKeys); invalid ones are ignored. */

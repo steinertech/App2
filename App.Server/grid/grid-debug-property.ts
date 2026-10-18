@@ -1,5 +1,5 @@
 import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPatchDto, GridPatchEnum, GridPlaneDto, GridRowDto } from '../dto/shared/grid-dto.js';
-import { debugContentLoad, debugContentLoadByIds, debugContentUpdate, debugContentInsert, debugContentDelete, debugPropertyLoadByIds, debugPropertyLoadByOwners, debugPropertyUpdate, debugPropertyInsert } from '../util/util-debug-property.js';
+import { debugContentLoad, debugContentLoadByIds, debugContentUpdate, debugContentInsert, debugContentDelete, debugPropertyLoadByIds, debugPropertyLoadByOwners, debugPropertyUpdate, debugPropertyInsert, gridDebugPropertyName } from '../util/util-debug-property.js';
 import { DebugContentDto, DebugPropertyDto } from '../dto/debug-property-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
 import { gridBarRow, gridCellText, gridCellValue, gridColumnChooserLoad, gridColumnChooserOk, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand, gridLookupSet, gridPatchDeleteMulti, gridSelectedMultiRowKeys, gridTables } from '../util/util-grid.js';
@@ -315,17 +315,6 @@ async function gridDebugPropertySaveUpdate(request: Request, gridDto: GridDto): 
   }
 
   await debugPropertyUpdate(request, properties);
-}
-
-/**
- * Derives a property's name from its owner and property: ownerName + "." + propertyName if ownerType is "CellTable"
- * (ownerName being the debug table cell, see gridDebugPropertyOwners), otherwise ownerName + "." + ownerType + "." + propertyName.
- */
-function gridDebugPropertyName(property: DebugPropertyDto): string {
-  if (property.ownerType === 'CellTable') {
-    return (property.ownerName ?? '') + '.' + (property.propertyName ?? '');
-  }
-  return (property.ownerName ?? '') + '.' + (property.ownerType ?? '') + '.' + (property.propertyName ?? '');
 }
 
 async function gridDebugPropertySaveInsert(request: Request, gridDto: GridDto): Promise<void> {
