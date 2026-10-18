@@ -375,7 +375,7 @@ async function gridDebugSaveInsert(request: Request, gridDto: GridDto): Promise<
 }
 
 /** Returns the "Delete item?" confirmation GridDto (Yes button and client-side GridCustomEnum.Cancel button) carrying rowKeys (ObjectId hex) in GridStateDto.custom. */
-function gridDebugDeleteConfirm(rowKeys: unknown): GridDto {
+export function gridDebugDeleteConfirm(rowKeys: unknown): GridDto {
   const count = Array.isArray(rowKeys) ? rowKeys.length : 0;
   const text = count === 1 ? 'Delete item?' : `Delete ${count} items?`;
   const textRow: GridRowDto = {
@@ -396,7 +396,7 @@ function gridDebugDeleteConfirm(rowKeys: unknown): GridDto {
 }
 
 /** Appends one empty, editable new row (one cell per rendered column) to the data table (GridDto.tables[1]). */
-function gridDebugNew(gridDto: GridDto, columns: GridConfigColumnDto[]): void {
+export function gridDebugNew(gridDto: GridDto, columns: GridConfigColumnDto[]): void {
   const dataTable = gridDto.tables?.[1];
   if (dataTable === undefined) {
     return;

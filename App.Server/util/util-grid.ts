@@ -3,6 +3,7 @@ import { titleCase } from './util-main.js';
 import { GridConfigColumnDto, GridConfigTypeEnum } from '../dto/grid-config-dto.js';
 import { planeProjectLoad, planeProjectPatch } from '../grid/grid-project.js';
 import { planeDebugLoad, planeDebugPatch } from '../grid/grid-debug.js';
+import { planeDebugPropertyLoad, planeDebugPropertyPatch } from '../grid/grid-debug-property.js';
 import { planeStorageLoad, planeStoragePatch } from '../grid/grid-storage.js';
 import { planeSchemaLoad, planeSchemaPatch } from '../grid/grid-schema.js';
 import { planeContentTableLoad, planeContentTablePatch, planeDynamicLoad, planeDynamicPatch } from '../grid/grid-dynamic.js';
@@ -464,6 +465,7 @@ type GridPlaneLoader = (request: Request, gridPlaneDto: GridPlaneDto) => Promise
  */
 const PLANE_LOADERS: Record<string, GridPlaneLoader> = {
   debug: planeDebugLoad,
+  debugProperty: planeDebugPropertyLoad,
   project: planeProjectLoad,
   storage: planeStorageLoad,
   schema: planeSchemaLoad,
@@ -488,6 +490,7 @@ type GridPlanePatcher = (request: Request, gridPlaneDto: GridPlaneDto) => Promis
 
 const PLANE_GRID_PATCHERS: Record<string, GridPlanePatcher> = {
   debug: planeDebugPatch,
+  debugProperty: planeDebugPropertyPatch,
   project: planeProjectPatch,
   storage: planeStoragePatch,
   schema: planeSchemaPatch,
