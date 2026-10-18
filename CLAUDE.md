@@ -51,6 +51,7 @@ Shared logic lives in `App.Server/util/` (not directly in `api/`):
 - `util-user.ts` — user sign-up/sign-in/session/sign-out
 - `util-debug.ts` — `DebugDto` load/insert/update/delete (`dto/debug-dto.ts`)
 - `util-debug-property.ts` — `DebugContentDto` load/insert/update/delete and `DebugPropertyDto` load/insert/update (`dto/debug-property-dto.ts`)
+- `util-property.ts` — `PropertyDto` load (`dto/property-dto.ts`; project sector, `sectorKey(request, true)`, so sign-in and a selected project are required)
 - `util-storage.ts` — blob upload/download via `@vercel/blob` (blob paths are prefixed with `sectorKey(request, true)`)
 - `util-grid.ts` — shared grid helpers plus the plane registry (`PLANE_LOADERS`, `PLANE_GRID_PATCHERS`) behind `api/grid-load.ts` / `api/grid-patch.ts`
 
@@ -76,7 +77,7 @@ All persisted DTOs (`UserDto`, `SessionDto`, `ProjectDto`, `DebugDto`, `DebugPro
 
 ### sectorKey scoping
 `sectorKey(request, isProject)` in `util-main.ts` builds the key used for both persistence layers:
-- **MongoDB** — stored in each document's `sectorKey` field and used as a query filter (`util-user.ts`, `util-project.ts`; currently always `isProject: false`).
+- **MongoDB** — stored in each document's `sectorKey` field and used as a query filter (`util-user.ts`, `util-project.ts` with `isProject: false`; `util-property.ts` with `isProject: true`).
 - **Blob storage** — used as the path prefix for every blob (`util-storage.ts` builds `sectorKey(request, true) + path`), so files live under `Domain/<domainName>/Project/<projectName>/...`.
 
 The key takes one of two forms:
