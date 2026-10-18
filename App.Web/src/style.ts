@@ -34,6 +34,10 @@ export const sidebarLinkClassName =
 
 export const sidebarLinkActiveClassName = 'rounded-md bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700';
 
+/** Right hand sidebar of a page (e.g. the Properties grid on the Design page): right column on lg+, below the page content on narrower screens. */
+export const sidebarRightClassName =
+  'min-w-0 shrink-0 overflow-x-auto border-t border-gray-200 pt-3 lg:w-96 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-4';
+
 /** Sign In button of the navbar (dark background): solid, the main call to action. */
 export const buttonNavPrimaryClassName =
   'rounded-md bg-blue-500 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500';
