@@ -21,8 +21,7 @@ export default function Debug() {
 
   const handleSessionClick = async () => {
     try {
-      const response = await userRequest({ requestEnum: UserRequestEnum.Session });
-      const data = await response.json();
+      const data = await userRequest({ requestEnum: UserRequestEnum.Session });
       setResult(JSON.stringify(data, null, 2));
     } catch {
       setResult('Error fetching user-session');

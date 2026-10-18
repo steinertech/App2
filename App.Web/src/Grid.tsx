@@ -391,15 +391,14 @@ function GridContent({ path }: GridProps) {
         path: gridStatePath(grid?.state),
         files: selectedFiles.map((file) => ({ fileName: file.name })),
       };
-      const response = await apiFetch('storage-upload', {
+      const storageUploadCollection = await apiFetch<StorageUploadCollectionDto>('storage-upload', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(storageUploadCollectionDto),
       });
-      if (!response.ok) {
+      if (storageUploadCollection === undefined) {
         return;
       }
-      const storageUploadCollection = (await response.json()) as StorageUploadCollectionDto;
 
       // Upload every selected file directly to blob storage via its presigned fileUrl.
       // Each file is handled on its own: a failed one (e.g. too big, network error) gets an Error alert, the others still upload.

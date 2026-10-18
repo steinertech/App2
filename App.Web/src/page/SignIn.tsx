@@ -14,8 +14,8 @@ export default function SignIn() {
     event.preventDefault();
     try {
       // Errors and the redirect to Home (on success) are sent by the backend (alert / redirect header).
-      const response = await userRequest({ requestEnum: UserRequestEnum.SignIn, email, password });
-      if (response.ok) {
+      const data = await userRequest({ requestEnum: UserRequestEnum.SignIn, email, password });
+      if (data?.success) {
         refreshNavState();
       }
     } catch {

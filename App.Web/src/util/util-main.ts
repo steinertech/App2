@@ -1,9 +1,9 @@
 import { useEffect, useRef, type DependencyList } from 'react';
 import { apiUrl } from '../page/App.tsx';
-import { ALERT_HEADER, type AlertDto, AlertEnum } from '../../../App.Server/dto/shared/alert-dto.ts';
-import { REDIRECT_HEADER } from '../../../App.Server/dto/shared/redirect-dto.ts';
+import { type AlertDto, AlertEnum } from '../../../App.Server/dto/shared/alert-dto.ts';
+import type { ApiResponseDto } from '../../../App.Server/dto/shared/api-response-dto.ts';
 
-export const VERSION_CLIENT = '1.18';
+export const VERSION_CLIENT = '1.19';
 
 /**
  * Like useEffect, but runs `effect` only once per distinct `deps` values. StrictMode runs every effect twice in dev,
@@ -35,11 +35,12 @@ export function setIsProgress(value: number) {
 }
 
 /**
- * Calls backend endpoint `/api/<path>`; isProgress is increased by 1 for the duration of the call.
- * Alert messages sent by the backend (ALERT_HEADER) are added to the alert list, plus an Error alert if the status is not ok
- * or no response arrives at all (the error is rethrown). A redirect url sent by the backend (REDIRECT_HEADER) is passed to redirect().
+ * Calls backend endpoint `/api/<path>` and returns ApiResponseDto.data, or undefined if the status is not ok;
+ * isProgress is increased by 1 for the duration of the call.
+ * Alert messages sent by the backend (ApiResponseDto.alerts) are added to the alert list, plus an Error alert if the status is not ok
+ * or no response arrives at all (the error is rethrown). A redirect url sent by the backend (ApiResponseDto.redirectUrl) is passed to redirect().
  */
-export async function apiFetch(path: string, init?: RequestInit) {
+export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T | undefined> {
   setIsProgress(isProgress + 1);
   try {
     let response: Response;
@@ -52,8 +53,13 @@ export async function apiFetch(path: string, init?: RequestInit) {
       }
       throw error;
     }
-    const alertHeader = response.headers.get(ALERT_HEADER);
-    const alertDtoList: AlertDto[] = alertHeader ? JSON.parse(decodeURIComponent(alertHeader)) : [];
+    let body: ApiResponseDto<T> | undefined;
+    try {
+      body = await response.json();
+    } catch {
+      // Not an ApiResponseDto (e.g. a platform error page); the generic Error alert below covers a status not ok.
+    }
+    const alertDtoList: AlertDto[] = body?.alerts ?? [];
     alertDtoList.forEach((alertDto) => addAlert(alertDto.alertEnum, alertDto.text));
     // Generic Error alert, unless the backend already sent a more specific one.
     if (!response.ok && !alertDtoList.some((alertDto) => alertDto.alertEnum === AlertEnum.Error)) {
@@ -61,11 +67,13 @@ export async function apiFetch(path: string, init?: RequestInit) {
       const status = [response.status, response.statusText].filter(Boolean).join(' ');
       addAlert(AlertEnum.Error, `Request ${path} failed (${status})`);
     }
-    const redirectHeader = response.headers.get(REDIRECT_HEADER);
-    if (redirectHeader !== null) {
-      redirect(decodeURIComponent(redirectHeader));
+    if (body?.redirectUrl !== undefined) {
+      redirect(body.redirectUrl);
     }
-    return response;
+    if (!response.ok) {
+      return undefined;
+    }
+    return body?.data ?? undefined;
   } finally {
     setIsProgress(isProgress - 1);
   }

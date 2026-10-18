@@ -10,8 +10,8 @@ export default function SignOut() {
   useEffectOnce(() => {
     (async () => {
       try {
-        const response = await userRequest({ requestEnum: UserRequestEnum.SignOut });
-        if (response.ok) {
+        const data = await userRequest({ requestEnum: UserRequestEnum.SignOut });
+        if (data?.success) {
           // Success message is sent by the backend as an alert (shown in NavState).
           refreshNavState();
         } else {

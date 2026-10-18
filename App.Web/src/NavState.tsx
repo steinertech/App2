@@ -10,7 +10,7 @@ import {
   removeAlert,
 } from './util/util-main.ts';
 import { languageFromPathname, withLanguagePrefix } from './util/util-i18n.ts';
-import { UserRequestEnum, type UserRequestDto } from '../../App.Server/dto/shared/user-request-dto.ts';
+import { UserRequestEnum, type UserRequestDto, type UserResponseDto } from '../../App.Server/dto/shared/user-request-dto.ts';
 import { AlertEnum } from '../../App.Server/dto/shared/alert-dto.ts';
 
 const REFRESH_EVENT = 'nav-state-refresh';
@@ -42,7 +42,7 @@ export function refreshNavState() {
 }
 
 export function userRequest(dto: UserRequestDto) {
-  return apiFetch('user', {
+  return apiFetch<UserResponseDto | null>('user', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     credentials: 'include',
@@ -60,8 +60,7 @@ export default function NavState() {
   useEffect(() => {
     const fetchSession = async () => {
       try {
-        const response = await userRequest({ requestEnum: UserRequestEnum.Session });
-        const data = await response.json();
+        const data = await userRequest({ requestEnum: UserRequestEnum.Session });
         setDomainName(data?.domainName ?? '');
         setEmail(data?.email ?? '');
         setProjectName(data?.projectName ?? '');

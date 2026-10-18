@@ -134,16 +134,15 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
       body.planeName = planeNameRef.current;
     }
 
-    const response = await apiFetch('grid-load', {
+    const data = await apiFetch<GridPlaneDto>('grid-load', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body),
     });
-    // Error (e.g. not signed in): apiFetch already shows the alert; keep the store as is (the error body is not a GridPlaneDto).
-    if (!response.ok) {
+    // Error (e.g. not signed in): apiFetch already shows the alert; keep the store as is.
+    if (data === undefined) {
       return undefined;
     }
-    const data = (await response.json()) as GridPlaneDto;
     gridPlaneDtoRef.current = data;
     setGridPlaneDto(data);
     setGridVersion((version) => version + 1);
@@ -194,15 +193,14 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
       body.planeName = planeNameRef.current;
     }
 
-    const response = await apiFetch('grid-patch', {
+    const data = await apiFetch<GridPlaneDto>('grid-patch', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body),
     });
-    if (!response.ok) {
+    if (data === undefined) {
       return gridPlaneDtoRef.current;
     }
-    const data = (await response.json()) as GridPlaneDto;
 
     // Patch the loaded grids in place; gridVersion is left as is so unsaved input text isn't reset.
     // A GridPatchEnum.Grid patch instead replaces (or adds, or with grid undefined removes) the whole grid at its index.

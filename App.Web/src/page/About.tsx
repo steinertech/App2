@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { apiFetch, useEffectOnce, VERSION_CLIENT } from '../util/util-main.ts';
 import { container } from '../style.ts';
 import { languageFromPathname } from '../util/util-i18n.ts';
+import type { VersionResponseDto } from '../../../App.Server/dto/shared/version-dto.ts';
 
 export default function About() {
   const location = useLocation();
@@ -12,11 +13,14 @@ export default function About() {
   useEffectOnce(() => {
     const handleVersionClick = async () => {
       try {
-        const response = await apiFetch('version', {
+        const data = await apiFetch<VersionResponseDto>('version', {
           headers: { 'Accept-Language': language },
           credentials: 'include',
         });
-        const data = await response.json();
+        if (data === undefined) {
+          setResult('Error fetching version');
+          return;
+        }
         setResult(
           `VersionServer=${data.version}; VersionClient=${VERSION_CLIENT}; Domain=${data.domainName}; Email=${data.email}; Project=${data.projectName}; Text=${data.text};`,
         );
