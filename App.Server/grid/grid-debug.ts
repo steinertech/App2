@@ -267,6 +267,11 @@ async function gridDebugPropertySaveInsert(request: Request, gridDto: GridDto): 
     propertiesByRowIndex.set(modify.rowIndex, property);
   }
 
+  // name is derived from the owner and the property: ownerName + "." + ownerType + "." + propertyName.
+  for (const property of propertiesByRowIndex.values()) {
+    property.name = (property.ownerName ?? '') + '.' + (property.ownerType ?? '') + '.' + (property.propertyName ?? '');
+  }
+
   await debugPropertyInsert(request, [...propertiesByRowIndex.values()]);
 }
 
