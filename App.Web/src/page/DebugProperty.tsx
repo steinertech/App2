@@ -23,6 +23,9 @@ export default function DebugProperty() {
       <div className="mt-4">
         <Grid path={[1]} />
       </div>
+      <div className="mt-4">
+        <Grid path={[2]} />
+      </div>
       {isModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 p-4" role="dialog" aria-modal="true">
           <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
