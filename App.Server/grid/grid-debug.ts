@@ -11,7 +11,7 @@ const DEBUG_COLUMNS: GridConfigDto = {
 };
 
 const DEBUG_PROPERTY_COLUMNS: GridConfigDto = {
-  columns: (['name', 'text', 'propertyName', 'propertyValue'] as const satisfies readonly (keyof DebugPropertyDto)[]).map(
+  columns: (['name', 'ownerName', 'ownerType', 'propertyName', 'propertyValue'] as const satisfies readonly (keyof DebugPropertyDto)[]).map(
     (columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text }),
   ),
 };
