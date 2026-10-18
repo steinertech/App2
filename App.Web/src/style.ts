@@ -24,3 +24,12 @@ export const buttonBarIconClassName =
 
 export const textInputClassName =
   'rounded-md border border-gray-300 px-3 py-1.5 text-base focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500';
+
+/** Second level navigation (Sidebar.tsx): left column on md+, a wrapping row of links above the page on narrow screens. */
+export const sidebarClassName =
+  'flex shrink-0 flex-wrap gap-1 border-b border-gray-200 pb-3 md:w-56 md:flex-col md:flex-nowrap md:border-r md:border-b-0 md:pr-4 md:pb-0';
+
+export const sidebarLinkClassName =
+  'rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900';
+
+export const sidebarLinkActiveClassName = 'rounded-md bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700';

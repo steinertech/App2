@@ -7,6 +7,8 @@
     { "source": "/de/about", "destination": "/de/about/index.html" },
     { "source": "/debug", "destination": "/debug/index.html" },
     { "source": "/de/debug", "destination": "/de/debug/index.html" },
+    { "source": "/debug/debug-property", "destination": "/debug/debug-property/index.html" },
+    { "source": "/de/debug/debug-property", "destination": "/de/debug/debug-property/index.html" },
     { "source": "/sign-up", "destination": "/sign-up/index.html" },
     { "source": "/de/sign-up", "destination": "/de/sign-up/index.html" },
     { "source": "/sign-in", "destination": "/sign-in/index.html" },

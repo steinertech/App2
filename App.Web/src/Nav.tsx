@@ -19,6 +19,11 @@ const linkList: { to: string; key: string; label: string; isSignIn?: boolean }[]
   { to: '/about', key: 'about', label: 'About' },
 ];
 
+// A link is also active on its subpages (e.g. '/debug' on '/debug/debug-property').
+function isLinkActive(to: string, currentPath: string): boolean {
+  return to === currentPath || (to !== '/' && currentPath.startsWith(to + '/'));
+}
+
 function linkLabel(key: string, label: string, language: Language): string {
   return key === 'about' && language === 'de' ? 'Über' : label;
 }
@@ -59,7 +64,7 @@ export default function Nav() {
             <Link
               key={link.key}
               to={withLanguagePrefix(link.to, language)}
-              className={link.to === currentPath ? 'font-semibold text-white' : 'text-slate-400 hover:text-slate-300'}
+              className={isLinkActive(link.to, currentPath) ? 'font-semibold text-white' : 'text-slate-400 hover:text-slate-300'}
             >
               {linkLabel(link.key, link.label, language)}
             </Link>
@@ -91,7 +96,7 @@ export default function Nav() {
               to={withLanguagePrefix(link.to, language)}
               onClick={() => setOpen(false)}
               className={`rounded px-2 py-2 hover:bg-slate-800 ${
-                link.to === currentPath ? 'bg-slate-800 font-semibold text-white' : ''
+                isLinkActive(link.to, currentPath) ? 'bg-slate-800 font-semibold text-white' : ''
               }`}
             >
               {linkLabel(link.key, link.label, language)}

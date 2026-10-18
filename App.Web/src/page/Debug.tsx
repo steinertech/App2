@@ -5,7 +5,7 @@ import { UserRequestEnum } from '../../../App.Server/dto/shared/user-request-dto
 import { AlertEnum } from '../../../App.Server/dto/shared/alert-dto.ts';
 import Grid from '../Grid.tsx';
 import { resolveGrid, useGridStore } from '../GridStore.tsx';
-import { buttonPrimaryClassName, container } from '../style.ts';
+import { buttonPrimaryClassName } from '../style.ts';
 
 export default function Debug() {
   const [result, setResult] = useState('');
@@ -34,7 +34,7 @@ export default function Debug() {
   };
 
   return (
-    <div className={container}>
+    <div>
       <h1>Debug</h1>
       <button onClick={handleSessionClick} className={buttonPrimaryClassName}>
         Session
