@@ -11,4 +11,6 @@ export interface ApiResponseDto<T> {
   alerts?: AlertDto[];
   /** ONE language neutral App.Web path such as '/' set via redirectSet; App.Web navigates there. */
   redirectUrl?: string;
+  /** The request's ApiRequestDto.requestCount, set by apiHandler. */
+  responseCount?: number;
 }

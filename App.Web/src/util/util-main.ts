@@ -36,19 +36,24 @@ export function setIsProgress(value: number) {
   window.dispatchEvent(new Event(PROGRESS_EVENT));
 }
 
+let requestCount = 0;
+
 /**
  * Calls backend endpoint `/api/<path>` with a POST of `data` (sent as ApiRequestDto with VERSION_CLIENT and the current language)
  * and returns ApiResponseDto.data, or undefined if the status is not ok; isProgress is increased by 1 for the duration of the call.
  * Alert messages sent by the backend (ApiResponseDto.alerts) are added to the alert list, plus an Error alert if the status is not ok
  * or no response arrives at all (the error is rethrown). A redirect url sent by the backend (ApiResponseDto.redirectUrl) is passed to redirect().
+ * Every call increases requestCount by 1 and sends it as ApiRequestDto.requestCount; the backend echoes it as ApiResponseDto.responseCount.
  */
 export async function apiFetch<T>(path: string, data?: unknown, init?: RequestInit): Promise<T | undefined> {
   setIsProgress(isProgress + 1);
   try {
+    requestCount += 1;
     const requestDto: ApiRequestDto<unknown> = {
       data: data ?? null,
       versionClient: VERSION_CLIENT,
       language: languageFromPathname(window.location.pathname),
+      requestCount,
     };
     let response: Response;
     try {

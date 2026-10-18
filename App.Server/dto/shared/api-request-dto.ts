@@ -11,4 +11,6 @@ export interface ApiRequestDto<T> {
   versionClient?: string;
   /** App.Web's current language (from the url prefix); read via requestLanguage(request). */
   language?: Language;
+  /** App.Web's apiFetch counter, increased by 1 on every request; echoed back as ApiResponseDto.responseCount. */
+  requestCount?: number;
 }

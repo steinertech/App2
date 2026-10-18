@@ -117,7 +117,7 @@ export function jsonResponse(data: unknown, status = 200, headers: Record<string
  * turns a thrown error into a 500 with an Error alert and merges corsHeaders into the response.
  * A POST body is parsed as ApiRequestDto (handlers read it via requestData), adding a Warning alert if its versionClient differs from VERSION_SERVER.
  * A handler's jsonResponse(data, ...) is sent as an ApiResponseDto, which also carries the alerts queued via alertAdd
- * and the url set via redirectSet. A handler returning a plain Response (e.g. text) sends it as is, without alerts or redirect url.
+ * and the url set via redirectSet, and echoes the request's requestCount as responseCount. A handler returning a plain Response (e.g. text) sends it as is, without alerts or redirect url.
  * Export the result as the file's default.
  */
 export function apiHandler(method: ApiMethod, handler: (request: Request) => Response | ApiResult | Promise<Response | ApiResult>) {
@@ -158,6 +158,10 @@ export function apiHandler(method: ApiMethod, handler: (request: Request) => Res
         const redirectUrl = redirectUrlByRequest.get(request);
         if (redirectUrl !== undefined) {
           body.redirectUrl = redirectUrl;
+        }
+        const requestCount = requestDtoByRequest.get(request)?.requestCount;
+        if (requestCount !== undefined) {
+          body.responseCount = requestCount;
         }
         response = new Response(JSON.stringify(body), {
           status: result.status,
