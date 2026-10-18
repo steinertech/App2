@@ -33,3 +33,11 @@ export const sidebarLinkClassName =
   'rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900';
 
 export const sidebarLinkActiveClassName = 'rounded-md bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700';
+
+/** Sign In button of the navbar (dark background): solid, the main call to action. */
+export const buttonNavPrimaryClassName =
+  'rounded-md bg-blue-500 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500';
+
+/** Sign Out button of the navbar (dark background): translucent, outlined. */
+export const buttonNavClassName =
+  'rounded-md bg-white/10 px-3 py-1.5 text-sm font-semibold text-white shadow-sm ring-1 ring-white/20 ring-inset hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white';

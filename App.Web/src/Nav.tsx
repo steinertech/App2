@@ -3,9 +3,10 @@ import { Link, useLocation } from 'react-router-dom';
 import { languageFromPathname, stripLanguagePrefix, withLanguagePrefix, type Language } from './util/util-i18n.ts';
 import { getIsSignIn, SIGN_IN_EVENT } from './NavState.tsx';
 import { linkList as schemaLinkList } from './page/SchemaLayout.tsx';
+import { buttonNavClassName, buttonNavPrimaryClassName } from './style.ts';
 
 // isSignIn: link is only shown if the user is signed in (true) or not signed in (false); undefined means always shown.
-// Sign Up is linked from the Sign In page.
+// Sign In / Sign Out are buttons next to the LanguageSwitch (SignButton); Sign Up is linked from the Sign In page.
 // subPaths: second level pages with their own path (not below to), on which the link is also active.
 const linkList: { to: string; key: string; label: string; isSignIn?: boolean; subPaths?: string[] }[] = [
   { to: '/', key: 'home', label: 'Home' },
@@ -13,8 +14,6 @@ const linkList: { to: string; key: string; label: string; isSignIn?: boolean; su
   { to: '/schema', key: 'schema', label: 'Schema', isSignIn: true, subPaths: schemaLinkList.map((link) => link.to) },
   { to: '/project', key: 'project', label: 'Project' },
   { to: '/debug', key: 'debug', label: 'Debug' },
-  { to: '/sign-out', key: 'sign-out', label: 'Sign Out', isSignIn: true },
-  { to: '/sign-in', key: 'sign-in', label: 'Sign In', isSignIn: false },
   { to: '/about', key: 'about', label: 'About' },
 ];
 
@@ -32,6 +31,19 @@ function LanguageSwitch({ pathname, language }: { pathname: string; language: La
   return (
     <Link to={withLanguagePrefix(pathname, nextLanguage)} className="text-sm text-slate-400 hover:text-white">
       {nextLanguage.toUpperCase()}
+    </Link>
+  );
+}
+
+// Sign Out if signed in, otherwise Sign In.
+function SignButton({ isSignIn, language }: { isSignIn: boolean; language: Language }) {
+  return isSignIn ? (
+    <Link to={withLanguagePrefix('/sign-out', language)} className={buttonNavClassName}>
+      Sign Out
+    </Link>
+  ) : (
+    <Link to={withLanguagePrefix('/sign-in', language)} className={buttonNavPrimaryClassName}>
+      Sign In
     </Link>
   );
 }
@@ -72,6 +84,7 @@ export default function Nav() {
 
         <div className="flex items-center gap-3">
           <LanguageSwitch pathname={location.pathname} language={language} />
+          <SignButton isSignIn={isSignIn} language={language} />
 
           <button
             type="button"
