@@ -42,12 +42,7 @@ export function refreshNavState() {
 }
 
 export function userRequest(dto: UserRequestDto) {
-  return apiFetch<UserResponseDto | null>('user', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify(dto),
-  });
+  return apiFetch<UserResponseDto | null>('user', dto, { credentials: 'include' });
 }
 
 export default function NavState() {

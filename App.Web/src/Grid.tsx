@@ -391,11 +391,7 @@ function GridContent({ path }: GridProps) {
         path: gridStatePath(grid?.state),
         files: selectedFiles.map((file) => ({ fileName: file.name })),
       };
-      const storageUploadCollection = await apiFetch<StorageUploadCollectionDto>('storage-upload', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(storageUploadCollectionDto),
-      });
+      const storageUploadCollection = await apiFetch<StorageUploadCollectionDto>('storage-upload', storageUploadCollectionDto);
       if (storageUploadCollection === undefined) {
         return;
       }

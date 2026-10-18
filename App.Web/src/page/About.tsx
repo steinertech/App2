@@ -13,10 +13,8 @@ export default function About() {
   useEffectOnce(() => {
     const handleVersionClick = async () => {
       try {
-        const data = await apiFetch<VersionResponseDto>('version', {
-          headers: { 'Accept-Language': language },
-          credentials: 'include',
-        });
+        // apiFetch sends the language of the current url (ApiRequestDto.language); `language` only re-runs the effect.
+        const data = await apiFetch<VersionResponseDto>('version', undefined, { credentials: 'include' });
         if (data === undefined) {
           setResult('Error fetching version');
           return;

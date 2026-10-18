@@ -134,11 +134,7 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
       body.planeName = planeNameRef.current;
     }
 
-    const data = await apiFetch<GridPlaneDto>('grid-load', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(body),
-    });
+    const data = await apiFetch<GridPlaneDto>('grid-load', body);
     // Error (e.g. not signed in): apiFetch already shows the alert; keep the store as is.
     if (data === undefined) {
       return undefined;
@@ -193,11 +189,7 @@ export function GridStoreProvider({ children }: { children: ReactNode }) {
       body.planeName = planeNameRef.current;
     }
 
-    const data = await apiFetch<GridPlaneDto>('grid-patch', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(body),
-    });
+    const data = await apiFetch<GridPlaneDto>('grid-patch', body);
     if (data === undefined) {
       return gridPlaneDtoRef.current;
     }

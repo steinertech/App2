@@ -1,8 +1,10 @@
 import { userSession } from './util-user.js';
 import { type AlertDto, AlertEnum } from '../dto/shared/alert-dto.js';
 import type { ApiResponseDto } from '../dto/shared/api-response-dto.js';
+import type { ApiRequestDto, Language } from '../dto/shared/api-request-dto.js';
+import { languageFromRequest } from './util-i18n.js';
 
-export const VERSION_SERVER = '1.19';
+export const VERSION_SERVER = '1.20';
 
 export function domainName(request: Request): string {
   const originHeader = request.headers.get('origin');
@@ -85,6 +87,20 @@ export function redirectSet(request: Request, url: string) {
   redirectUrlByRequest.set(request, url);
 }
 
+const requestDtoByRequest = new WeakMap<Request, ApiRequestDto<unknown>>();
+
+/** The endpoint's own request DTO (ApiRequestDto.data) of a POST request, parsed by apiHandler. Use it instead of request.json(). */
+export function requestData<T>(request: Request): T {
+  const requestDto = requestDtoByRequest.get(request);
+  if (requestDto === undefined) throw new Error('Request has no body!');
+  return requestDto.data as T;
+}
+
+/** App.Web's current language: ApiRequestDto.language, or the Accept-Language header if the request has no body. */
+export function requestLanguage(request: Request): Language {
+  return requestDtoByRequest.get(request)?.language ?? languageFromRequest(request);
+}
+
 /** Result of a handler; apiHandler sends `data` as ApiResponseDto.data, together with the queued alerts and redirect url. */
 export interface ApiResult {
   data: unknown;
@@ -99,6 +115,7 @@ export function jsonResponse(data: unknown, status = 200, headers: Record<string
 /**
  * Wraps an api/ endpoint: answers OPTIONS with 204, rejects every method other than `method` with 405,
  * turns a thrown error into a 500 with an Error alert and merges corsHeaders into the response.
+ * A POST body is parsed as ApiRequestDto (handlers read it via requestData), adding a Warning alert if its versionClient differs from VERSION_SERVER.
  * A handler's jsonResponse(data, ...) is sent as an ApiResponseDto, which also carries the alerts queued via alertAdd
  * and the url set via redirectSet. A handler returning a plain Response (e.g. text) sends it as is, without alerts or redirect url.
  * Export the result as the file's default.
@@ -115,6 +132,13 @@ export function apiHandler(method: ApiMethod, handler: (request: Request) => Res
       }
       let result: Response | ApiResult;
       try {
+        if (method === 'POST') {
+          const requestDto: ApiRequestDto<unknown> = await request.json();
+          requestDtoByRequest.set(request, requestDto);
+          if (requestDto.versionClient !== VERSION_SERVER) {
+            alertAdd(request, AlertEnum.Warning, 'A new version is available, please reload the page.');
+          }
+        }
         result = await handler(request);
       } catch (error) {
         // Logged for Vercel's function logs; the message reaches App.Web as an Error alert.

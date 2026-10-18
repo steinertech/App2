@@ -2,8 +2,10 @@ import { useEffect, useRef, type DependencyList } from 'react';
 import { apiUrl } from '../page/App.tsx';
 import { type AlertDto, AlertEnum } from '../../../App.Server/dto/shared/alert-dto.ts';
 import type { ApiResponseDto } from '../../../App.Server/dto/shared/api-response-dto.ts';
+import type { ApiRequestDto } from '../../../App.Server/dto/shared/api-request-dto.ts';
+import { languageFromPathname } from './util-i18n.ts';
 
-export const VERSION_CLIENT = '1.19';
+export const VERSION_CLIENT = '1.20';
 
 /**
  * Like useEffect, but runs `effect` only once per distinct `deps` values. StrictMode runs every effect twice in dev,
@@ -35,17 +37,27 @@ export function setIsProgress(value: number) {
 }
 
 /**
- * Calls backend endpoint `/api/<path>` and returns ApiResponseDto.data, or undefined if the status is not ok;
- * isProgress is increased by 1 for the duration of the call.
+ * Calls backend endpoint `/api/<path>` with a POST of `data` (sent as ApiRequestDto with VERSION_CLIENT and the current language)
+ * and returns ApiResponseDto.data, or undefined if the status is not ok; isProgress is increased by 1 for the duration of the call.
  * Alert messages sent by the backend (ApiResponseDto.alerts) are added to the alert list, plus an Error alert if the status is not ok
  * or no response arrives at all (the error is rethrown). A redirect url sent by the backend (ApiResponseDto.redirectUrl) is passed to redirect().
  */
-export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T | undefined> {
+export async function apiFetch<T>(path: string, data?: unknown, init?: RequestInit): Promise<T | undefined> {
   setIsProgress(isProgress + 1);
   try {
+    const requestDto: ApiRequestDto<unknown> = {
+      data: data ?? null,
+      versionClient: VERSION_CLIENT,
+      language: languageFromPathname(window.location.pathname),
+    };
     let response: Response;
     try {
-      response = await fetch(`${apiUrl}${path}`, init);
+      response = await fetch(`${apiUrl}${path}`, {
+        ...init,
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(requestDto),
+      });
     } catch (error) {
       // No response at all (e.g. network down). An intentionally aborted call is not an error.
       if (!(error instanceof DOMException && error.name === 'AbortError')) {

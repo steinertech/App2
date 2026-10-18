@@ -1,5 +1,5 @@
 import { signIn, signOut, signUp, userSession } from '../util/util-user.js';
-import { alertAdd, apiHandler, domainName, jsonResponse, redirectSet } from '../util/util-main.js';
+import { alertAdd, apiHandler, domainName, jsonResponse, redirectSet, requestData } from '../util/util-main.js';
 import { UserRequestEnum } from '../dto/shared/user-request-dto.js';
 import { AlertEnum } from '../dto/shared/alert-dto.js';
 import type { UserRequestDto, UserResponseDto } from '../dto/shared/user-request-dto.js';
@@ -8,7 +8,7 @@ const json = (body: UserResponseDto | null, status = 200, headers: Record<string
   jsonResponse(body, status, headers);
 
 export default apiHandler('POST', async (request) => {
-  const { requestEnum, email, password }: UserRequestDto = await request.json();
+  const { requestEnum, email, password } = requestData<UserRequestDto>(request);
 
   switch (requestEnum) {
     case UserRequestEnum.SignUp: {

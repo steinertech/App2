@@ -59,11 +59,7 @@ export default function Content({ contentName }: { contentName: string }) {
   useEffectOnce(() => {
     (async () => {
       const body: ContentRequestDto = { contentName };
-      const data = await apiFetch<ContentDto>('content', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(body),
-      });
+      const data = await apiFetch<ContentDto>('content', body);
       // Error (e.g. not signed in): apiFetch already shows the alert.
       if (data !== undefined) {
         setContent(data);

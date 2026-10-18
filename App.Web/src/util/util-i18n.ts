@@ -1,4 +1,6 @@
-export type Language = 'en' | 'de';
+import type { Language } from '../../../App.Server/dto/shared/api-request-dto.ts';
+
+export type { Language };
 
 export function languageFromPathname(pathname: string): Language {
   return pathname === '/de' || pathname.startsWith('/de/') ? 'de' : 'en';
