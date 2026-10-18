@@ -5,7 +5,7 @@ export enum ContentBandEnum {
   Form = 3,
 }
 
-/** The DesignBandPropertyDto.propertyName list of each ContentBandEnum. */
+/** The PropertyDto.propertyName list of each ContentBandEnum. */
 export const DESIGN_BAND_PROPERTY_NAMES: Record<ContentBandEnum, string[]> = {
   [ContentBandEnum.None]: [],
   [ContentBandEnum.Header]: ['Text'],
@@ -21,7 +21,7 @@ export const CONTENT_TABLE_CUSTOM_TABLE_NAME = 'tableName';
 
 export interface ContentBandDto {
   bandEnum: ContentBandEnum;
-  /** DesignBandPropertyDto.propertyValue of each DESIGN_BAND_PROPERTY_NAMES[bandEnum], in that order ('' if missing). */
+  /** PropertyDto.propertyValue of each DESIGN_BAND_PROPERTY_NAMES[bandEnum], in that order ('' if missing). */
   propertyValues: string[];
 }
 

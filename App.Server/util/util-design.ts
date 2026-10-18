@@ -1,9 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import { ObjectId } from 'mongodb';
 import client from './util-db.js';
-import { DesignBandDto, DesignBandPropertyDto } from '../dto/design-dto.js';
+import { DesignBandDto } from '../dto/design-dto.js';
+import { PropertyDto } from '../dto/property-dto.js';
 import { ContentBandEnum, DESIGN_BAND_PROPERTY_NAMES } from '../dto/shared/content-dto.js';
 import { sectorKey } from './util-main.js';
+import { PropertyOwner, propertyLoadByIds, propertyLoadByOwners, propertySync, propertyUpdate } from './util-property.js';
 
 // Design bands are per project: sectorKey(request, true) also asserts the user is signed in (redirects to /sign-in otherwise).
 
@@ -61,59 +63,36 @@ export async function designBandUpdate(request: Request, designBandDtos: DesignB
   return bands;
 }
 
-export async function designPropertyLoad(request: Request, bandName: string): Promise<DesignBandPropertyDto[]> {
-  const key = await sectorKey(request, true);
-  const collection = client.db().collection<DesignBandPropertyDto>('myCollection');
-  return collection.find({ sectorKey: key, type: 'DesignBandPropertyDto', bandName }).toArray();
+/** ownerType of the PropertyDto rows of a design band. */
+const DESIGN_PROPERTY_OWNER_TYPE = 'DesignBand';
+
+/** The owner of a design band's PropertyDto rows (ownerName is DesignBandDto.name). */
+export function designPropertyOwner(bandName: string): PropertyOwner {
+  return { ownerName: bandName, ownerType: DESIGN_PROPERTY_OWNER_TYPE };
 }
 
-/** ids are ObjectId hex strings (the grid's rowKeys); invalid ones are ignored. */
-export async function designPropertyLoadByIds(request: Request, ids: string[]): Promise<DesignBandPropertyDto[]> {
-  const key = await sectorKey(request, true);
-  const collection = client.db().collection<DesignBandPropertyDto>('myCollection');
-  const objectIds = ids.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
-  return collection.find({ sectorKey: key, type: 'DesignBandPropertyDto', _id: { $in: objectIds } }).toArray();
+export async function designPropertyLoad(request: Request, bandName: string): Promise<PropertyDto[]> {
+  return propertyLoadByOwners(request, [designPropertyOwner(bandName)]);
 }
 
-/** Updates the propertyValue of designBandPropertyDtos by _id; bandName and propertyName are owned by designPropertySync. */
-export async function designPropertyUpdate(request: Request, designBandPropertyDtos: DesignBandPropertyDto[]): Promise<void> {
-  const key = await sectorKey(request, true);
-  const collection = client.db().collection<DesignBandPropertyDto>('myCollection');
+/** ids are ObjectId hex strings (the grid's rowKeys); invalid ones and properties of other owner types are ignored. */
+export async function designPropertyLoadByIds(request: Request, ids: string[]): Promise<PropertyDto[]> {
+  return (await propertyLoadByIds(request, ids)).filter((property) => property.ownerType === DESIGN_PROPERTY_OWNER_TYPE);
+}
 
-  const properties = designBandPropertyDtos.filter((designBandPropertyDto) => designBandPropertyDto._id !== undefined);
-
-  if (properties.length > 0) {
-    await collection.bulkWrite(
-      properties.map(({ _id, propertyValue }) => ({
-        updateOne: {
-          filter: { _id, sectorKey: key, type: 'DesignBandPropertyDto' },
-          update: { $set: { propertyValue } },
-        },
-      })),
-    );
-  }
+/** Updates the propertyValue of propertyDtos by _id; owner and propertyName are owned by designPropertySync. */
+export async function designPropertyUpdate(request: Request, propertyDtos: PropertyDto[]): Promise<void> {
+  await propertyUpdate(request, propertyDtos.map(({ _id, propertyValue }) => ({ _id, propertyValue })));
 }
 
 /**
- * Makes the properties of band match DESIGN_BAND_PROPERTY_NAMES of its bandEnum: inserts the missing ones (name is a random UUID),
- * deletes the ones that no longer apply and keeps the others (with their propertyValue). A band without a name has no properties.
+ * Makes the properties of band match DESIGN_BAND_PROPERTY_NAMES of its bandEnum (see propertySync).
+ * A band without a name has no properties.
  */
 export async function designPropertySync(request: Request, band: DesignBandDto): Promise<void> {
   if (!band.name) {
     return;
   }
-  const key = await sectorKey(request, true);
-  const collection = client.db().collection<DesignBandPropertyDto>('myCollection');
-
   const propertyNames = DESIGN_BAND_PROPERTY_NAMES[band.bandEnum ?? ContentBandEnum.None] ?? [];
-  const existingNames = new Set((await designPropertyLoad(request, band.name)).map((property) => property.propertyName));
-
-  const inserts = propertyNames
-    .filter((propertyName) => !existingNames.has(propertyName))
-    .map((propertyName): DesignBandPropertyDto => ({ name: randomUUID(), sectorKey: key, type: 'DesignBandPropertyDto', bandName: band.name, propertyName }));
-  if (inserts.length > 0) {
-    await collection.insertMany(inserts);
-  }
-
-  await collection.deleteMany({ sectorKey: key, type: 'DesignBandPropertyDto', bandName: band.name, propertyName: { $nin: propertyNames } });
+  await propertySync(request, designPropertyOwner(band.name), propertyNames);
 }
