@@ -29,6 +29,16 @@ export async function propertyLoadByOwners(request: Request, owners: PropertyOwn
   return collection.find({ sectorKey: key, type: 'PropertyDto', $or: owners.map(({ ownerName, ownerType }) => ({ ownerName, ownerType })) }).toArray();
 }
 
+/** Deletes the properties attached to any of the owners (matching both ownerName and ownerType); none if owners is empty. */
+export async function propertyDeleteByOwners(request: Request, owners: PropertyOwner[]): Promise<void> {
+  if (owners.length === 0) {
+    return;
+  }
+  const key = await sectorKey(request, true);
+  const collection = client.db().collection<PropertyDto>('myCollection');
+  await collection.deleteMany({ sectorKey: key, type: 'PropertyDto', $or: owners.map(({ ownerName, ownerType }) => ({ ownerName, ownerType })) });
+}
+
 /** ids are ObjectId hex strings (the grid's rowKeys); invalid ones are ignored. */
 export async function propertyLoadByIds(request: Request, ids: string[]): Promise<PropertyDto[]> {
   const key = await sectorKey(request, true);

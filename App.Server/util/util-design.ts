@@ -5,7 +5,7 @@ import { DesignBandDto } from '../dto/design-dto.js';
 import { PropertyDto } from '../dto/property-dto.js';
 import { ContentBandEnum, DESIGN_BAND_PROPERTY_NAMES } from '../dto/shared/content-dto.js';
 import { sectorKey } from './util-main.js';
-import { PropertyOwner, propertyLoadByIds, propertyLoadByOwners, propertySync, propertyUpdate } from './util-property.js';
+import { PropertyOwner, propertyDeleteByOwners, propertyLoadByIds, propertyLoadByOwners, propertySync, propertyUpdate } from './util-property.js';
 
 // Design bands are per project: sectorKey(request, true) also asserts the user is signed in (redirects to /sign-in otherwise).
 
@@ -61,6 +61,18 @@ export async function designBandUpdate(request: Request, designBandDtos: DesignB
   }
 
   return bands;
+}
+
+/** Deletes the design bands by ids (ObjectId hex strings, the grid's rowKeys) and their properties; invalid ids are ignored. */
+export async function designBandDelete(request: Request, ids: string[]): Promise<void> {
+  const bands = await designBandLoadByIds(request, ids);
+  if (bands.length === 0) {
+    return;
+  }
+  const key = await sectorKey(request, true);
+  const collection = client.db().collection<DesignBandDto>('myCollection');
+  await propertyDeleteByOwners(request, bands.filter((band) => band.name).map((band) => designPropertyOwner(band.name!)));
+  await collection.deleteMany({ sectorKey: key, type: 'DesignBandDto', _id: { $in: bands.map((band) => band._id!) } });
 }
 
 /** ownerType of the PropertyDto rows of a design band. */

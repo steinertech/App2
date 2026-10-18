@@ -1,11 +1,12 @@
-import { GridCellDto, GridCellEnum, GridCommandEnum, GridDto, GridPatchDto, GridPatchEnum, GridPlaneDto, GridRowDto } from '../dto/shared/grid-dto.js';
-import { designBandInsert, designBandLoad, designBandLoadByIds, designBandUpdate, designPropertyLoad, designPropertyLoadByIds, designPropertySync, designPropertyUpdate } from '../util/util-design.js';
+import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPatchDto, GridPatchEnum, GridPlaneDto, GridRowDto } from '../dto/shared/grid-dto.js';
+import { designBandDelete, designBandInsert, designBandLoad, designBandLoadByIds, designBandUpdate, designPropertyLoad, designPropertyLoadByIds, designPropertySync, designPropertyUpdate } from '../util/util-design.js';
 import { DesignBandDto } from '../dto/design-dto.js';
 import { PropertyDto } from '../dto/property-dto.js';
 import { ContentBandEnum } from '../dto/shared/content-dto.js';
 import { GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
 import { indexToColumnNameExcel } from '../util/util-main.js';
-import { gridBarRow, gridCellText, gridCellValue, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridLookupSet, gridTables } from '../util/util-grid.js';
+import { gridBarRow, gridCellText, gridCellValue, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand, gridLookupSet, gridPatchDeleteMulti, gridSelectedMultiRowKeys, gridTables } from '../util/util-grid.js';
+import { gridDebugDeleteConfirm } from './grid-debug.js';
 
 /** The names of ContentBandEnum, e.g. "Header". */
 const DESIGN_BAND_ENUM_NAMES = Object.keys(ContentBandEnum).filter((key) => isNaN(Number(key)));
@@ -121,6 +122,37 @@ async function gridDesignBandSelected(request: Request, gridDto: GridDto): Promi
 }
 
 async function gridDesignBandLoad(request: Request, gridDto: GridDto): Promise<GridDto> {
+  // Selection is by rowIndex: remember it by rowKey so it can be mapped onto the reloaded rows (deleted rows drop out).
+  const selectedMultiRowKeys = new Set(gridSelectedMultiRowKeys(gridDto));
+
+  // Delete confirmation (opened by a row's Delete button or the toolbar's DeleteMulti button below) lives at gridDto.planes[1].grids[0] (planes[0] is the lookup), carrying GridStateDto.custom.rowKeys.
+  const confirmGridDto = gridDto.planes?.[1]?.grids?.[0];
+  if (confirmGridDto !== undefined) {
+    // Its Cancel button (GridCustomEnum.Cancel) closes the dialog in App.Web without a server call.
+    if (gridIsCommand(confirmGridDto, 'Yes')) {
+      const rowKeys = confirmGridDto.state?.custom?.rowKeys;
+      if (Array.isArray(rowKeys)) {
+        await designBandDelete(request, rowKeys.filter((rowKey): rowKey is string => typeof rowKey === 'string'));
+      }
+      gridDto.planes = undefined;
+    } else {
+      // Rows aren't sent back by the client: rebuild them so the dialog stays visible across other commands.
+      gridDto.planes = [null, { grids: [{ ...gridDebugDeleteConfirm(confirmGridDto.state?.custom?.rowKeys), command: undefined }] }];
+    }
+  }
+
+  if (gridIsCommand(gridDto, 'Delete')) {
+    const rowIndex = gridDto.command?.rowIndex;
+    const rowKey = rowIndex !== undefined ? gridDto.state?.rowKeys?.[rowIndex] : undefined;
+    if (rowKey !== undefined) {
+      gridDto.planes = [null, { grids: [gridDebugDeleteConfirm([rowKey])] }];
+    }
+  }
+
+  if (gridIsCommand(gridDto, 'DeleteMulti') && selectedMultiRowKeys.size > 0) {
+    gridDto.planes = [null, { grids: [gridDebugDeleteConfirm([...selectedMultiRowKeys])] }];
+  }
+
   if (gridDto.command?.commandEnum === GridCommandEnum.Save) {
     await gridDesignBandSaveUpdate(request, gridDto);
     await gridDesignBandSaveInsert(request, gridDto);
@@ -134,30 +166,57 @@ async function gridDesignBandLoad(request: Request, gridDto: GridDto): Promise<G
   // Filter-Sort-Page: bands holds only the rows of the current page.
   const { rows: bands, state: fspState } = gridFsp(allBands, DESIGN_BAND_COLUMNS.columns ?? [], gridDto.state);
 
+  const columns = gridColumns(DESIGN_BAND_COLUMNS.columns ?? []);
+
   const headerRow: GridRowDto = {
-    cells: gridColumns(DESIGN_BAND_COLUMNS.columns ?? []).map((column) => gridHeaderCell(column.columnName, gridDto.state?.sort)),
+    cells: [...columns.map((column) => gridHeaderCell(column.columnName, gridDto.state?.sort)), { cellEnum: GridCellEnum.Header, text: 'Command' }],
   };
   const rows: GridRowDto[] = bands.map((band, rowIndex) => ({
-    cells: gridColumns(DESIGN_BAND_COLUMNS.columns ?? []).map(
-      (column): GridCellDto => ({
-        cellEnum: GridCellEnum.Edit,
-        text: gridCellText(band[column.columnName as keyof DesignBandDto], column),
+    cells: [
+      ...columns.map(
+        (column, columnIndex): GridCellDto => ({
+          cellEnum: GridCellEnum.Edit,
+          text: gridCellText(band[column.columnName as keyof DesignBandDto], column),
+          rowIndex,
+          columnName: column.columnName,
+          isSelectMulti: columnIndex === 0 ? true : undefined,
+        }),
+      ),
+      {
+        cellEnum: GridCellEnum.Custom,
+        customs: [{ text: 'Delete', name: 'Delete', customEnum: GridCustomEnum.Button, rowIndex } satisfies GridCustomDto],
         rowIndex,
-        columnName: column.columnName,
-      }),
-    ),
+      },
+    ],
   }));
 
   // rowKey is the _id (ObjectId hex), since name is not sent to App.Web.
   const rowKeys: string[] = bands.map((band) => band._id?.toHexString() ?? '');
-  const findRow = gridFindRow(gridColumns(DESIGN_BAND_COLUMNS.columns ?? []).map((column) => column.columnName));
+  const isSelectedMulti = rowKeys.map((rowKey) => selectedMultiRowKeys.has(rowKey));
+  const findRow = gridFindRow([...columns.map((column) => column.columnName), undefined]);
+
+  const toolbarRow: GridRowDto = {
+    cells: [
+      {
+        cellEnum: GridCellEnum.Custom,
+        customs: [
+          {
+            text: 'Delete',
+            name: 'DeleteMulti',
+            customEnum: GridCustomEnum.Button,
+            isDisabled: !isSelectedMulti.some((isSelected) => isSelected),
+          },
+        ],
+      },
+    ],
+  };
 
   const result: GridDto = {
     ...gridDto,
     title: 'Design Band',
-    tables: gridTables([], [headerRow, findRow, ...rows], [gridBarRow()]),
-    state: { ...gridDto.state, ...fspState, rowKeys },
-    setting: { isSelectPatch: true },
+    tables: gridTables([toolbarRow], [headerRow, findRow, ...rows], [gridBarRow()]),
+    state: { ...gridDto.state, ...fspState, rowKeys, isSelectedMulti },
+    setting: { isSelectPatch: true, isSelectMultiPatch: true },
   };
 
   if (gridDto.command?.commandEnum === GridCommandEnum.New) {
@@ -229,7 +288,8 @@ async function gridDesignPropertyLoad(request: Request, gridDto: GridDto, band: 
 /**
  * Patches the "design" plane's grids (design band grid GridPlaneDto.grids[0], Properties grid grids[1], Form grid grids[2]):
  * GridCommandEnum.FilterMulti opens the Filter Multi lookup (distinct texts of its column);
- * GridCommandEnum.Select of a design band grid row replaces the Properties grid with the properties of the selected band and the Form grid with its preview.
+ * GridCommandEnum.Select of a design band grid row replaces the Properties grid with the properties of the selected band and the Form grid with its preview;
+ * any other command (MultiClick) enables/disables the design band grid's DeleteMulti button.
  */
 export async function planeDesignPatch(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
   const gridDto = gridPlaneDto.grids?.[0] ?? {};
@@ -261,7 +321,7 @@ export async function planeDesignPatch(request: Request, gridPlaneDto: GridPlane
     const lookupPlane = gridFilterMultiLoad(propertyGridDto, DESIGN_PROPERTY_COLUMNS.columns ?? [], band?.name ? await designPropertyLoad(request, band.name) : []);
     return { ...gridPlaneDto, grids: [{}, { patches: [{ patchEnum: GridPatchEnum.Lookup, planeName: lookupPlane?.planeName, lookup: lookupPlane?.grids?.[0] } satisfies GridPatchDto] }, {}] };
   }
-  return { ...gridPlaneDto, grids: [{}, {}, {}] };
+  return { ...gridPlaneDto, grids: [await gridPatchDeleteMulti(request, gridDto), {}, {}] };
 }
 
 /** Saves the modified propertyValue cells; RowCount and ColumnCount must be whole numbers (or empty). */
