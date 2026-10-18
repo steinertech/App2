@@ -2,16 +2,15 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { languageFromPathname, stripLanguagePrefix, withLanguagePrefix, type Language } from './util/util-i18n.ts';
 import { getIsSignIn, SIGN_IN_EVENT } from './NavState.tsx';
+import { linkList as schemaLinkList } from './page/SchemaLayout.tsx';
 
 // isSignIn: link is only shown if the user is signed in (true) or not signed in (false); undefined means always shown.
 // Sign Up is linked from the Sign In page.
-const linkList: { to: string; key: string; label: string; isSignIn?: boolean }[] = [
+// subPaths: second level pages with their own path (not below to), on which the link is also active.
+const linkList: { to: string; key: string; label: string; isSignIn?: boolean; subPaths?: string[] }[] = [
   { to: '/', key: 'home', label: 'Home' },
   { to: '/storage', key: 'storage', label: 'Storage', isSignIn: true },
-  { to: '/schema', key: 'schema', label: 'Schema', isSignIn: true },
-  { to: '/dynamic', key: 'dynamic', label: 'Dynamic', isSignIn: true },
-  { to: '/design', key: 'design', label: 'Design', isSignIn: true },
-  { to: '/content', key: 'content', label: 'Content', isSignIn: true },
+  { to: '/schema', key: 'schema', label: 'Schema', isSignIn: true, subPaths: schemaLinkList.map((link) => link.to) },
   { to: '/project', key: 'project', label: 'Project' },
   { to: '/debug', key: 'debug', label: 'Debug' },
   { to: '/sign-out', key: 'sign-out', label: 'Sign Out', isSignIn: true },
@@ -19,9 +18,9 @@ const linkList: { to: string; key: string; label: string; isSignIn?: boolean }[]
   { to: '/about', key: 'about', label: 'About' },
 ];
 
-// A link is also active on its subpages (e.g. '/debug' on '/debug/debug-property').
-function isLinkActive(to: string, currentPath: string): boolean {
-  return to === currentPath || (to !== '/' && currentPath.startsWith(to + '/'));
+// A link is also active on its subpages (e.g. '/debug' on '/debug/debug-property') and its subPaths (e.g. '/schema' on '/dynamic').
+function isLinkActive(to: string, currentPath: string, subPaths: string[] = []): boolean {
+  return to === currentPath || (to !== '/' && currentPath.startsWith(to + '/')) || subPaths.includes(currentPath);
 }
 
 function linkLabel(key: string, label: string, language: Language): string {
@@ -64,7 +63,7 @@ export default function Nav() {
             <Link
               key={link.key}
               to={withLanguagePrefix(link.to, language)}
-              className={isLinkActive(link.to, currentPath) ? 'font-semibold text-white' : 'text-slate-400 hover:text-slate-300'}
+              className={isLinkActive(link.to, currentPath, link.subPaths) ? 'font-semibold text-white' : 'text-slate-400 hover:text-slate-300'}
             >
               {linkLabel(link.key, link.label, language)}
             </Link>
@@ -96,7 +95,7 @@ export default function Nav() {
               to={withLanguagePrefix(link.to, language)}
               onClick={() => setOpen(false)}
               className={`rounded px-2 py-2 hover:bg-slate-800 ${
-                isLinkActive(link.to, currentPath) ? 'bg-slate-800 font-semibold text-white' : ''
+                isLinkActive(link.to, currentPath, link.subPaths) ? 'bg-slate-800 font-semibold text-white' : ''
               }`}
             >
               {linkLabel(link.key, link.label, language)}

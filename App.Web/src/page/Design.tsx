@@ -1,7 +1,6 @@
 import { useEffectOnce } from '../util/util-main.ts';
 import Grid from '../Grid.tsx';
 import { useGridStore } from '../GridStore.tsx';
-import { container } from '../style.ts';
 
 export default function Design() {
   const { load } = useGridStore();
@@ -12,7 +11,7 @@ export default function Design() {
   }, [load]);
 
   return (
-    <div className={container}>
+    <div>
       <h1>Design</h1>
       <Grid path={[0]} />
       <Grid path={[1]} />

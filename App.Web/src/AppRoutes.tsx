@@ -11,6 +11,7 @@ import SignOut from './page/SignOut.tsx';
 import Project from './page/Project.tsx';
 import Storage from './page/Storage.tsx';
 import Schema from './page/Schema.tsx';
+import SchemaLayout from './page/SchemaLayout.tsx';
 import Dynamic from './page/Dynamic.tsx';
 import Design from './page/Design.tsx';
 import ContentPage from './page/Content.tsx';
@@ -31,10 +32,12 @@ function pageRoutes() {
       <Route path="sign-out" element={<SignOut />} />
       <Route path="project" element={<Project />} />
       <Route path="storage" element={<Storage />} />
-      <Route path="schema" element={<Schema />} />
-      <Route path="dynamic" element={<Dynamic />} />
-      <Route path="design" element={<Design />} />
-      <Route path="content" element={<ContentPage />} />
+      <Route element={<SchemaLayout />}>
+        <Route path="schema" element={<Schema />} />
+        <Route path="dynamic" element={<Dynamic />} />
+        <Route path="design" element={<Design />} />
+        <Route path="content" element={<ContentPage />} />
+      </Route>
     </>
   );
 }
