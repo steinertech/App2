@@ -108,7 +108,7 @@ async function gridDesignFormLoad(request: Request, band: DesignBandDto | undefi
   }));
 
   return {
-    title: 'Form',
+    title: 'Design Form',
     tables: gridTables([], columnCount > 0 ? [headerRow, ...rows] : []),
   };
 }
