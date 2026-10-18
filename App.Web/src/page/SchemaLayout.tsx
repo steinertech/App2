@@ -4,7 +4,7 @@ import { container } from '../style.ts';
 
 export const linkList: SidebarLink[] = [
   { to: '/schema', label: 'Schema' },
-  { to: '/dynamic', label: 'Dynamic' },
+  { to: '/dynamic', label: 'Dynamic (Data)' },
   { to: '/design', label: 'Design' },
   { to: '/content', label: 'Content' },
 ];
