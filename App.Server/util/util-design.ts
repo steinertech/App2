@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { ObjectId } from 'mongodb';
 import client from './util-db.js';
 import { DesignBandDto } from '../dto/design-dto.js';
-import { PropertyDto } from '../dto/property-dto.js';
+import { PropertyDto, PropertyOwnerEnum } from '../dto/property-dto.js';
 import { ContentBandEnum, DESIGN_BAND_PROPERTY_NAMES } from '../dto/shared/content-dto.js';
 import { sectorKey } from './util-main.js';
 import { PropertyOwner, propertyDeleteByOwners, propertyLoadByIds, propertyLoadByOwners, propertySync, propertyUpdate } from './util-property.js';
@@ -75,12 +75,9 @@ export async function designBandDelete(request: Request, ids: string[]): Promise
   await collection.deleteMany({ sectorKey: key, type: 'DesignBandDto', _id: { $in: bands.map((band) => band._id!) } });
 }
 
-/** ownerType of the PropertyDto rows of a design band. */
-const DESIGN_PROPERTY_OWNER_TYPE = 'DesignBand';
-
 /** The owner of a design band's PropertyDto rows (ownerName is DesignBandDto.name). */
 export function designPropertyOwner(bandName: string): PropertyOwner {
-  return { ownerName: bandName, ownerType: DESIGN_PROPERTY_OWNER_TYPE };
+  return { ownerName: bandName, ownerEnum: PropertyOwnerEnum.DesignBand };
 }
 
 export async function designPropertyLoad(request: Request, bandName: string): Promise<PropertyDto[]> {
@@ -89,7 +86,7 @@ export async function designPropertyLoad(request: Request, bandName: string): Pr
 
 /** ids are ObjectId hex strings (the grid's rowKeys); invalid ones and properties of other owner types are ignored. */
 export async function designPropertyLoadByIds(request: Request, ids: string[]): Promise<PropertyDto[]> {
-  return (await propertyLoadByIds(request, ids)).filter((property) => property.ownerType === DESIGN_PROPERTY_OWNER_TYPE);
+  return (await propertyLoadByIds(request, ids)).filter((property) => property.ownerEnum === PropertyOwnerEnum.DesignBand);
 }
 
 /** Updates the propertyValue of propertyDtos by _id; owner and propertyName are owned by designPropertySync. */

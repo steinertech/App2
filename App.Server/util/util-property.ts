@@ -1,12 +1,12 @@
 import { ObjectId } from 'mongodb';
 import client from './util-db.js';
-import { PropertyDto } from '../dto/property-dto.js';
+import { PropertyDto, PropertyOwnerEnum } from '../dto/property-dto.js';
 import { sectorKey } from './util-main.js';
 
 // Properties are per project: sectorKey(request, true) also asserts the user is signed in (redirects to /sign-in otherwise).
 
-/** Owner a property is attached to (e.g. a design band: { ownerName: DesignBandDto.name, ownerType: 'DesignBand' }). */
-export type PropertyOwner = Required<Pick<PropertyDto, 'ownerName' | 'ownerType'>>;
+/** Owner a property is attached to (e.g. a design band: { ownerName: DesignBandDto.name, ownerEnum: PropertyOwnerEnum.DesignBand }). */
+export type PropertyOwner = Required<Pick<PropertyDto, 'ownerName' | 'ownerEnum'>>;
 
 export async function propertyLoad(request: Request): Promise<PropertyDto[]> {
   const key = await sectorKey(request, true);
@@ -14,29 +14,29 @@ export async function propertyLoad(request: Request): Promise<PropertyDto[]> {
   return collection.find({ sectorKey: key, type: 'PropertyDto' }).toArray();
 }
 
-/** Derives a property's name from its owner and property: ownerName + "." + ownerType + "." + propertyName. */
+/** Derives a property's name from its owner and property: ownerName + "." + ownerEnum name (e.g. "DesignBand") + "." + propertyName. */
 export function propertyDtoName(property: PropertyDto): string {
-  return (property.ownerName ?? '') + '.' + (property.ownerType ?? '') + '.' + (property.propertyName ?? '');
+  return (property.ownerName ?? '') + '.' + PropertyOwnerEnum[property.ownerEnum ?? PropertyOwnerEnum.None] + '.' + (property.propertyName ?? '');
 }
 
-/** Returns the properties attached to any of the owners (matching both ownerName and ownerType); none if owners is empty. */
+/** Returns the properties attached to any of the owners (matching both ownerName and ownerEnum); none if owners is empty. */
 export async function propertyLoadByOwners(request: Request, owners: PropertyOwner[]): Promise<PropertyDto[]> {
   if (owners.length === 0) {
     return [];
   }
   const key = await sectorKey(request, true);
   const collection = client.db().collection<PropertyDto>('myCollection');
-  return collection.find({ sectorKey: key, type: 'PropertyDto', $or: owners.map(({ ownerName, ownerType }) => ({ ownerName, ownerType })) }).toArray();
+  return collection.find({ sectorKey: key, type: 'PropertyDto', $or: owners.map(({ ownerName, ownerEnum }) => ({ ownerName, ownerEnum })) }).toArray();
 }
 
-/** Deletes the properties attached to any of the owners (matching both ownerName and ownerType); none if owners is empty. */
+/** Deletes the properties attached to any of the owners (matching both ownerName and ownerEnum); none if owners is empty. */
 export async function propertyDeleteByOwners(request: Request, owners: PropertyOwner[]): Promise<void> {
   if (owners.length === 0) {
     return;
   }
   const key = await sectorKey(request, true);
   const collection = client.db().collection<PropertyDto>('myCollection');
-  await collection.deleteMany({ sectorKey: key, type: 'PropertyDto', $or: owners.map(({ ownerName, ownerType }) => ({ ownerName, ownerType })) });
+  await collection.deleteMany({ sectorKey: key, type: 'PropertyDto', $or: owners.map(({ ownerName, ownerEnum }) => ({ ownerName, ownerEnum })) });
 }
 
 /** ids are ObjectId hex strings (the grid's rowKeys); invalid ones are ignored. */

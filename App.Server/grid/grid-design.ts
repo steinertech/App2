@@ -1,7 +1,7 @@
 import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPatchDto, GridPatchEnum, GridPlaneDto, GridRowDto } from '../dto/shared/grid-dto.js';
 import { designBandDelete, designBandInsert, designBandLoad, designBandLoadByIds, designBandUpdate, designPropertyLoad, designPropertyLoadByIds, designPropertySync, designPropertyUpdate } from '../util/util-design.js';
 import { DesignBandDto } from '../dto/design-dto.js';
-import { PropertyDto } from '../dto/property-dto.js';
+import { PropertyDto, PropertyOwnerEnum } from '../dto/property-dto.js';
 import { ContentBandEnum } from '../dto/shared/content-dto.js';
 import { GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
 import { indexToColumnNameExcel } from '../util/util-main.js';
@@ -61,9 +61,12 @@ const DESIGN_BAND_COLUMNS: GridConfigDto = {
 const DESIGN_PROPERTY_COLUMNS: GridConfigDto = {
   columns: [
     { columnName: 'name' satisfies keyof PropertyDto, typeEnum: GridConfigTypeEnum.Text },
-    { columnName: 'text' satisfies keyof PropertyDto, typeEnum: GridConfigTypeEnum.Text },
+    {
+      columnName: 'ownerEnum' satisfies keyof PropertyDto,
+      typeEnum: GridConfigTypeEnum.Number,
+      valueToText: (value) => PropertyOwnerEnum[value as PropertyOwnerEnum] ?? String(value),
+    },
     { columnName: 'ownerName' satisfies keyof PropertyDto, typeEnum: GridConfigTypeEnum.Text },
-    { columnName: 'ownerType' satisfies keyof PropertyDto, typeEnum: GridConfigTypeEnum.Text },
     { columnName: 'propertyName' satisfies keyof PropertyDto, text: 'Property', typeEnum: GridConfigTypeEnum.Text },
     { columnName: 'propertyValue' satisfies keyof PropertyDto, text: 'Value', typeEnum: GridConfigTypeEnum.Text },
   ],
