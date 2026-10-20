@@ -51,7 +51,7 @@ function ContentForm({ rowCount, columnCount }: { rowCount: number; columnCount:
   );
 }
 
-/** Loads the content named contentName from /api/content and renders every band: Header as h1 (property Text), Table as Data grid of its TableName, Form as RowCount x ColumnCount table followed by Data grid of its TableName, others as their ContentBandEnum (as number). */
+/** Loads the content named contentName from /api/content and renders every band: Header as h1 (property Text), Table as Data grid of its TableName, Form as RowCount x ColumnCount table, others as their ContentBandEnum (as number). */
 export default function Content({ contentName }: { contentName: string }) {
   const [content, setContent] = useState<ContentDto>();
 
@@ -83,14 +83,7 @@ export default function Content({ contentName }: { contentName: string }) {
               </GridStoreProvider>
             );
           case ContentBandEnum.Form:
-            return (
-              <div key={index}>
-                <ContentForm rowCount={contentFormCount(propertyValue(band, 'RowCount'))} columnCount={contentFormCount(propertyValue(band, 'ColumnCount'))} />
-                <GridStoreProvider>
-                  <ContentTable tableName={propertyValue(band, 'TableName')} />
-                </GridStoreProvider>
-              </div>
-            );
+            return <ContentForm key={index} rowCount={contentFormCount(propertyValue(band, 'RowCount'))} columnCount={contentFormCount(propertyValue(band, 'ColumnCount'))} />;
           default:
             return <div key={index}>{band.bandEnum}</div>;
         }
