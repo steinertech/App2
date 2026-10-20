@@ -14,7 +14,7 @@ export async function loadContent(request: Request, contentName: string): Promis
   const collection = client.db().collection<DesignBandDto>('myCollection');
   const bands = await collection.find({ sectorKey: key, type: 'DesignBandDto', contentName }).sort({ sort: 1 }).toArray();
 
-  const bandNames = bands.map((band) => band.name).filter((name): name is string => !!name);
+  const bandNames = bands.map((band) => band.name).filter((name): name is NonNullable<DesignBandDto['name']> => !!name);
   const properties = await propertyLoadByOwners(request, bandNames.map(designPropertyOwner));
 
   return {

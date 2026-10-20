@@ -4,7 +4,7 @@ import { SchemaDto } from '../dto/schema-dto.js';
 import { sectorKey } from './util-main.js';
 
 /** Returns SchemaDto.name: "{tableName}.{columnName}". */
-function schemaName(schemaDto: SchemaDto): string {
+function schemaName(schemaDto: SchemaDto): `${string}.${string}` {
   return `${schemaDto.tableName ?? ''}.${schemaDto.columnName ?? ''}`;
 }
 
