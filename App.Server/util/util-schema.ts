@@ -1,31 +1,31 @@
 import { ObjectId } from 'mongodb';
 import client from './util-db.js';
 import { SchemaDto } from '../dto/schema-dto.js';
-import { sectorKey } from './util-main.js';
+import { sectorKeyProjectDb } from './util-main.js';
 
 /** Returns SchemaDto.name: "{tableName}.{columnName}". */
 function schemaName(schemaDto: SchemaDto): `${string}.${string}` {
   return `${schemaDto.tableName ?? ''}.${schemaDto.columnName ?? ''}`;
 }
 
-// Schemas are per project: sectorKey(request, true) also asserts the user is signed in (redirects to /sign-in otherwise).
+// Schemas are per project: sectorKeyProjectDb (like sectorKey(request, true)) also asserts the user is signed in (redirects to /sign-in otherwise).
 
 export async function schemaLoad(request: Request): Promise<SchemaDto[]> {
-  const key = await sectorKey(request, true);
+  const key = await sectorKeyProjectDb(request, 'SchemaDto');
   const collection = client.db().collection<SchemaDto>('myCollection');
   return collection.find({ sectorKey: key, type: 'SchemaDto' }).toArray();
 }
 
 /** ids are ObjectId hex strings (the grid's rowKeys); invalid ones are ignored. */
 export async function schemaLoadByIds(request: Request, ids: string[]): Promise<SchemaDto[]> {
-  const key = await sectorKey(request, true);
+  const key = await sectorKeyProjectDb(request, 'SchemaDto');
   const collection = client.db().collection<SchemaDto>('myCollection');
   const objectIds = ids.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
   return collection.find({ sectorKey: key, type: 'SchemaDto', _id: { $in: objectIds } }).toArray();
 }
 
 export async function schemaInsert(request: Request, schemaDtos: SchemaDto[]): Promise<SchemaDto[]> {
-  const key = await sectorKey(request, true);
+  const key = await sectorKeyProjectDb(request, 'SchemaDto');
   const collection = client.db().collection<SchemaDto>('myCollection');
 
   const schemas = schemaDtos.map((schemaDto): SchemaDto => {
@@ -42,7 +42,7 @@ export async function schemaInsert(request: Request, schemaDtos: SchemaDto[]): P
 
 /** Updates schemaDtos by _id (not by name, since name changes with tableName or columnName). */
 export async function schemaUpdate(request: Request, schemaDtos: SchemaDto[]): Promise<SchemaDto[]> {
-  const key = await sectorKey(request, true);
+  const key = await sectorKeyProjectDb(request, 'SchemaDto');
   const collection = client.db().collection<SchemaDto>('myCollection');
 
   const schemas = schemaDtos

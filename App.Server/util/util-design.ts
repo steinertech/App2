@@ -3,20 +3,20 @@ import client from './util-db.js';
 import { DesignBandDto } from '../dto/design-dto.js';
 import { PropertyDto, PropertyOwnerEnum } from '../dto/property-dto.js';
 import { ContentBandEnum, DESIGN_BAND_PROPERTY_NAMES } from '../dto/shared/content-dto.js';
-import { sectorKey } from './util-main.js';
+import { sectorKeyProjectDb } from './util-main.js';
 import { PropertyOwner, propertyDeleteByOwners, propertyLoadByIds, propertyLoadByOwners, propertyOwnerRename, propertySync, propertyUpdate } from './util-property.js';
 
-// Design bands are per project: sectorKey(request, true) also asserts the user is signed in (redirects to /sign-in otherwise).
+// Design bands are per project: sectorKeyProjectDb (like sectorKey(request, true)) also asserts the user is signed in (redirects to /sign-in otherwise).
 
 export async function designBandLoad(request: Request): Promise<DesignBandDto[]> {
-  const key = await sectorKey(request, true);
+  const key = await sectorKeyProjectDb(request, 'DesignBandDto');
   const collection = client.db().collection<DesignBandDto>('myCollection');
   return collection.find({ sectorKey: key, type: 'DesignBandDto' }).toArray();
 }
 
 /** ids are ObjectId hex strings (the grid's rowKeys); invalid ones are ignored. */
 export async function designBandLoadByIds(request: Request, ids: string[]): Promise<DesignBandDto[]> {
-  const key = await sectorKey(request, true);
+  const key = await sectorKeyProjectDb(request, 'DesignBandDto');
   const collection = client.db().collection<DesignBandDto>('myCollection');
   const objectIds = ids.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
   return collection.find({ sectorKey: key, type: 'DesignBandDto', _id: { $in: objectIds } }).toArray();
@@ -41,7 +41,7 @@ async function designBandNameAssertUnique(request: Request, bands: DesignBandDto
 
 /** Sets each band's name by designBandName. */
 export async function designBandInsert(request: Request, designBandDtos: DesignBandDto[]): Promise<DesignBandDto[]> {
-  const key = await sectorKey(request, true);
+  const key = await sectorKeyProjectDb(request, 'DesignBandDto');
   const collection = client.db().collection<DesignBandDto>('myCollection');
 
   const bands = designBandDtos.map((designBandDto): DesignBandDto => {
@@ -59,7 +59,7 @@ export async function designBandInsert(request: Request, designBandDtos: DesignB
 
 /** Updates designBandDtos by _id, setting each band's name by designBandName; the properties of a renamed band move to its new name. */
 export async function designBandUpdate(request: Request, designBandDtos: DesignBandDto[]): Promise<DesignBandDto[]> {
-  const key = await sectorKey(request, true);
+  const key = await sectorKeyProjectDb(request, 'DesignBandDto');
   const collection = client.db().collection<DesignBandDto>('myCollection');
 
   const bands = designBandDtos
@@ -97,7 +97,7 @@ export async function designBandDelete(request: Request, ids: string[]): Promise
   if (bands.length === 0) {
     return;
   }
-  const key = await sectorKey(request, true);
+  const key = await sectorKeyProjectDb(request, 'DesignBandDto');
   const collection = client.db().collection<DesignBandDto>('myCollection');
   await propertyDeleteByOwners(request, bands.filter((band) => band.name).map((band) => designPropertyOwner(band.name!)));
   await collection.deleteMany({ sectorKey: key, type: 'DesignBandDto', _id: { $in: bands.map((band) => band._id!) } });

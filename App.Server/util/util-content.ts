@@ -1,7 +1,7 @@
 import client from './util-db.js';
 import { DesignBandDto } from '../dto/design-dto.js';
 import { ContentBandEnum, ContentDto, DESIGN_BAND_PROPERTY_NAMES } from '../dto/shared/content-dto.js';
-import { sectorKey } from './util-main.js';
+import { sectorKeyProjectDb } from './util-main.js';
 import { designPropertyOwner } from './util-design.js';
 import { propertyLoadByOwners } from './util-property.js';
 
@@ -10,7 +10,7 @@ import { propertyLoadByOwners } from './util-property.js';
  * Each band carries the propertyValue of its PropertyDto rows (owner designPropertyOwner(band.name)) in DESIGN_BAND_PROPERTY_NAMES[bandEnum] order ('' if missing, e.g. never synced).
  */
 export async function loadContent(request: Request, contentName: string): Promise<ContentDto> {
-  const key = await sectorKey(request, true);
+  const key = await sectorKeyProjectDb(request, 'DesignBandDto');
   const collection = client.db().collection<DesignBandDto>('myCollection');
   const bands = await collection.find({ sectorKey: key, type: 'DesignBandDto', contentName }).sort({ sort: 1 }).toArray();
 

@@ -1,24 +1,24 @@
 import { ObjectId } from 'mongodb';
 import client from './util-db.js';
 import { DebugDto } from '../dto/debug-dto.js';
-import { sectorKey } from './util-main.js';
+import { sectorKeyDb } from './util-main.js';
 
 export async function debugLoad(request: Request): Promise<DebugDto[]> {
-  const key = await sectorKey(request, false);
+  const key = await sectorKeyDb(request, 'DebugDto');
   const collection = client.db().collection<DebugDto>('myCollection');
   return collection.find({ sectorKey: key, type: 'DebugDto' }).toArray();
 }
 
 /** ids are ObjectId hex strings (the grid's rowKeys); invalid ones are ignored. */
 export async function debugLoadByIds(request: Request, ids: string[]): Promise<DebugDto[]> {
-  const key = await sectorKey(request, false);
+  const key = await sectorKeyDb(request, 'DebugDto');
   const collection = client.db().collection<DebugDto>('myCollection');
   const objectIds = ids.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
   return collection.find({ sectorKey: key, type: 'DebugDto', _id: { $in: objectIds } }).toArray();
 }
 
 export async function debugInsert(request: Request, debugDtos: DebugDto[]): Promise<DebugDto[]> {
-  const key = await sectorKey(request, false);
+  const key = await sectorKeyDb(request, 'DebugDto');
   const collection = client.db().collection<DebugDto>('myCollection');
 
   const debugs = debugDtos.map((debugDto): DebugDto => {
@@ -35,7 +35,7 @@ export async function debugInsert(request: Request, debugDtos: DebugDto[]): Prom
 
 /** Updates debugDtos by _id. */
 export async function debugUpdate(request: Request, debugDtos: DebugDto[]): Promise<DebugDto[]> {
-  const key = await sectorKey(request, false);
+  const key = await sectorKeyDb(request, 'DebugDto');
   const collection = client.db().collection<DebugDto>('myCollection');
 
   const debugs = debugDtos
@@ -58,7 +58,7 @@ export async function debugUpdate(request: Request, debugDtos: DebugDto[]): Prom
 
 /** Deletes the debugs by ids (ObjectId hex strings, the grid's rowKeys); invalid ones are ignored. */
 export async function debugDelete(request: Request, ids: string[]): Promise<void> {
-  const key = await sectorKey(request, false);
+  const key = await sectorKeyDb(request, 'DebugDto');
   const collection = client.db().collection<DebugDto>('myCollection');
   const objectIds = ids.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
   if (objectIds.length > 0) {

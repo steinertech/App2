@@ -1,15 +1,15 @@
 import { ObjectId } from 'mongodb';
 import client from './util-db.js';
 import { PropertyDto, PropertyOwnerEnum } from '../dto/property-dto.js';
-import { sectorKey } from './util-main.js';
+import { sectorKeyProjectDb } from './util-main.js';
 
-// Properties are per project: sectorKey(request, true) also asserts the user is signed in (redirects to /sign-in otherwise).
+// Properties are per project: sectorKeyProjectDb (like sectorKey(request, true)) also asserts the user is signed in (redirects to /sign-in otherwise).
 
 /** Owner a property is attached to (e.g. a design band: { ownerName: DesignBandDto.name, ownerEnum: PropertyOwnerEnum.DesignBand }). */
 export type PropertyOwner = Required<Pick<PropertyDto, 'ownerName' | 'ownerEnum'>>;
 
 export async function propertyLoad(request: Request): Promise<PropertyDto[]> {
-  const key = await sectorKey(request, true);
+  const key = await sectorKeyProjectDb(request, 'PropertyDto');
   const collection = client.db().collection<PropertyDto>('myCollection');
   return collection.find({ sectorKey: key, type: 'PropertyDto' }).toArray();
 }
@@ -24,7 +24,7 @@ export async function propertyLoadByOwners(request: Request, owners: PropertyOwn
   if (owners.length === 0) {
     return [];
   }
-  const key = await sectorKey(request, true);
+  const key = await sectorKeyProjectDb(request, 'PropertyDto');
   const collection = client.db().collection<PropertyDto>('myCollection');
   return collection.find({ sectorKey: key, type: 'PropertyDto', $or: owners.map(({ ownerName, ownerEnum }) => ({ ownerName, ownerEnum })) }).toArray();
 }
@@ -34,21 +34,21 @@ export async function propertyDeleteByOwners(request: Request, owners: PropertyO
   if (owners.length === 0) {
     return;
   }
-  const key = await sectorKey(request, true);
+  const key = await sectorKeyProjectDb(request, 'PropertyDto');
   const collection = client.db().collection<PropertyDto>('myCollection');
   await collection.deleteMany({ sectorKey: key, type: 'PropertyDto', $or: owners.map(({ ownerName, ownerEnum }) => ({ ownerName, ownerEnum })) });
 }
 
 /** ids are ObjectId hex strings (the grid's rowKeys); invalid ones are ignored. */
 export async function propertyLoadByIds(request: Request, ids: string[]): Promise<PropertyDto[]> {
-  const key = await sectorKey(request, true);
+  const key = await sectorKeyProjectDb(request, 'PropertyDto');
   const collection = client.db().collection<PropertyDto>('myCollection');
   const objectIds = ids.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
   return collection.find({ sectorKey: key, type: 'PropertyDto', _id: { $in: objectIds } }).toArray();
 }
 
 export async function propertyInsert(request: Request, propertyDtos: PropertyDto[]): Promise<PropertyDto[]> {
-  const key = await sectorKey(request, true);
+  const key = await sectorKeyProjectDb(request, 'PropertyDto');
   const collection = client.db().collection<PropertyDto>('myCollection');
 
   const properties = propertyDtos.map((propertyDto): PropertyDto => {
@@ -65,7 +65,7 @@ export async function propertyInsert(request: Request, propertyDtos: PropertyDto
 
 /** Updates propertyDtos by _id. */
 export async function propertyUpdate(request: Request, propertyDtos: PropertyDto[]): Promise<PropertyDto[]> {
-  const key = await sectorKey(request, true);
+  const key = await sectorKeyProjectDb(request, 'PropertyDto');
   const collection = client.db().collection<PropertyDto>('myCollection');
 
   const properties = propertyDtos
@@ -106,7 +106,7 @@ export async function propertyOwnerRename(request: Request, renames: { owner: Pr
  * deletes the ones not in propertyNames and keeps the others (with their propertyValue).
  */
 export async function propertySync(request: Request, owner: PropertyOwner, propertyNames: string[]): Promise<void> {
-  const key = await sectorKey(request, true);
+  const key = await sectorKeyProjectDb(request, 'PropertyDto');
   const collection = client.db().collection<PropertyDto>('myCollection');
 
   const existingNames = new Set((await propertyLoadByOwners(request, [owner])).map((property) => property.propertyName));
