@@ -4,7 +4,7 @@ import { DesignBandDto } from '../dto/design-dto.js';
 import { PropertyDto, PropertyOwnerEnum } from '../dto/property-dto.js';
 import { ContentBandEnum, DESIGN_BAND_PROPERTY_NAMES } from '../dto/shared/content-dto.js';
 import { sectorKeyProjectDb } from './util-main.js';
-import { PropertyOwner, propertyDeleteByOwners, propertyLoadByIds, propertyLoadByOwners, propertyOwnerRename, propertySync, propertyUpdate } from './util-property.js';
+import { PropertyOwner, propertyDeleteByOwners, propertyLoadByIds, propertyLoadByOwners, propertySync, propertyUpdate } from './util-property.js';
 
 // Design bands are per project: sectorKeyProjectDb (like sectorKey(request, true)) also asserts the user is signed in (redirects to /sign-in otherwise).
 
@@ -27,18 +27,6 @@ export function designBandName(band: DesignBandDto): `${string}.${string}` {
   return `${band.contentName ?? ''}.${band.bandName ?? ''}`;
 }
 
-/** Throws if a name of bands is used twice among them or by another stored band (one not in bands, by _id). */
-async function designBandNameAssertUnique(request: Request, bands: DesignBandDto[]): Promise<void> {
-  const ids = new Set(bands.filter((band) => band._id !== undefined).map((band) => band._id!.toHexString()));
-  const names = new Set((await designBandLoad(request)).filter((band) => !ids.has(band._id?.toHexString() ?? '')).map((band) => band.name));
-  for (const band of bands) {
-    if (names.has(band.name)) {
-      throw new Error(`Content "${band.contentName ?? ''}" already has a band named "${band.bandName ?? ''}"!`);
-    }
-    names.add(band.name);
-  }
-}
-
 /** Sets each band's name by designBandName. */
 export async function designBandInsert(request: Request, designBandDtos: DesignBandDto[]): Promise<DesignBandDto[]> {
   const key = await sectorKeyProjectDb(request, 'DesignBandDto');
@@ -48,7 +36,6 @@ export async function designBandInsert(request: Request, designBandDtos: DesignB
     const { _id, ...rest } = designBandDto;
     return { ...rest, name: designBandName(designBandDto), sectorKey: key, type: 'DesignBandDto' };
   });
-  await designBandNameAssertUnique(request, bands);
 
   if (bands.length > 0) {
     await collection.insertMany(bands);
@@ -57,7 +44,7 @@ export async function designBandInsert(request: Request, designBandDtos: DesignB
   return bands;
 }
 
-/** Updates designBandDtos by _id, setting each band's name by designBandName; the properties of a renamed band move to its new name. */
+/** Updates designBandDtos by _id, setting each band's name by designBandName. The properties of a renamed band stay with its old name (not moved). */
 export async function designBandUpdate(request: Request, designBandDtos: DesignBandDto[]): Promise<DesignBandDto[]> {
   const key = await sectorKeyProjectDb(request, 'DesignBandDto');
   const collection = client.db(DB_NAME).collection<DesignBandDto>('myCollection');
@@ -65,17 +52,6 @@ export async function designBandUpdate(request: Request, designBandDtos: DesignB
   const bands = designBandDtos
     .filter((designBandDto) => designBandDto._id !== undefined)
     .map((designBandDto): DesignBandDto => ({ ...designBandDto, name: designBandName(designBandDto), sectorKey: key, type: 'DesignBandDto' }));
-  await designBandNameAssertUnique(request, bands);
-
-  // A band's old name is the stored one.
-  const bandsStored = await designBandLoadByIds(request, bands.map((band) => band._id!.toHexString()));
-  const renames = bands
-    .map((band) => ({ nameOld: bandsStored.find((bandStored) => bandStored._id?.equals(band._id!))?.name, nameNew: band.name! }))
-    .filter((rename): rename is { nameOld: NonNullable<DesignBandDto['name']>; nameNew: NonNullable<DesignBandDto['name']> } => rename.nameOld !== undefined && rename.nameOld !== rename.nameNew);
-  await propertyOwnerRename(
-    request,
-    renames.map(({ nameOld, nameNew }) => ({ owner: designPropertyOwner(nameOld), ownerNameNew: nameNew })),
-  );
 
   if (bands.length > 0) {
     await collection.bulkWrite(

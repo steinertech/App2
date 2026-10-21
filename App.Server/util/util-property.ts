@@ -87,21 +87,6 @@ export async function propertyUpdate(request: Request, propertyDtos: PropertyDto
 }
 
 /**
- * Moves the properties of each owner to ownerNameNew (same ownerEnum), renaming them by propertyDtoName.
- * All properties are loaded before any is updated, so owners may swap names.
- */
-export async function propertyOwnerRename(request: Request, renames: { owner: PropertyOwner; ownerNameNew: string }[]): Promise<void> {
-  const properties = await propertyLoadByOwners(request, renames.map(({ owner }) => owner));
-  const updates = properties.map((property): PropertyDto => {
-    const rename = renames.find(({ owner }) => owner.ownerName === property.ownerName && owner.ownerEnum === property.ownerEnum)!;
-    const result: PropertyDto = { _id: property._id, ownerName: rename.ownerNameNew, ownerEnum: property.ownerEnum, propertyName: property.propertyName };
-    result.name = propertyDtoName(result);
-    return result;
-  });
-  await propertyUpdate(request, updates);
-}
-
-/**
  * Makes the properties of owner match propertyNames: inserts the missing ones (name by propertyDtoName),
  * deletes the ones not in propertyNames and keeps the others (with their propertyValue).
  */
