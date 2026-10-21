@@ -7,6 +7,8 @@ export enum PropertyOwnerEnum {
 }
 
 export interface PropertyDto extends DbDto {
+  /** ownerName + "." + ownerEnum name (e.g. "DesignBand") + "." + propertyName, set by the backend on insert and update (see propertyDtoName). */
+  name?: string;
   /** Type of the owner this property is attached to. */
   ownerEnum?: PropertyOwnerEnum;
   /** Name of the owner this property is attached to. */

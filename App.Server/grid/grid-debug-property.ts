@@ -139,7 +139,7 @@ async function gridDebugContentLoad(request: Request, gridDto: GridDto): Promise
     ],
   }));
 
-  // rowKey is the _id (ObjectId hex), since name is editable and not unique.
+  // rowKey is the _id (ObjectId hex), since name is editable.
   const rowKeys: string[] = contents.map((content) => content._id?.toHexString() ?? '');
   const isSelectedMulti = rowKeys.map((rowKey) => selectedMultiRowKeys.has(rowKey));
   const findRow = gridFindRow([...columns.map((column) => column.columnName), undefined]);
@@ -213,7 +213,7 @@ async function gridDebugPropertyLoad(request: Request, gridDto: GridDto, owners:
     ),
   }));
 
-  // rowKey is the _id (ObjectId hex), since name is editable and not unique.
+  // rowKey is the _id (ObjectId hex), since name is editable.
   const rowKeys: string[] = properties.map((property) => property._id?.toHexString() ?? '');
   const findRow = gridFindRow(columns.map((column) => column.columnName));
 

@@ -90,7 +90,7 @@ async function gridDebugLoad(request: Request, gridDto: GridDto): Promise<GridDt
     ],
   }));
 
-  // rowKey is the _id (ObjectId hex), since name is editable and not unique.
+  // rowKey is the _id (ObjectId hex), since name is editable.
   const rowKeys: string[] = debugs.map((debug) => debug._id?.toHexString() ?? '');
   const isSelectedMulti = rowKeys.map((rowKey) => selectedMultiRowKeys.has(rowKey));
   const findRow = gridFindRow([...columns.map((column) => column.columnName), undefined]);
