@@ -1,10 +1,10 @@
 import { put, head, issueSignedToken, presignUrl, list, createFolder, BlobNotFoundError, del, rename } from '@vercel/blob';
-import { sectorKey } from './util-main.js';
+import { sectorKeyProjectStorage } from './util-main.js';
 import { StorageFileDto } from '../dto/storage-file-dto.js';
 
 /** Returns one presigned PUT url per fileNames entry, for uploading into folder path (e.g. "a/b/", or "" for the root) below the sector key. Urls are valid for 5 minutes and accept files up to 5 MB. */
 export async function storageUploadUrls(request: Request, path: string = '', fileNames: string[]): Promise<string[]> {
-  const prefix = (await sectorKey(request, true)) + path;
+  const prefix = (await sectorKeyProjectStorage(request)) + path;
   const validUntil = Date.now() + 5 * 60 * 1000;
   const maximumSizeInBytes = 5 * 1024 * 1024;
 
@@ -36,7 +36,7 @@ const STORAGE_DOWNLOAD_URL_STATIC: string | undefined = '/photo.jpg';
 
 /** Returns one presigned GET url per fileNames entry (paths relative to the sector key, e.g. StorageFileDto.fileName "a/b/my.txt"). Urls are valid for 5 minutes. */
 export async function storageDownloadUrls(request: Request, fileNames: string[]): Promise<string[]> {
-  const prefix = await sectorKey(request, true);
+  const prefix = await sectorKeyProjectStorage(request);
   const validUntil = Date.now() + 5 * 60 * 1000;
 
   return Promise.all(
@@ -67,7 +67,7 @@ export async function storageDownloadUrls(request: Request, fileNames: string[])
 
 /** Lists the direct children of folder path (e.g. "a/b/", or "" for the root) below the sector key. path must end with "/" unless empty. */
 export async function storageFiles(request: Request, path: string = ''): Promise<StorageFileDto[]> {
-  const key = await sectorKey(request, true);
+  const key = await sectorKeyProjectStorage(request);
   const prefix = key + path;
 
   // Folded mode returns only the direct children of prefix: files in blobs, sub-folders (with trailing slash) in folders.
@@ -114,7 +114,7 @@ export async function storageFiles(request: Request, path: string = ''): Promise
  * - File name (e.g. "my.txt"): creates the empty file "my.txt" in folder path. Throws if the file already exists.
  */
 export async function storageNew(request: Request, path: string = '', fileOrFolderName: string): Promise<void> {
-  const prefix = (await sectorKey(request, true)) + path;
+  const prefix = (await sectorKeyProjectStorage(request)) + path;
 
   const segments = fileOrFolderName.split('/').filter(Boolean);
   if (segments.length === 0) {
@@ -152,7 +152,7 @@ export async function storageNew(request: Request, path: string = '', fileOrFold
  * - File name (e.g. "my.txt"): deletes the file.
  */
 export async function storageDelete(request: Request, path: string = '', fileOrFolderNames: string[]): Promise<void> {
-  const prefix = (await sectorKey(request, true)) + path;
+  const prefix = (await sectorKeyProjectStorage(request)) + path;
 
   const pathnames: string[] = [];
   for (const fileOrFolderName of fileOrFolderNames.filter(Boolean)) {
@@ -184,7 +184,7 @@ export async function storageDelete(request: Request, path: string = '', fileOrF
  * Throws if fileOrFolderNameModified is empty, contains "/", or already exists.
  */
 export async function storageRename(request: Request, path: string = '', fileOrFolderName: string, fileOrFolderNameModified: string): Promise<void> {
-  const prefix = (await sectorKey(request, true)) + path;
+  const prefix = (await sectorKeyProjectStorage(request)) + path;
 
   const isFolder = fileOrFolderName.endsWith('/');
   const name = fileOrFolderName.replace(/\/$/, '');

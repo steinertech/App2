@@ -14,7 +14,7 @@ export function domainName(request: Request): string {
   return 'unknown';
 }
 
-export async function sectorKey(request: Request, isProject: boolean = true): Promise<string> {
+async function sectorKey(request: Request, isProject: boolean = true): Promise<string> {
   if (isProject) {
     const dto = await userSession(request);
     if (!dto) {
@@ -36,6 +36,16 @@ export async function sectorKeyDb(request: Request, type: string): Promise<strin
 /** sectorKey(request, true) plus "Type/<type>/", type being the name of a DbDto derived interface (e.g. 'PropertyDto'). Requires sign-in and a selected project like sectorKey. */
 export async function sectorKeyProjectDb(request: Request, type: string): Promise<string> {
   return (await sectorKey(request, true)) + 'Type' + '/' + type + '/';
+}
+
+/** sectorKey(request, false) plus "Storage/", the path prefix of global blobs. */
+export async function sectorKeyStorage(request: Request): Promise<string> {
+  return (await sectorKey(request, false)) + 'Storage' + '/';
+}
+
+/** sectorKey(request, true) plus "Storage/", the path prefix of project blobs. Requires sign-in and a selected project like sectorKey. */
+export async function sectorKeyProjectStorage(request: Request): Promise<string> {
+  return (await sectorKey(request, true)) + 'Storage' + '/';
 }
 
 export function titleCase(text?: string): string | undefined {
