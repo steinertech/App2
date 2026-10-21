@@ -28,6 +28,16 @@ export async function sectorKey(request: Request, isProject: boolean = true): Pr
   return 'Domain' + '/' + domainName(request) + '/' + 'Global' + '/';
 }
 
+/** sectorKey(request, false) plus "Type/<type>/", type being the name of a DbDto derived interface (e.g. 'UserDto'; interfaces don't exist at runtime, so it is passed by name). */
+export async function sectorKeyDb(request: Request, type: string): Promise<string> {
+  return (await sectorKey(request, false)) + 'Type' + '/' + type + '/';
+}
+
+/** sectorKey(request, true) plus "Type/<type>/", type being the name of a DbDto derived interface (e.g. 'PropertyDto'). Requires sign-in and a selected project like sectorKey. */
+export async function sectorKeyProjectDb(request: Request, type: string): Promise<string> {
+  return (await sectorKey(request, true)) + 'Type' + '/' + type + '/';
+}
+
 export function titleCase(text?: string): string | undefined {
   if (text === undefined) return undefined;
   return text
