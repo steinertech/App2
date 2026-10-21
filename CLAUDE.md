@@ -47,7 +47,7 @@ Every file in `App.Server/api/` is a standalone Vercel function, mapped by filen
 
 Shared logic lives in `App.Server/util/` (not directly in `api/`):
 - `util-main.ts` — `VERSION_SERVER`, `domainName(request)`, `sectorKeyDb(request, type)`, `sectorKeyProjectDb(request, type)`, `sectorKeyStorage(request)`, `sectorKeyProjectStorage(request)`, `corsHeaders(request, method)`, `jsonResponse(...)`/`ApiResult`, `apiHandler(method, handler)`, `alertAdd(request, alertEnum, text)`, `redirectSet(request, url)`
-- `util-db.ts` — the shared MongoDB `client` (via `@vercel/functions` `attachDatabasePool`)
+- `util-db.ts` — the shared MongoDB `client` (via `@vercel/functions` `attachDatabasePool`) and `DB_NAME` (`myDatabase`; always `client.db(DB_NAME)`, never `client.db()`, which would use the `MONGODB_URI` path or `test`); creates the unique index `{ sectorKey: 1, name: 1 }` on `myCollection` (errors only logged)
 - `util-user.ts` — user sign-up/sign-in/session/sign-out
 - `util-debug.ts` — `DebugDto` load/insert/update/delete (`dto/debug-dto.ts`)
 - `util-debug-property.ts` — `DebugContentDto` load/insert/update/delete and `DebugPropertyDto` load/insert/update (`dto/debug-property-dto.ts`)
@@ -73,7 +73,7 @@ New DTOs go in `dto/shared/` only if `App.Web` actually imports them (and they h
 The app version is stored in two places: `VERSION_CLIENT` in `App.Web/src/util/util-main.ts` and `VERSION_SERVER` in `App.Server/util/util-main.ts`. **Both values must always be identical** — whenever one is bumped, bump the other to the same value in the same change. (`App.Web/src/page/About.tsx` displays both side by side.)
 
 ### Single-collection MongoDB pattern
-All persisted DTOs (`UserDto`, `SessionDto`, `ProjectDto`, `DebugDto`, `DebugPropertyDto`, `DebugContentDto`, `PropertyDto`, `DesignBandDto` — the ones with `_id`/`type` fields; not e.g. `GridConfigDto` or `StorageFileDto`) are stored in one MongoDB collection (`'myCollection'`), disambiguated by a `type` field (e.g. `type: 'UserDto'`) and scoped by a `sectorKey` field. They all extend `DbDto` (`dto/db-dto.ts`: `_id`, `sectorKey`, `type`, `name` — `name` being the document's unique key within its `sectorKey` (which includes the type, so unique per type) — enforced by a unique index on the database, not in code; every derived DTO redeclares `name` with a comment on how it is built). Adding a new entity means adding a new DTO interface extending `DbDto` plus a `type` discriminator, not a new collection.
+All persisted DTOs (`UserDto`, `SessionDto`, `ProjectDto`, `DebugDto`, `DebugPropertyDto`, `DebugContentDto`, `PropertyDto`, `DesignBandDto` — the ones with `_id`/`type` fields; not e.g. `GridConfigDto` or `StorageFileDto`) are stored in one MongoDB collection (`'myCollection'`), disambiguated by a `type` field (e.g. `type: 'UserDto'`) and scoped by a `sectorKey` field. They all extend `DbDto` (`dto/db-dto.ts`: `_id`, `sectorKey`, `type`, `name` — `name` being the document's unique key within its `sectorKey` (which includes the type, so unique per type) — enforced by a unique index `{ sectorKey: 1, name: 1 }` on the database, created by `util-db.ts` on every cold start; every derived DTO redeclares `name` with a comment on how it is built). Adding a new entity means adding a new DTO interface extending `DbDto` plus a `type` discriminator, not a new collection.
 
 ### sectorKey scoping
 `sectorKey(request, isProject)` in `util-main.ts` (not exported) builds the base key used for both persistence layers:

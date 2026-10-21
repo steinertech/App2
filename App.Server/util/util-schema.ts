@@ -1,5 +1,5 @@
 import { ObjectId } from 'mongodb';
-import client from './util-db.js';
+import client, { DB_NAME } from './util-db.js';
 import { SchemaDto } from '../dto/schema-dto.js';
 import { sectorKeyProjectDb } from './util-main.js';
 
@@ -12,21 +12,21 @@ function schemaName(schemaDto: SchemaDto): `${string}.${string}` {
 
 export async function schemaLoad(request: Request): Promise<SchemaDto[]> {
   const key = await sectorKeyProjectDb(request, 'SchemaDto');
-  const collection = client.db().collection<SchemaDto>('myCollection');
+  const collection = client.db(DB_NAME).collection<SchemaDto>('myCollection');
   return collection.find({ sectorKey: key, type: 'SchemaDto' }).toArray();
 }
 
 /** ids are ObjectId hex strings (the grid's rowKeys); invalid ones are ignored. */
 export async function schemaLoadByIds(request: Request, ids: string[]): Promise<SchemaDto[]> {
   const key = await sectorKeyProjectDb(request, 'SchemaDto');
-  const collection = client.db().collection<SchemaDto>('myCollection');
+  const collection = client.db(DB_NAME).collection<SchemaDto>('myCollection');
   const objectIds = ids.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
   return collection.find({ sectorKey: key, type: 'SchemaDto', _id: { $in: objectIds } }).toArray();
 }
 
 export async function schemaInsert(request: Request, schemaDtos: SchemaDto[]): Promise<SchemaDto[]> {
   const key = await sectorKeyProjectDb(request, 'SchemaDto');
-  const collection = client.db().collection<SchemaDto>('myCollection');
+  const collection = client.db(DB_NAME).collection<SchemaDto>('myCollection');
 
   const schemas = schemaDtos.map((schemaDto): SchemaDto => {
     const { _id, ...rest } = schemaDto;
@@ -43,7 +43,7 @@ export async function schemaInsert(request: Request, schemaDtos: SchemaDto[]): P
 /** Updates schemaDtos by _id (not by name, since name changes with tableName or columnName). */
 export async function schemaUpdate(request: Request, schemaDtos: SchemaDto[]): Promise<SchemaDto[]> {
   const key = await sectorKeyProjectDb(request, 'SchemaDto');
-  const collection = client.db().collection<SchemaDto>('myCollection');
+  const collection = client.db(DB_NAME).collection<SchemaDto>('myCollection');
 
   const schemas = schemaDtos
     .filter((schemaDto) => schemaDto._id !== undefined)

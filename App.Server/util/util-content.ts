@@ -1,4 +1,4 @@
-import client from './util-db.js';
+import client, { DB_NAME } from './util-db.js';
 import { DesignBandDto } from '../dto/design-dto.js';
 import { ContentBandEnum, ContentDto, DESIGN_BAND_PROPERTY_NAMES } from '../dto/shared/content-dto.js';
 import { sectorKeyProjectDb } from './util-main.js';
@@ -11,7 +11,7 @@ import { propertyLoadByOwners } from './util-property.js';
  */
 export async function loadContent(request: Request, contentName: string): Promise<ContentDto> {
   const key = await sectorKeyProjectDb(request, 'DesignBandDto');
-  const collection = client.db().collection<DesignBandDto>('myCollection');
+  const collection = client.db(DB_NAME).collection<DesignBandDto>('myCollection');
   const bands = await collection.find({ sectorKey: key, type: 'DesignBandDto', contentName }).sort({ sort: 1 }).toArray();
 
   const bandNames = bands.map((band) => band.name).filter((name): name is NonNullable<DesignBandDto['name']> => !!name);

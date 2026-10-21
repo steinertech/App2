@@ -8,6 +8,6 @@ export interface DbDto {
   sectorKey?: string;
   /** Discriminator of the DTO stored in the shared collection, e.g. 'UserDto'. */
   type?: string;
-  /** Unique key of the document within its sectorKey (which includes the type, so it is unique per type; enforced by a unique index on the database, so a duplicate insert or update fails). Every derived DTO redeclares it with a comment on how it is built (and may narrow its type, e.g. DesignBandDto). */
+  /** Unique key of the document within its sectorKey (which includes the type, so it is unique per type; enforced by the unique index { sectorKey: 1, name: 1 } created in util-db.ts, so a duplicate insert or update fails). Every derived DTO redeclares it with a comment on how it is built (and may narrow its type, e.g. DesignBandDto). */
   name?: string;
 }

@@ -1,5 +1,5 @@
 import { ObjectId } from 'mongodb';
-import client from './util-db.js';
+import client, { DB_NAME } from './util-db.js';
 import { PropertyDto, PropertyOwnerEnum } from '../dto/property-dto.js';
 import { sectorKeyProjectDb } from './util-main.js';
 
@@ -10,7 +10,7 @@ export type PropertyOwner = Required<Pick<PropertyDto, 'ownerName' | 'ownerEnum'
 
 export async function propertyLoad(request: Request): Promise<PropertyDto[]> {
   const key = await sectorKeyProjectDb(request, 'PropertyDto');
-  const collection = client.db().collection<PropertyDto>('myCollection');
+  const collection = client.db(DB_NAME).collection<PropertyDto>('myCollection');
   return collection.find({ sectorKey: key, type: 'PropertyDto' }).toArray();
 }
 
@@ -25,7 +25,7 @@ export async function propertyLoadByOwners(request: Request, owners: PropertyOwn
     return [];
   }
   const key = await sectorKeyProjectDb(request, 'PropertyDto');
-  const collection = client.db().collection<PropertyDto>('myCollection');
+  const collection = client.db(DB_NAME).collection<PropertyDto>('myCollection');
   return collection.find({ sectorKey: key, type: 'PropertyDto', $or: owners.map(({ ownerName, ownerEnum }) => ({ ownerName, ownerEnum })) }).toArray();
 }
 
@@ -35,21 +35,21 @@ export async function propertyDeleteByOwners(request: Request, owners: PropertyO
     return;
   }
   const key = await sectorKeyProjectDb(request, 'PropertyDto');
-  const collection = client.db().collection<PropertyDto>('myCollection');
+  const collection = client.db(DB_NAME).collection<PropertyDto>('myCollection');
   await collection.deleteMany({ sectorKey: key, type: 'PropertyDto', $or: owners.map(({ ownerName, ownerEnum }) => ({ ownerName, ownerEnum })) });
 }
 
 /** ids are ObjectId hex strings (the grid's rowKeys); invalid ones are ignored. */
 export async function propertyLoadByIds(request: Request, ids: string[]): Promise<PropertyDto[]> {
   const key = await sectorKeyProjectDb(request, 'PropertyDto');
-  const collection = client.db().collection<PropertyDto>('myCollection');
+  const collection = client.db(DB_NAME).collection<PropertyDto>('myCollection');
   const objectIds = ids.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
   return collection.find({ sectorKey: key, type: 'PropertyDto', _id: { $in: objectIds } }).toArray();
 }
 
 export async function propertyInsert(request: Request, propertyDtos: PropertyDto[]): Promise<PropertyDto[]> {
   const key = await sectorKeyProjectDb(request, 'PropertyDto');
-  const collection = client.db().collection<PropertyDto>('myCollection');
+  const collection = client.db(DB_NAME).collection<PropertyDto>('myCollection');
 
   const properties = propertyDtos.map((propertyDto): PropertyDto => {
     const { _id, ...rest } = propertyDto;
@@ -66,7 +66,7 @@ export async function propertyInsert(request: Request, propertyDtos: PropertyDto
 /** Updates propertyDtos by _id. */
 export async function propertyUpdate(request: Request, propertyDtos: PropertyDto[]): Promise<PropertyDto[]> {
   const key = await sectorKeyProjectDb(request, 'PropertyDto');
-  const collection = client.db().collection<PropertyDto>('myCollection');
+  const collection = client.db(DB_NAME).collection<PropertyDto>('myCollection');
 
   const properties = propertyDtos
     .filter((propertyDto) => propertyDto._id !== undefined)
@@ -107,7 +107,7 @@ export async function propertyOwnerRename(request: Request, renames: { owner: Pr
  */
 export async function propertySync(request: Request, owner: PropertyOwner, propertyNames: string[]): Promise<void> {
   const key = await sectorKeyProjectDb(request, 'PropertyDto');
-  const collection = client.db().collection<PropertyDto>('myCollection');
+  const collection = client.db(DB_NAME).collection<PropertyDto>('myCollection');
 
   const existingNames = new Set((await propertyLoadByOwners(request, [owner])).map((property) => property.propertyName));
 

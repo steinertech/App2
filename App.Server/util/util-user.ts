@@ -1,11 +1,11 @@
 import { randomUUID } from 'crypto';
-import client from './util-db.js';
+import client, { DB_NAME } from './util-db.js';
 import { UserDto } from '../dto/user-dto.js';
 import { SessionDto } from '../dto/session-dto.js';
 import { domainName, sectorKeyDb } from './util-main.js';
 
 export async function signUp(request: Request, email: string, password: string) {
-  const collection = client.db().collection<UserDto>('myCollection');
+  const collection = client.db(DB_NAME).collection<UserDto>('myCollection');
 
   await collection.insertOne({
     email,
@@ -17,7 +17,7 @@ export async function signUp(request: Request, email: string, password: string) 
 }
 
 export async function signIn(request: Request, email: string, password: string) {
-  const userCollection = client.db().collection<UserDto>('myCollection');
+  const userCollection = client.db(DB_NAME).collection<UserDto>('myCollection');
 
   const user = await userCollection.findOne({
     email,
@@ -30,7 +30,7 @@ export async function signIn(request: Request, email: string, password: string) 
     return null;
   }
 
-  const sessionCollection = client.db().collection<SessionDto>('myCollection');
+  const sessionCollection = client.db(DB_NAME).collection<SessionDto>('myCollection');
   const sessionId = randomUUID();
 
   await sessionCollection.insertOne({
@@ -58,7 +58,7 @@ export async function userSession(request: Request) {
     return null;
   }
 
-  const sessionCollection = client.db().collection<SessionDto>('myCollection');
+  const sessionCollection = client.db(DB_NAME).collection<SessionDto>('myCollection');
   return sessionCollection.findOne({
     sessionId,
     isSignIn: true,
@@ -69,7 +69,7 @@ export async function userSession(request: Request) {
 
 export async function usersLoad(request: Request): Promise<UserDto[]> {
   const key = await sectorKeyDb(request, 'UserDto');
-  const collection = client.db().collection<UserDto>('myCollection');
+  const collection = client.db(DB_NAME).collection<UserDto>('myCollection');
   return collection.find({ sectorKey: key, type: 'UserDto' }).toArray();
 }
 
@@ -77,7 +77,7 @@ export async function signOut(request: Request) {
   const dto = await userSession(request);
   if (dto) {
     dto.isSignIn = false;
-    const sessionCollection = client.db().collection<SessionDto>('myCollection');
+    const sessionCollection = client.db(DB_NAME).collection<SessionDto>('myCollection');
     await sessionCollection.updateOne({ _id: dto._id }, { $set: { isSignIn: false } });
   }
 
@@ -88,10 +88,10 @@ export async function userProject(request: Request, projectName: string) {
   const dto = await userSession(request);
   if (dto) {
     dto.projectName = projectName;
-    const sessionCollection = client.db().collection<SessionDto>('myCollection');
+    const sessionCollection = client.db(DB_NAME).collection<SessionDto>('myCollection');
     await sessionCollection.updateOne({ _id: dto._id }, { $set: { projectName } });
 
-    const userCollection = client.db().collection<UserDto>('myCollection');
+    const userCollection = client.db(DB_NAME).collection<UserDto>('myCollection');
     await userCollection.updateOne({ email: dto.email, sectorKey: await sectorKeyDb(request, 'UserDto'), type: 'UserDto' }, { $set: { projectName } });
   }
 
