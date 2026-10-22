@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { apiFetch, useEffectOnce } from './util/util-main.ts';
 import Grid from './Grid.tsx';
 import { GridStoreProvider, useGridStore } from './GridStore.tsx';
-import { CONTENT_FORM_CUSTOM_COLUMN_COUNT, CONTENT_FORM_CUSTOM_ROW_COUNT, CONTENT_FORM_PLANE_NAME, CONTENT_TABLE_CUSTOM_TABLE_NAME, CONTENT_TABLE_PLANE_NAME, ContentBandEnum, DESIGN_BAND_PROPERTY_NAMES } from '../../App.Server/dto/shared/content-dto.ts';
+import { CONTENT_FORM_CUSTOM_COLUMN_COUNT, CONTENT_FORM_CUSTOM_ROW_COUNT, CONTENT_FORM_CUSTOM_TABLE_NAME, CONTENT_FORM_PLANE_NAME, CONTENT_TABLE_CUSTOM_TABLE_NAME, CONTENT_TABLE_PLANE_NAME, ContentBandEnum, DESIGN_BAND_PROPERTY_NAMES } from '../../App.Server/dto/shared/content-dto.ts';
 import type { ContentBandDto, ContentDto, ContentRequestDto } from '../../App.Server/dto/shared/content-dto.ts';
 
 /** propertyValue of band's property propertyName (one of DESIGN_BAND_PROPERTY_NAMES[band.bandEnum]); '' if not found. */
@@ -22,13 +22,16 @@ function ContentTable({ tableName }: { tableName: string }) {
   return <Grid path={[0]} />;
 }
 
-/** Form layout: a grid of rowCount rows by columnCount columns (named A, B, C, ...), each cell "Cell"; the server parses and clamps the counts. Must be inside its own GridStoreProvider. */
-function ContentForm({ rowCount, columnCount }: { rowCount: string; columnCount: string }) {
+/**
+ * Form layout: a grid of rowCount rows by columnCount columns (named A, B, C, ...), each cell "Cell"; the server parses and clamps the counts.
+ * Its bar (New, Save, Reload, pager) pages the DynamicDto rows of tableName, loaded by the server only. Must be inside its own GridStoreProvider.
+ */
+function ContentForm({ rowCount, columnCount, tableName }: { rowCount: string; columnCount: string; tableName: string }) {
   const { load } = useGridStore();
 
   useEffectOnce(() => {
-    void load(CONTENT_FORM_PLANE_NAME, [{ state: { custom: { [CONTENT_FORM_CUSTOM_ROW_COUNT]: rowCount, [CONTENT_FORM_CUSTOM_COLUMN_COUNT]: columnCount } } }]);
-  }, [load, rowCount, columnCount]);
+    void load(CONTENT_FORM_PLANE_NAME, [{ state: { custom: { [CONTENT_FORM_CUSTOM_ROW_COUNT]: rowCount, [CONTENT_FORM_CUSTOM_COLUMN_COUNT]: columnCount, [CONTENT_FORM_CUSTOM_TABLE_NAME]: tableName } } }]);
+  }, [load, rowCount, columnCount, tableName]);
 
   return <Grid path={[0]} />;
 }
@@ -67,7 +70,7 @@ export default function Content({ contentName }: { contentName: string }) {
           case ContentBandEnum.Form:
             return (
               <GridStoreProvider key={index}>
-                <ContentForm rowCount={propertyValue(band, 'RowCount')} columnCount={propertyValue(band, 'ColumnCount')} />
+                <ContentForm rowCount={propertyValue(band, 'RowCount')} columnCount={propertyValue(band, 'ColumnCount')} tableName={propertyValue(band, 'TableName')} />
               </GridStoreProvider>
             );
           default:

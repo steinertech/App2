@@ -26,6 +26,9 @@ export const CONTENT_FORM_PLANE_NAME = 'contentForm';
 export const CONTENT_FORM_CUSTOM_ROW_COUNT = 'rowCount';
 export const CONTENT_FORM_CUSTOM_COLUMN_COUNT = 'columnCount';
 
+/** GridStateDto.custom key holding the band's TableName propertyValue whose DynamicDto rows the CONTENT_FORM_PLANE_NAME grid's pager pages; missing or '' pages all rows. */
+export const CONTENT_FORM_CUSTOM_TABLE_NAME = 'tableName';
+
 export interface ContentBandDto {
   bandEnum: ContentBandEnum;
   /** PropertyDto.propertyValue of each DESIGN_BAND_PROPERTY_NAMES[bandEnum], in that order ('' if missing). */
