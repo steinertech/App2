@@ -2,7 +2,7 @@ import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEn
 import { designBandDelete, designBandInsert, designBandLoad, designBandLoadByIds, designBandUpdate, designFormCellPropertyLoad, designFormCellPropertySync, designBandPropertyLoad, designBandFormPropertyLoadByIds, designBandPropertySync, designBandFormPropertyUpdate } from '../util/util-design.js';
 import { DesignBandDto } from '../dto/design-dto.js';
 import { PropertyDto } from '../dto/property-dto.js';
-import { ContentBandEnum } from '../dto/shared/content-dto.js';
+import { CONTENT_FORM_CUSTOM_COLUMN_COUNT, CONTENT_FORM_CUSTOM_ROW_COUNT, ContentBandEnum } from '../dto/shared/content-dto.js';
 import { GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
 import { indexToColumnNameExcel } from '../util/util-main.js';
 import { gridBarRow, gridCellText, gridCellValue, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand, gridLookupSet, gridPatchDeleteMulti, gridSelectedMultiRowKeys, gridTables } from '../util/util-grid.js';
@@ -138,6 +138,25 @@ async function gridDesignFormLoad(request: Request, band: DesignBandDto | undefi
     state: cell !== undefined ? { selectedRowIndex: cell.rowIndex, selectedColumnName: cell.columnName } : {},
     setting: { isSelectPatch: true, isSelectColumnPatch: true },
   };
+}
+
+/**
+ * Loads the CONTENT_FORM_PLANE_NAME plane (a ContentBandEnum.Form band of Content.tsx): one read only grid (grids[0]) with ColumnCount header columns
+ * (named A, B, C, ... by indexToColumnNameExcel) and RowCount rows (each cell "Cell"), the counts taken from its GridStateDto.custom (clamped like designFormCount).
+ */
+export async function planeContentFormLoad(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
+  const custom = gridPlaneDto.grids?.[0]?.state?.custom;
+  const count = (key: string) => designFormCount(typeof custom?.[key] === 'string' ? custom[key] : undefined);
+  const rowCount = count(CONTENT_FORM_CUSTOM_ROW_COUNT);
+  const columnNames = Array.from({ length: count(CONTENT_FORM_CUSTOM_COLUMN_COUNT) }, (_, columnIndex) => indexToColumnNameExcel(columnIndex));
+
+  // No columnName on the header cells: clicking them doesn't sort and they have no filter button.
+  const headerRow: GridRowDto = { cells: columnNames.map((columnName) => gridHeaderCell(undefined, undefined, columnName)) };
+  const rows: GridRowDto[] = Array.from({ length: rowCount }, (_, rowIndex) => ({
+    cells: columnNames.map((columnName): GridCellDto => ({ cellEnum: GridCellEnum.Label, text: 'Cell', rowIndex, columnName })),
+  }));
+
+  return { ...gridPlaneDto, grids: [{ tables: gridTables([], columnNames.length > 0 && rowCount > 0 ? [headerRow, ...rows] : []), state: { custom } }] };
 }
 
 /** Returns the properties shown in the Properties grid: those of cell of the Form grid if one is selected, otherwise those of band; none if no band is selected. */

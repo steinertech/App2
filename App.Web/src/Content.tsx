@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { apiFetch, useEffectOnce } from './util/util-main.ts';
 import Grid from './Grid.tsx';
 import { GridStoreProvider, useGridStore } from './GridStore.tsx';
-import { CONTENT_TABLE_CUSTOM_TABLE_NAME, CONTENT_TABLE_PLANE_NAME, ContentBandEnum, DESIGN_BAND_PROPERTY_NAMES } from '../../App.Server/dto/shared/content-dto.ts';
+import { CONTENT_FORM_CUSTOM_COLUMN_COUNT, CONTENT_FORM_CUSTOM_ROW_COUNT, CONTENT_FORM_PLANE_NAME, CONTENT_TABLE_CUSTOM_TABLE_NAME, CONTENT_TABLE_PLANE_NAME, ContentBandEnum, DESIGN_BAND_PROPERTY_NAMES } from '../../App.Server/dto/shared/content-dto.ts';
 import type { ContentBandDto, ContentDto, ContentRequestDto } from '../../App.Server/dto/shared/content-dto.ts';
 
 /** propertyValue of band's property propertyName (one of DESIGN_BAND_PROPERTY_NAMES[band.bandEnum]); '' if not found. */
@@ -22,36 +22,18 @@ function ContentTable({ tableName }: { tableName: string }) {
   return <Grid path={[0]} />;
 }
 
-/** Max RowCount and ColumnCount rendered by ContentForm, so a large value doesn't render a huge table. */
-const CONTENT_FORM_COUNT_MAX = 50;
+/** Form layout: a grid of rowCount rows by columnCount columns (named A, B, C, ...), each cell "Cell"; the server parses and clamps the counts. Must be inside its own GridStoreProvider. */
+function ContentForm({ rowCount, columnCount }: { rowCount: string; columnCount: string }) {
+  const { load } = useGridStore();
 
-/** Whole number of a RowCount or ColumnCount propertyValue, clamped to 0..CONTENT_FORM_COUNT_MAX; '' or invalid is 0. */
-function contentFormCount(text: string): number {
-  const count = Math.trunc(Number(text));
-  return Number.isFinite(count) ? Math.min(Math.max(count, 0), CONTENT_FORM_COUNT_MAX) : 0;
+  useEffectOnce(() => {
+    void load(CONTENT_FORM_PLANE_NAME, [{ state: { custom: { [CONTENT_FORM_CUSTOM_ROW_COUNT]: rowCount, [CONTENT_FORM_CUSTOM_COLUMN_COUNT]: columnCount } } }]);
+  }, [load, rowCount, columnCount]);
+
+  return <Grid path={[0]} />;
 }
 
-/** Form layout: a table of rowCount rows by columnCount columns of empty cells. Renders nothing if either is 0. */
-function ContentForm({ rowCount, columnCount }: { rowCount: number; columnCount: number }) {
-  if (rowCount === 0 || columnCount === 0) {
-    return null;
-  }
-  return (
-    <table className="my-2 border-collapse">
-      <tbody>
-        {Array.from({ length: rowCount }, (_, rowIndex) => (
-          <tr key={rowIndex}>
-            {Array.from({ length: columnCount }, (_, columnIndex) => (
-              <td key={columnIndex} className="h-8 w-32 border border-gray-300" />
-            ))}
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
-}
-
-/** Loads the content named contentName from /api/content and renders every band: Header as h1 (property Text), Table as Data grid of its TableName, Form as RowCount x ColumnCount table, others as their ContentBandEnum (as number). */
+/** Loads the content named contentName from /api/content and renders every band: Header as h1 (property Text), Table as Data grid of its TableName, Form as RowCount x ColumnCount grid, others as their ContentBandEnum (as number). */
 export default function Content({ contentName }: { contentName: string }) {
   const [content, setContent] = useState<ContentDto>();
 
@@ -83,7 +65,11 @@ export default function Content({ contentName }: { contentName: string }) {
               </GridStoreProvider>
             );
           case ContentBandEnum.Form:
-            return <ContentForm key={index} rowCount={contentFormCount(propertyValue(band, 'RowCount'))} columnCount={contentFormCount(propertyValue(band, 'ColumnCount'))} />;
+            return (
+              <GridStoreProvider key={index}>
+                <ContentForm rowCount={propertyValue(band, 'RowCount')} columnCount={propertyValue(band, 'ColumnCount')} />
+              </GridStoreProvider>
+            );
           default:
             return <div key={index}>{band.bandEnum}</div>;
         }
