@@ -38,8 +38,8 @@ function designSortFromText(text: string): number {
   return result;
 }
 
-/** PropertyDto.propertyName values of a design band whose propertyValue must be a whole number (or empty). */
-const DESIGN_BAND_PROPERTY_NUMBER_NAMES = new Set(['RowCount', 'ColumnCount']);
+/** PropertyDto.propertyName values of a design band or form cell whose propertyValue must be a whole number (or empty). */
+const DESIGN_BAND_PROPERTY_NUMBER_NAMES = new Set(['RowCount', 'ColumnCount', 'ColumnSpan', 'RowSpan']);
 
 // name is not a column, so it's never sent to App.Web (designBandInsert/designBandUpdate set it to contentName + "." + bandName).
 const DESIGN_BAND_COLUMNS: GridConfigDto = {
@@ -374,7 +374,7 @@ export async function planeDesignPatch(request: Request, gridPlaneDto: GridPlane
   return { ...gridPlaneDto, grids: [await gridPatchDeleteMulti(request, gridDto), {}, {}] };
 }
 
-/** Saves the modified propertyValue cells; RowCount and ColumnCount must be whole numbers (or empty). */
+/** Saves the modified propertyValue cells; RowCount, ColumnCount, ColumnSpan and RowSpan must be whole numbers (or empty). */
 async function gridDesignBandFormPropertySaveUpdate(request: Request, gridDto: GridDto): Promise<void> {
   const modifies = (gridDto.modifies ?? []).filter((modify) => !modify.isNew);
   const rowKeys = gridDto.state?.rowKeys ?? [];

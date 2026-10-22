@@ -94,7 +94,7 @@ export async function designBandPropertyLoad(request: Request, bandName: string)
 }
 
 /** The PropertyDto.propertyName list of a cell of a ContentBandEnum.Form band. */
-const DESIGN_FORM_CELL_PROPERTY_NAMES = ['FieldName'];
+const DESIGN_FORM_CELL_PROPERTY_NAMES = ['FieldName', 'ColumnSpan', 'RowSpan'];
 
 /** The owner of the PropertyDto rows of a cell of a Form band (ownerName is DesignBandDto.name + "." + rowIndex + "." + columnName). */
 export function designFormCellPropertyOwner(bandName: string, rowIndex: number, columnName: string): PropertyOwner {
