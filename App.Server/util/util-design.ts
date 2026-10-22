@@ -4,7 +4,7 @@ import { DesignBandDto } from '../dto/design-dto.js';
 import { PropertyDto, PropertyOwnerEnum } from '../dto/property-dto.js';
 import { ContentBandEnum, DESIGN_BAND_PROPERTY_NAMES } from '../dto/shared/content-dto.js';
 import { sectorKeyProjectDb } from './util-main.js';
-import { PropertyOwner, propertyDeleteByOwnerNameRegex, propertyDeleteByOwners, propertyLoadByIds, propertyLoadByOwners, propertySync, propertyUpdate } from './util-property.js';
+import { PropertyOwner, propertyDeleteByOwnerNameRegex, propertyDeleteByOwners, propertyLoadByIds, propertyLoadByOwnerNameRegex, propertyLoadByOwners, propertySync, propertyUpdate } from './util-property.js';
 
 // Design bands are per project: sectorKeyProjectDb (like sectorKey(request, true)) also asserts the user is signed in (redirects to /sign-in otherwise).
 
@@ -77,9 +77,7 @@ export async function designBandDelete(request: Request, ids: string[]): Promise
   const collection = client.db(DB_NAME).collection<DesignBandDto>('myCollection');
   await propertyDeleteByOwners(request, bands.filter((band) => band.name).map((band) => designBandPropertyOwner(band.name!)));
   for (const band of bands.filter((band) => band.name)) {
-    // Owner names of designFormCellPropertyOwner: band name + "." + rowIndex + "." + columnName.
-    const bandNameRegex = band.name!.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    await propertyDeleteByOwnerNameRegex(request, PropertyOwnerEnum.DesignFormCell, new RegExp(`^${bandNameRegex}\\.\\d+\\.[A-Z]+$`));
+    await propertyDeleteByOwnerNameRegex(request, PropertyOwnerEnum.DesignFormCell, designFormCellOwnerNameRegex(band.name!));
   }
   await collection.deleteMany({ sectorKey: key, type: 'DesignBandDto', _id: { $in: bands.map((band) => band._id!) } });
 }
@@ -99,6 +97,17 @@ const DESIGN_FORM_CELL_PROPERTY_NAMES = ['FieldName', 'ColumnSpan', 'RowSpan'];
 /** The owner of the PropertyDto rows of a cell of a Form band (ownerName is DesignBandDto.name + "." + rowIndex + "." + columnName). */
 export function designFormCellPropertyOwner(bandName: string, rowIndex: number, columnName: string): PropertyOwner {
   return { ownerName: bandName + '.' + rowIndex + '.' + columnName, ownerEnum: PropertyOwnerEnum.DesignFormCell };
+}
+
+/** Matches the ownerName of every cell of the Form band bandName (designFormCellPropertyOwner: band name + "." + rowIndex + "." + columnName). */
+function designFormCellOwnerNameRegex(bandName: string): RegExp {
+  const bandNameRegex = bandName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`^${bandNameRegex}\\.\\d+\\.[A-Z]+$`);
+}
+
+/** Returns the properties of all cells of the Form band bandName. */
+export async function designFormCellPropertyLoadAll(request: Request, bandName: string): Promise<PropertyDto[]> {
+  return propertyLoadByOwnerNameRegex(request, PropertyOwnerEnum.DesignFormCell, designFormCellOwnerNameRegex(bandName));
 }
 
 export async function designFormCellPropertyLoad(request: Request, bandName: string, rowIndex: number, columnName: string): Promise<PropertyDto[]> {

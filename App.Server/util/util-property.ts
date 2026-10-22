@@ -39,6 +39,13 @@ export async function propertyDeleteByOwners(request: Request, owners: PropertyO
   await collection.deleteMany({ sectorKey: key, type: 'PropertyDto', $or: owners.map(({ ownerName, ownerEnum }) => ({ ownerName, ownerEnum })) });
 }
 
+/** Returns the properties of ownerEnum whose ownerName matches ownerNameRegex (e.g. all cells of a design form). */
+export async function propertyLoadByOwnerNameRegex(request: Request, ownerEnum: PropertyOwnerEnum, ownerNameRegex: RegExp): Promise<PropertyDto[]> {
+  const key = await sectorKeyProjectDb(request, 'PropertyDto');
+  const collection = client.db(DB_NAME).collection<PropertyDto>('myCollection');
+  return collection.find({ sectorKey: key, type: 'PropertyDto', ownerEnum, ownerName: { $regex: ownerNameRegex } }).toArray();
+}
+
 /** Deletes the properties of ownerEnum whose ownerName matches ownerNameRegex (e.g. all cells of a design form). */
 export async function propertyDeleteByOwnerNameRegex(request: Request, ownerEnum: PropertyOwnerEnum, ownerNameRegex: RegExp): Promise<void> {
   const key = await sectorKeyProjectDb(request, 'PropertyDto');

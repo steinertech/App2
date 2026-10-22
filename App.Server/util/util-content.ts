@@ -24,7 +24,7 @@ export async function loadContent(request: Request, contentName: string): Promis
       const propertyValues = (DESIGN_BAND_PROPERTY_NAMES[bandEnum] ?? []).map(
         (propertyName) => properties.find((property) => property.ownerName === band.name && property.propertyName === propertyName)?.propertyValue ?? '',
       );
-      return { bandEnum, propertyValues };
+      return { name: band.name ?? '', bandEnum, propertyValues };
     }),
   };
 }

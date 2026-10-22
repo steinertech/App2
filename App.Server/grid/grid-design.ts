@@ -1,8 +1,8 @@
 import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPatchDto, GridPatchEnum, GridPlaneDto, GridRowDto } from '../dto/shared/grid-dto.js';
-import { designBandDelete, designBandInsert, designBandLoad, designBandLoadByIds, designBandUpdate, designFormCellPropertyLoad, designFormCellPropertySync, designBandPropertyLoad, designBandFormPropertyLoadByIds, designBandPropertySync, designBandFormPropertyUpdate } from '../util/util-design.js';
+import { designBandDelete, designBandInsert, designBandLoad, designBandLoadByIds, designBandUpdate, designFormCellPropertyLoad, designFormCellPropertyLoadAll, designFormCellPropertyOwner, designFormCellPropertySync, designBandPropertyLoad, designBandFormPropertyLoadByIds, designBandPropertySync, designBandFormPropertyUpdate } from '../util/util-design.js';
 import { DesignBandDto } from '../dto/design-dto.js';
 import { PropertyDto } from '../dto/property-dto.js';
-import { CONTENT_FORM_CUSTOM_COLUMN_COUNT, CONTENT_FORM_CUSTOM_ROW_COUNT, CONTENT_FORM_CUSTOM_TABLE_NAME, ContentBandEnum } from '../dto/shared/content-dto.js';
+import { CONTENT_FORM_CUSTOM_BAND_NAME, CONTENT_FORM_CUSTOM_COLUMN_COUNT, CONTENT_FORM_CUSTOM_ROW_COUNT, CONTENT_FORM_CUSTOM_TABLE_NAME, ContentBandEnum } from '../dto/shared/content-dto.js';
 import { dynamicLoad } from '../util/util-dynamic.js';
 import { GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
 import { indexToColumnNameExcel } from '../util/util-main.js';
@@ -143,7 +143,8 @@ async function gridDesignFormLoad(request: Request, band: DesignBandDto | undefi
 
 /**
  * Loads the CONTENT_FORM_PLANE_NAME plane (a ContentBandEnum.Form band of Content.tsx): one read only grid (grids[0]) with ColumnCount header columns
- * (named A, B, C, ... by indexToColumnNameExcel) and RowCount rows (each cell "Cell"), the counts taken from its GridStateDto.custom (clamped like designFormCount),
+ * (named A, B, C, ... by indexToColumnNameExcel) and RowCount rows (each cell the FieldName property of that cell of the Form band named by GridStateDto.custom's
+ * bandName, "Cell" if missing or empty), the counts taken from its GridStateDto.custom (clamped like designFormCount),
  * followed by the bar (New, Save, Reload and pager). The pager pages the DynamicDto rows of GridStateDto.custom's tableName (all rows if missing or empty, like the
  * Data grid of the "dynamic" plane); those rows are loaded but not sent to App.Web yet. New and Save don't do anything yet.
  */
@@ -159,10 +160,18 @@ export async function planeContentFormLoad(request: Request, gridPlaneDto: GridP
   const rowCount = count(CONTENT_FORM_CUSTOM_ROW_COUNT);
   const columnNames = Array.from({ length: count(CONTENT_FORM_CUSTOM_COLUMN_COUNT) }, (_, columnIndex) => indexToColumnNameExcel(columnIndex));
 
+  // FieldName of each cell (owner designFormCellPropertyOwner), shown instead of "Cell".
+  const bandName = custom?.[CONTENT_FORM_CUSTOM_BAND_NAME];
+  const cellProperties = typeof bandName === 'string' && bandName !== '' ? await designFormCellPropertyLoadAll(request, bandName) : [];
+  const cellText = (rowIndex: number, columnName: string) => {
+    const { ownerName } = designFormCellPropertyOwner(String(bandName), rowIndex, columnName);
+    return cellProperties.find((property) => property.ownerName === ownerName && property.propertyName === 'FieldName')?.propertyValue || 'Cell';
+  };
+
   // No columnName on the header cells: clicking them doesn't sort and they have no filter button.
   const headerRow: GridRowDto = { cells: columnNames.map((columnName) => gridHeaderCell(undefined, undefined, columnName)) };
   const rows: GridRowDto[] = Array.from({ length: rowCount }, (_, rowIndex) => ({
-    cells: columnNames.map((columnName): GridCellDto => ({ cellEnum: GridCellEnum.Label, text: 'Cell', rowIndex, columnName })),
+    cells: columnNames.map((columnName): GridCellDto => ({ cellEnum: GridCellEnum.Label, text: cellText(rowIndex, columnName), rowIndex, columnName })),
   }));
 
   // Command (e.g. New or Save of the bar) is transient: not sent back, so it isn't re-processed on a later request.
