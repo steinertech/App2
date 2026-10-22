@@ -4,6 +4,7 @@ import { DbDto } from './db-dto.js';
 export enum PropertyOwnerEnum {
   None = 0,
   DesignBand = 1,
+  DesignFormCell = 2,
 }
 
 export interface PropertyDto extends DbDto {

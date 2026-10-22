@@ -4,7 +4,7 @@ import { DesignBandDto } from '../dto/design-dto.js';
 import { PropertyDto, PropertyOwnerEnum } from '../dto/property-dto.js';
 import { ContentBandEnum, DESIGN_BAND_PROPERTY_NAMES } from '../dto/shared/content-dto.js';
 import { sectorKeyProjectDb } from './util-main.js';
-import { PropertyOwner, propertyDeleteByOwners, propertyLoadByIds, propertyLoadByOwners, propertySync, propertyUpdate } from './util-property.js';
+import { PropertyOwner, propertyDeleteByOwnerNameRegex, propertyDeleteByOwners, propertyLoadByIds, propertyLoadByOwners, propertySync, propertyUpdate } from './util-property.js';
 
 // Design bands are per project: sectorKeyProjectDb (like sectorKey(request, true)) also asserts the user is signed in (redirects to /sign-in otherwise).
 
@@ -67,7 +67,7 @@ export async function designBandUpdate(request: Request, designBandDtos: DesignB
   return bands;
 }
 
-/** Deletes the design bands by ids (ObjectId hex strings, the grid's rowKeys) and their properties; invalid ids are ignored. */
+/** Deletes the design bands by ids (ObjectId hex strings, the grid's rowKeys) and their properties (also those of their form cells); invalid ids are ignored. */
 export async function designBandDelete(request: Request, ids: string[]): Promise<void> {
   const bands = await designBandLoadByIds(request, ids);
   if (bands.length === 0) {
@@ -75,26 +75,48 @@ export async function designBandDelete(request: Request, ids: string[]): Promise
   }
   const key = await sectorKeyProjectDb(request, 'DesignBandDto');
   const collection = client.db(DB_NAME).collection<DesignBandDto>('myCollection');
-  await propertyDeleteByOwners(request, bands.filter((band) => band.name).map((band) => designPropertyOwner(band.name!)));
+  await propertyDeleteByOwners(request, bands.filter((band) => band.name).map((band) => designBandPropertyOwner(band.name!)));
+  for (const band of bands.filter((band) => band.name)) {
+    // Owner names of designFormCellPropertyOwner: band name + "." + rowIndex + "." + columnName.
+    const bandNameRegex = band.name!.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    await propertyDeleteByOwnerNameRegex(request, PropertyOwnerEnum.DesignFormCell, new RegExp(`^${bandNameRegex}\\.\\d+\\.[A-Z]+$`));
+  }
   await collection.deleteMany({ sectorKey: key, type: 'DesignBandDto', _id: { $in: bands.map((band) => band._id!) } });
 }
 
 /** The owner of a design band's PropertyDto rows (ownerName is DesignBandDto.name). */
-export function designPropertyOwner(bandName: string): PropertyOwner {
+export function designBandPropertyOwner(bandName: string): PropertyOwner {
   return { ownerName: bandName, ownerEnum: PropertyOwnerEnum.DesignBand };
 }
 
-export async function designPropertyLoad(request: Request, bandName: string): Promise<PropertyDto[]> {
-  return propertyLoadByOwners(request, [designPropertyOwner(bandName)]);
+export async function designBandPropertyLoad(request: Request, bandName: string): Promise<PropertyDto[]> {
+  return propertyLoadByOwners(request, [designBandPropertyOwner(bandName)]);
+}
+
+/** The PropertyDto.propertyName list of a cell of a ContentBandEnum.Form band. */
+const DESIGN_FORM_CELL_PROPERTY_NAMES = ['FieldName'];
+
+/** The owner of the PropertyDto rows of a cell of a Form band (ownerName is DesignBandDto.name + "." + rowIndex + "." + columnName). */
+export function designFormCellPropertyOwner(bandName: string, rowIndex: number, columnName: string): PropertyOwner {
+  return { ownerName: bandName + '.' + rowIndex + '.' + columnName, ownerEnum: PropertyOwnerEnum.DesignFormCell };
+}
+
+export async function designFormCellPropertyLoad(request: Request, bandName: string, rowIndex: number, columnName: string): Promise<PropertyDto[]> {
+  return propertyLoadByOwners(request, [designFormCellPropertyOwner(bandName, rowIndex, columnName)]);
+}
+
+/** Makes the properties of a Form band's cell match DESIGN_FORM_CELL_PROPERTY_NAMES (see propertySync). */
+export async function designFormCellPropertySync(request: Request, bandName: string, rowIndex: number, columnName: string): Promise<void> {
+  await propertySync(request, designFormCellPropertyOwner(bandName, rowIndex, columnName), DESIGN_FORM_CELL_PROPERTY_NAMES);
 }
 
 /** ids are ObjectId hex strings (the grid's rowKeys); invalid ones and properties of other owner types are ignored. */
-export async function designPropertyLoadByIds(request: Request, ids: string[]): Promise<PropertyDto[]> {
-  return (await propertyLoadByIds(request, ids)).filter((property) => property.ownerEnum === PropertyOwnerEnum.DesignBand);
+export async function designBandFormPropertyLoadByIds(request: Request, ids: string[]): Promise<PropertyDto[]> {
+  return (await propertyLoadByIds(request, ids)).filter((property) => property.ownerEnum === PropertyOwnerEnum.DesignBand || property.ownerEnum === PropertyOwnerEnum.DesignFormCell);
 }
 
-/** Updates the propertyValue of propertyDtos by _id; owner and propertyName are owned by designPropertySync. */
-export async function designPropertyUpdate(request: Request, propertyDtos: PropertyDto[]): Promise<void> {
+/** Updates the propertyValue of propertyDtos by _id; owner and propertyName are owned by designBandPropertySync. */
+export async function designBandFormPropertyUpdate(request: Request, propertyDtos: PropertyDto[]): Promise<void> {
   await propertyUpdate(request, propertyDtos.map(({ _id, propertyValue }) => ({ _id, propertyValue })));
 }
 
@@ -102,10 +124,10 @@ export async function designPropertyUpdate(request: Request, propertyDtos: Prope
  * Makes the properties of band match DESIGN_BAND_PROPERTY_NAMES of its bandEnum (see propertySync).
  * A band without a name has no properties.
  */
-export async function designPropertySync(request: Request, band: DesignBandDto): Promise<void> {
+export async function designBandPropertySync(request: Request, band: DesignBandDto): Promise<void> {
   if (!band.name) {
     return;
   }
   const propertyNames = DESIGN_BAND_PROPERTY_NAMES[band.bandEnum ?? ContentBandEnum.None] ?? [];
-  await propertySync(request, designPropertyOwner(band.name), propertyNames);
+  await propertySync(request, designBandPropertyOwner(band.name), propertyNames);
 }
