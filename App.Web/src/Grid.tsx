@@ -320,10 +320,10 @@ function GridContent({ path }: GridProps) {
 
   const grid = resolveGrid(gridPlaneDto.grids, path);
   const gridTables = grid?.tables ?? [];
-  const [rowIndexSelected, setRowIndexSelected] = useState(grid?.state?.selectedRowIndex);
   const [modifies, setModifies] = useState<GridModifyDto[]>(grid?.modifies ?? []);
   const [customModifies, setCustomModifies] = useState<GridCustomModifyDto[]>(grid?.customModifies ?? []);
-  // Read from the store (not local state) so it follows server changes, e.g. cleared after DeleteMulti.
+  // Read from the store (not local state) so they follow server changes, e.g. cleared after DeleteMulti, or the first row selected by the server.
+  const rowIndexSelected = grid?.state?.selectedRowIndex;
   const isSelectedMulti = grid?.state?.isSelectedMulti ?? [];
   const selectedColumnName = grid?.state?.selectedColumnName;
 
@@ -494,7 +494,6 @@ function GridContent({ path }: GridProps) {
 
   /** Filter, sort or paging changed, so the rows shown change: clears the selected row (and column) and the multi select checkboxes. */
   const resetSelection = () => {
-    setRowIndexSelected(undefined);
     setState(path, { selectedRowIndex: undefined, selectedColumnName: undefined, isSelectedMulti: undefined });
   };
 
@@ -527,17 +526,14 @@ function GridContent({ path }: GridProps) {
   };
 
   /**
-   * Click on a data cell: selects its row and its column (GridStateDto.selectedColumnName, sent with the next command).
+   * Click on a data cell: selects its row and its column (GridStateDto.selectedRowIndex and selectedColumnName, sent with the next command).
    * Sends GridCommandEnum.Select once if the row changed (GridSettingDto.isSelectPatch) or the column changed (GridSettingDto.isSelectColumnPatch).
    */
   const handleCellSelect = async (rowIndex: number, columnName: string | undefined) => {
     const isColumnChanged = columnName !== selectedColumnName;
     const isRowChanged = rowIndex !== rowIndexSelected;
-    if (isColumnChanged) {
-      setState(path, { selectedColumnName: columnName });
-    }
-    if (isRowChanged) {
-      setRowIndexSelected(rowIndex);
+    if (isColumnChanged || isRowChanged) {
+      setState(path, { selectedRowIndex: rowIndex, selectedColumnName: columnName });
     }
     if ((isRowChanged && grid?.setting?.isSelectPatch === true) || (isColumnChanged && grid?.setting?.isSelectColumnPatch === true)) {
       await sendPatch(path, {

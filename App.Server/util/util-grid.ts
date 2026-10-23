@@ -51,11 +51,12 @@ export function gridColumns(columns: GridConfigColumnDto[], state?: GridStateDto
 }
 
 /**
- * Filter-Sort-Page: returns the rows of the current page plus the effective paging state (pageIndex, pageCount, pageRowCount; merge it into the response's GridStateDto).
+ * Filter-Sort-Page: returns the rows of the current page plus the effective paging state (pageIndex, pageCount, pageRowCount, and selectedRowIndex, 0 if unset and the page has rows; merge it into the response's GridStateDto).
  * Only the columns rendered by gridColumns(columns, state) take part, since filters and sort come back from the client:
  * - Filter: every GridStateDto.filters entry must match (see gridFspFilterMatch).
  * - Sort: by GridStateDto.sort, using the column's columnNameSort value if set. Rows without a value come last; equal values keep their original order.
  * - Page: pageRowCount defaults to 5 (max 10); pageIndex is clamped to the existing pages; pageCount is the number of pages after the filter (at least 1).
+ * - Select: selectedRowIndex is kept if set, otherwise 0 (the first row of the page) if the page has rows.
  */
 export function gridFsp<T extends object>(rows: T[], columns: GridConfigColumnDto[], state: GridStateDto | undefined): { rows: T[]; state: GridStateDto } {
   const renderedColumns = gridColumns(columns, state);
@@ -85,10 +86,14 @@ export function gridFsp<T extends object>(rows: T[], columns: GridConfigColumnDt
   const pageCount = Math.max(1, Math.ceil(result.length / pageRowCount));
   const pageIndexState = Math.trunc(state?.pageIndex ?? 0);
   const pageIndex = Number.isFinite(pageIndexState) ? Math.min(Math.max(pageIndexState, 0), pageCount - 1) : 0;
+  const pageRows = result.slice(pageIndex * pageRowCount, (pageIndex + 1) * pageRowCount);
+
+  // Selected row: the first one of the page if none is selected (e.g. on first load, or after App.Web cleared it on filter, sort or paging).
+  const selectedRowIndex = state?.selectedRowIndex ?? (pageRows.length > 0 ? 0 : undefined);
 
   return {
-    rows: result.slice(pageIndex * pageRowCount, (pageIndex + 1) * pageRowCount),
-    state: { pageIndex, pageCount, pageRowCount },
+    rows: pageRows,
+    state: { pageIndex, pageCount, pageRowCount, selectedRowIndex },
   };
 }
 

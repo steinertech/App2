@@ -153,7 +153,7 @@ export async function planeContentFormLoad(request: Request, gridPlaneDto: GridP
   const custom = gridDto.state?.custom;
   const tableName = custom?.[CONTENT_FORM_CUSTOM_TABLE_NAME];
   const dynamics = await dynamicLoad(request, typeof tableName === 'string' && tableName !== '' ? tableName : undefined);
-  // Filter-Sort-Page: only the page state is used (no columns, so no filter or sort).
+  // Filter-Sort-Page: only the page state is used (no columns, so no filter or sort). Not its selectedRowIndex: the rendered rows are the form's, not the paged ones.
   const { state: fspState } = gridFsp(dynamics, [], gridDto.state);
 
   const count = (key: string) => designFormCount(typeof custom?.[key] === 'string' ? custom[key] : undefined);
@@ -177,7 +177,7 @@ export async function planeContentFormLoad(request: Request, gridPlaneDto: GridP
   // Command (e.g. New or Save of the bar) is transient: not sent back, so it isn't re-processed on a later request.
   return {
     ...gridPlaneDto,
-    grids: [{ tables: gridTables([], columnNames.length > 0 && rowCount > 0 ? [headerRow, ...rows] : [], [gridBarRow()]), state: { ...fspState, custom } }],
+    grids: [{ tables: gridTables([], columnNames.length > 0 && rowCount > 0 ? [headerRow, ...rows] : [], [gridBarRow()]), state: { ...fspState, selectedRowIndex: undefined, custom } }],
   };
 }
 
