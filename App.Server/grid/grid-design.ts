@@ -144,7 +144,7 @@ async function gridDesignFormLoad(request: Request, band: DesignBandDto | undefi
 /**
  * Loads the CONTENT_FORM_PLANE_NAME plane (a ContentBandEnum.Form band of Content.tsx): one read only grid (grids[0]) with ColumnCount header columns
  * (named A, B, C, ... by indexToColumnNameExcel) and RowCount rows (each cell the FieldName property of that cell of the Form band named by GridStateDto.custom's
- * bandName, "Cell" if missing or empty), the counts taken from its GridStateDto.custom (clamped like designFormCount),
+ * bandName, "Cell" if missing or empty), each followed by a row of "Empty" cells, the counts taken from its GridStateDto.custom (clamped like designFormCount),
  * followed by the bar (New, Save, Reload and pager). The pager pages the DynamicDto rows of GridStateDto.custom's tableName (all rows if missing or empty, like the
  * Data grid of the "dynamic" plane); those rows are loaded but not sent to App.Web yet. New and Save don't do anything yet.
  */
@@ -170,9 +170,11 @@ export async function planeContentFormLoad(request: Request, gridPlaneDto: GridP
 
   // No columnName on the header cells: clicking them doesn't sort and they have no filter button.
   const headerRow: GridRowDto = { cells: columnNames.map((columnName) => gridHeaderCell(undefined, undefined, columnName)) };
-  const rows: GridRowDto[] = Array.from({ length: rowCount }, (_, rowIndex) => ({
-    cells: columnNames.map((columnName): GridCellDto => ({ cellEnum: GridCellEnum.Label, text: cellText(rowIndex, columnName), rowIndex, columnName })),
-  }));
+  // Each form row renders as two rows: its FieldNames, then a row of "Empty" cells (same rowIndex, so both are selected together).
+  const rows: GridRowDto[] = Array.from({ length: rowCount }, (_, rowIndex) => [
+    { cells: columnNames.map((columnName): GridCellDto => ({ cellEnum: GridCellEnum.Label, text: cellText(rowIndex, columnName), rowIndex, columnName })) },
+    { cells: columnNames.map((columnName): GridCellDto => ({ cellEnum: GridCellEnum.Label, text: 'Empty', rowIndex, columnName })) },
+  ]).flat();
 
   // Command (e.g. New or Save of the bar) is transient: not sent back, so it isn't re-processed on a later request.
   return {
