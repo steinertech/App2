@@ -142,10 +142,10 @@ async function gridDesignFormLoad(request: Request, band: DesignBandDto | undefi
 }
 
 /**
- * Loads the CONTENT_FORM_PLANE_NAME plane (a ContentBandEnum.Form band of Content.tsx): one read only grid (grids[0]) with ColumnCount header columns
+ * Loads the CONTENT_FORM_PLANE_NAME plane (a ContentBandEnum.Form band of Content.tsx): one grid (grids[0]) with ColumnCount header columns
  * (named A, B, C, ... by indexToColumnNameExcel) and RowCount rows (each cell the FieldName property of that cell of the Form band named by GridStateDto.custom's
- * bandName, "Cell" if missing or empty), each followed by a row of their values (the value of that FieldName of the DynamicDto row, "Empty" if the cell has no
- * FieldName), repeated for each DynamicDto row of the current page (every cell's rowIndex is that row's index on the page), the counts taken from its GridStateDto.custom
+ * bandName, "Cell" if missing or empty), each followed by a row of their values (a text box with the value of that FieldName of the DynamicDto row, the label "Empty"
+ * if the cell has no FieldName), repeated for each DynamicDto row of the current page (every cell's rowIndex is that row's index on the page), the counts taken from its GridStateDto.custom
  * (clamped like designFormCount),
  * followed by the bar (New, Save, Reload and pager). The pager pages the DynamicDto rows of GridStateDto.custom's tableName (all rows if missing or empty, like the
  * Data grid of the "dynamic" plane). New and Save don't do anything yet.
@@ -169,10 +169,12 @@ export async function planeContentFormLoad(request: Request, gridPlaneDto: GridP
     const { ownerName } = designFormCellPropertyOwner(String(bandName), rowIndex, columnName);
     return cellProperties.find((property) => property.ownerName === ownerName && property.propertyName === 'FieldName')?.propertyValue || undefined;
   };
-  // Value row text: the dynamic row's value of the cell's FieldName ("" if missing), or "Empty" if the cell has no FieldName.
-  const valueText = (dynamic: Record<string, unknown>, formRowIndex: number, columnName: string): string => {
+  // Value row cell: a text box with the dynamic row's value of the cell's FieldName ("" if missing), or the label "Empty" if the cell has no FieldName.
+  const valueCell = (dynamic: Record<string, unknown>, formRowIndex: number, columnName: string, rowIndex: number): GridCellDto => {
     const name = fieldName(formRowIndex, columnName);
-    return name !== undefined ? gridCellText(dynamic[name], {}) : 'Empty';
+    return name !== undefined
+      ? { cellEnum: GridCellEnum.Edit, text: gridCellText(dynamic[name], {}), rowIndex, columnName }
+      : { cellEnum: GridCellEnum.Label, text: 'Empty', rowIndex, columnName };
   };
 
   // No columnName on the header cells: clicking them doesn't sort and they have no filter button.
@@ -181,7 +183,7 @@ export async function planeContentFormLoad(request: Request, gridPlaneDto: GridP
   // Each form row renders as two rows: its FieldNames ("Cell" if missing), then their values.
   const rows: GridRowDto[] = (pageDynamics as Record<string, unknown>[]).flatMap((dynamic, rowIndex) => Array.from({ length: rowCount }, (_, formRowIndex) => [
     { cells: columnNames.map((columnName): GridCellDto => ({ cellEnum: GridCellEnum.Label, text: fieldName(formRowIndex, columnName) ?? 'Cell', rowIndex, columnName })) },
-    { cells: columnNames.map((columnName): GridCellDto => ({ cellEnum: GridCellEnum.Label, text: valueText(dynamic, formRowIndex, columnName), rowIndex, columnName })) },
+    { cells: columnNames.map((columnName) => valueCell(dynamic, formRowIndex, columnName, rowIndex)) },
   ]).flat());
 
   // Command (e.g. New or Save of the bar) is transient: not sent back, so it isn't re-processed on a later request.
