@@ -186,11 +186,14 @@ export async function planeContentFormLoad(request: Request, gridPlaneDto: GridP
     { cells: columnNames.map((columnName) => valueCell(dynamic, formRowIndex, columnName, rowIndex)) },
   ]).flat());
 
+  // rowKey is the _id (ObjectId hex) of the form repetition's dynamic row, its rowIndex being the index into rowKeys.
+  const rowKeys: string[] = pageDynamics.map((dynamic) => dynamic._id?.toHexString() ?? '');
+
   // Command (e.g. New or Save of the bar) is transient: not sent back, so it isn't re-processed on a later request.
   const isForm = columnNames.length > 0 && rowCount > 0;
   return {
     ...gridPlaneDto,
-    grids: [{ tables: gridTables([], isForm ? [headerRow, ...rows] : [], [gridBarRow()]), state: { ...fspState, selectedRowIndex: isForm ? fspState.selectedRowIndex : undefined, custom } }],
+    grids: [{ tables: gridTables([], isForm ? [headerRow, ...rows] : [], [gridBarRow()]), state: { ...fspState, selectedRowIndex: isForm ? fspState.selectedRowIndex : undefined, rowKeys, custom } }],
   };
 }
 
