@@ -35,6 +35,13 @@ interface GridProps {
 /** Paging part of GridStateDto changed by a GridCustomEnum.Bar. */
 type GridStatePage = Pick<GridStateDto, 'pageIndex' | 'pageRowCount'>;
 
+/** Previous/Next row buttons of a GridCustomEnum.Bar: move the selected row (GridStateDto.selectedRowIndex) within the rows of the current page. */
+interface GridRowStep {
+  isPreviousDisabled: boolean;
+  isNextDisabled: boolean;
+  onStep: (step: -1 | 1) => void;
+}
+
 function gridCellClassName(gridCell: GridCellDto, rowSelected: boolean, columnSelected: boolean): string {
   if (gridCell.cellEnum === GridCellEnum.Header) {
     return 'font-bold text-white bg-blue-600';
@@ -62,6 +69,7 @@ function gridCustomContent(
   onPageChange: (statePage: GridStatePage) => void,
   gridState: GridStateDto | undefined,
   gridSetting: GridSettingDto | undefined,
+  rowStep: GridRowStep,
 ): ReactNode {
   if (gridCustom.customEnum === GridCustomEnum.Bar) {
     const pageIndex = gridState?.pageIndex ?? 0;
@@ -79,6 +87,30 @@ function gridCustomContent(
           </button>
           <button type="button" onClick={() => onBarClick(GridCommandEnum.Reload)} className={buttonBarClassName}>
             ⟳ Reload
+          </button>
+          <button
+            type="button"
+            aria-label="Previous row"
+            title="Previous row"
+            disabled={rowStep.isPreviousDisabled}
+            onClick={() => rowStep.onStep(-1)}
+            className={buttonBarIconClassName}
+          >
+            <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5" aria-hidden="true">
+              <path fillRule="evenodd" d="M14.77 12.79a.75.75 0 0 1-1.06-.02L10 8.83l-3.71 3.94a.75.75 0 1 1-1.08-1.04l4.25-4.5a.75.75 0 0 1 1.08 0l4.25 4.5a.75.75 0 0 1-.02 1.06Z" clipRule="evenodd" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            aria-label="Next row"
+            title="Next row"
+            disabled={rowStep.isNextDisabled}
+            onClick={() => rowStep.onStep(1)}
+            className={buttonBarIconClassName}
+          >
+            <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5" aria-hidden="true">
+              <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clipRule="evenodd" />
+            </svg>
           </button>
         </span>
         <span className="flex items-center gap-1">
@@ -198,11 +230,12 @@ function gridCellContent(
   gridState: GridStateDto | undefined,
   gridSetting: GridSettingDto | undefined,
   onFilterMultiClick: (gridCell: GridCellDto) => void,
+  rowStep: GridRowStep,
 ): ReactNode {
   let content: ReactNode;
   if (gridCell.cellEnum === GridCellEnum.Custom) {
     content = (gridCell.customs ?? []).map((gridCustom, index) =>
-      gridCustomContent(gridCustom, index, gridVersion, onCustomClick, onCustomTextChange, pathSegments, onBarClick, onPageChange, gridState, gridSetting),
+      gridCustomContent(gridCustom, index, gridVersion, onCustomClick, onCustomTextChange, pathSegments, onBarClick, onPageChange, gridState, gridSetting, rowStep),
     );
   } else if (gridCell.cellEnum === GridCellEnum.Empty) {
     content = null;
@@ -514,6 +547,30 @@ function GridContent({ path }: GridProps) {
     }
   };
 
+  // rowIndex of every (not new) data row of the current page, in display order.
+  const rowIndexes = [
+    ...new Set(
+      (gridTables[1]?.rows ?? []).flatMap((gridRow) =>
+        (gridRow.cells ?? []).filter((gridCell) => gridCell.rowIndex !== undefined && gridCell.isNew !== true).map((gridCell) => gridCell.rowIndex as number),
+      ),
+    ),
+  ];
+  const rowIndexesPosition = rowIndexSelected === undefined ? -1 : rowIndexes.indexOf(rowIndexSelected);
+
+  /** Previous/Next row button of a GridCustomEnum.Bar: selects the row before/after the selected one like a click on it (keeps the selected column); Next without a selected row selects the first row. */
+  const handleRowStep = async (step: -1 | 1) => {
+    const rowIndex = rowIndexes[rowIndexesPosition === -1 ? 0 : rowIndexesPosition + step];
+    if (rowIndex !== undefined) {
+      await handleCellSelect(rowIndex, selectedColumnName);
+    }
+  };
+
+  const rowStep: GridRowStep = {
+    isPreviousDisabled: rowIndexesPosition <= 0,
+    isNextDisabled: rowIndexesPosition >= rowIndexes.length - 1,
+    onStep: (step) => void handleRowStep(step),
+  };
+
   const handleSaveClick = async () => {
     await sendGridCommand({ command: { commandEnum: GridCommandEnum.Save }, modifies });
     // Saved: clear modifies so the next Save doesn't send (and e.g. insert) them again.
@@ -620,6 +677,7 @@ function GridContent({ path }: GridProps) {
                       grid?.state,
                       grid?.setting,
                       (gridCell) => void handleFilterMultiClick(gridCell),
+                      rowStep,
                     )}
                   </td>
                 ))}
