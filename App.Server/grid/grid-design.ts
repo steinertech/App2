@@ -3,7 +3,7 @@ import { designBandDelete, designBandInsert, designBandLoad, designBandLoadByIds
 import { DesignBandDto } from '../dto/design-dto.js';
 import { PropertyDto } from '../dto/property-dto.js';
 import { CONTENT_FORM_CUSTOM_BAND_NAME, CONTENT_FORM_CUSTOM_COLUMN_COUNT, CONTENT_FORM_CUSTOM_ROW_COUNT, CONTENT_FORM_CUSTOM_TABLE_NAME, ContentBandEnum } from '../dto/shared/content-dto.js';
-import { dynamicLoad } from '../util/util-dynamic.js';
+import { dynamicLoad, dynamicLoadByIds, dynamicUpdate } from '../util/util-dynamic.js';
 import { GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
 import { indexToColumnNameExcel } from '../util/util-main.js';
 import { gridBarRow, gridCellText, gridCellValue, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand, gridLookupSet, gridPatchDeleteMulti, gridSelectedMultiRowKeys, gridTables } from '../util/util-grid.js';
@@ -148,15 +148,11 @@ async function gridDesignFormLoad(request: Request, band: DesignBandDto | undefi
  * if the cell has no FieldName), repeated for each DynamicDto row of the current page (every cell's rowIndex is that row's index on the page), the counts taken from its GridStateDto.custom
  * (clamped like designFormCount),
  * followed by the bar (New, Save, Reload and pager). The pager pages the DynamicDto rows of GridStateDto.custom's tableName (all rows if missing or empty, like the
- * Data grid of the "dynamic" plane). New and Save don't do anything yet.
+ * Data grid of the "dynamic" plane). Save writes the modified text boxes into their DynamicDto rows; New doesn't do anything yet.
  */
 export async function planeContentFormLoad(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
   const gridDto = gridPlaneDto.grids?.[0] ?? {};
   const custom = gridDto.state?.custom;
-  const tableName = custom?.[CONTENT_FORM_CUSTOM_TABLE_NAME];
-  const dynamics = await dynamicLoad(request, typeof tableName === 'string' && tableName !== '' ? tableName : undefined);
-  // Filter-Sort-Page: no columns, so no filter or sort. Its selectedRowIndex (the first row of the page if none is selected) is the rowIndex of a form repetition.
-  const { rows: pageDynamics, state: fspState } = gridFsp(dynamics, [], gridDto.state);
 
   const count = (key: string) => designFormCount(typeof custom?.[key] === 'string' ? custom[key] : undefined);
   const rowCount = count(CONTENT_FORM_CUSTOM_ROW_COUNT);
@@ -170,12 +166,24 @@ export async function planeContentFormLoad(request: Request, gridPlaneDto: GridP
     return cellProperties.find((property) => property.ownerName === ownerName && property.propertyName === 'FieldName')?.propertyValue || undefined;
   };
   // Value row cell: a text box with the dynamic row's value of the cell's FieldName ("" if missing), or the label "Empty" if the cell has no FieldName.
+  // The text box's columnName is its FieldName (not A, B, ...): a modify is identified by rowIndex and columnName, and A, B, ... repeat for every form row
+  // of a repetition. Text boxes with the same FieldName show the same value anyway.
   const valueCell = (dynamic: Record<string, unknown>, formRowIndex: number, columnName: string, rowIndex: number): GridCellDto => {
     const name = fieldName(formRowIndex, columnName);
     return name !== undefined
-      ? { cellEnum: GridCellEnum.Edit, text: gridCellText(dynamic[name], {}), rowIndex, columnName }
+      ? { cellEnum: GridCellEnum.Edit, text: gridCellText(dynamic[name], {}), rowIndex, columnName: name }
       : { cellEnum: GridCellEnum.Label, text: 'Empty', rowIndex, columnName };
   };
+
+  if (gridDto.command?.commandEnum === GridCommandEnum.Save) {
+    const fieldNames = new Set(columnNames.flatMap((columnName) => Array.from({ length: rowCount }, (_, formRowIndex) => fieldName(formRowIndex, columnName) ?? []).flat()));
+    await gridContentFormSaveUpdate(request, gridDto, fieldNames);
+  }
+
+  const tableName = custom?.[CONTENT_FORM_CUSTOM_TABLE_NAME];
+  const dynamics = await dynamicLoad(request, typeof tableName === 'string' && tableName !== '' ? tableName : undefined);
+  // Filter-Sort-Page: no columns, so no filter or sort. Its selectedRowIndex (the first row of the page if none is selected) is the rowIndex of a form repetition.
+  const { rows: pageDynamics, state: fspState } = gridFsp(dynamics, [], gridDto.state);
 
   // No columnName on the header cells: clicking them doesn't sort and they have no filter button.
   const headerRow: GridRowDto = { cells: columnNames.map((columnName) => gridHeaderCell(undefined, undefined, columnName)) };
@@ -195,6 +203,36 @@ export async function planeContentFormLoad(request: Request, gridPlaneDto: GridP
     ...gridPlaneDto,
     grids: [{ tables: gridTables([], isForm ? [headerRow, ...rows] : [], [gridBarRow()]), state: { ...fspState, selectedRowIndex: isForm ? fspState.selectedRowIndex : undefined, rowKeys, custom } }],
   };
+}
+
+/** Saves the modified text boxes of the Content Form into their DynamicDto rows (rowKeys); only those whose columnName is one of fieldNames (the form's FieldNames). */
+async function gridContentFormSaveUpdate(request: Request, gridDto: GridDto, fieldNames: Set<string>): Promise<void> {
+  const modifies = (gridDto.modifies ?? []).filter((modify) => !modify.isNew);
+  const rowKeys = gridDto.state?.rowKeys ?? [];
+
+  const ids = [
+    ...new Set(
+      modifies
+        .map((modify) => (modify.rowIndex !== undefined ? rowKeys[modify.rowIndex] : undefined))
+        .filter((rowKey): rowKey is string => rowKey !== undefined),
+    ),
+  ];
+
+  const dynamics = await dynamicLoadByIds(request, ids);
+
+  for (const modify of modifies) {
+    if (modify.rowIndex === undefined || modify.columnName === undefined || modify.cellEnum !== GridCellEnum.Edit || !fieldNames.has(modify.columnName)) {
+      continue;
+    }
+
+    const rowKey = rowKeys[modify.rowIndex];
+    const dynamic = dynamics.find((dynamic) => dynamic._id?.toHexString() === rowKey);
+    if (dynamic) {
+      (dynamic as Record<string, unknown>)[modify.columnName] = modify.textModified ?? '';
+    }
+  }
+
+  await dynamicUpdate(request, dynamics);
 }
 
 /** Returns the properties shown in the Properties grid: those of cell of the Form grid if one is selected, otherwise those of band; none if no band is selected. */
