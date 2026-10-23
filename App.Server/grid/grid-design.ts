@@ -144,9 +144,10 @@ async function gridDesignFormLoad(request: Request, band: DesignBandDto | undefi
 /**
  * Loads the CONTENT_FORM_PLANE_NAME plane (a ContentBandEnum.Form band of Content.tsx): one read only grid (grids[0]) with ColumnCount header columns
  * (named A, B, C, ... by indexToColumnNameExcel) and RowCount rows (each cell the FieldName property of that cell of the Form band named by GridStateDto.custom's
- * bandName, "Cell" if missing or empty), each followed by a row of "Empty" cells, the counts taken from its GridStateDto.custom (clamped like designFormCount),
+ * bandName, "Cell" if missing or empty), each followed by a row of their values (the value of that FieldName of the first DynamicDto row of the current page, "Empty"
+ * if the cell has no FieldName), the counts taken from its GridStateDto.custom (clamped like designFormCount),
  * followed by the bar (New, Save, Reload and pager). The pager pages the DynamicDto rows of GridStateDto.custom's tableName (all rows if missing or empty, like the
- * Data grid of the "dynamic" plane); those rows are loaded but not sent to App.Web yet. New and Save don't do anything yet.
+ * Data grid of the "dynamic" plane). New and Save don't do anything yet.
  */
 export async function planeContentFormLoad(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
   const gridDto = gridPlaneDto.grids?.[0] ?? {};
@@ -154,26 +155,33 @@ export async function planeContentFormLoad(request: Request, gridPlaneDto: GridP
   const tableName = custom?.[CONTENT_FORM_CUSTOM_TABLE_NAME];
   const dynamics = await dynamicLoad(request, typeof tableName === 'string' && tableName !== '' ? tableName : undefined);
   // Filter-Sort-Page: only the page state is used (no columns, so no filter or sort). Not its selectedRowIndex: the rendered rows are the form's, not the paged ones.
-  const { state: fspState } = gridFsp(dynamics, [], gridDto.state);
+  const { rows: pageDynamics, state: fspState } = gridFsp(dynamics, [], gridDto.state);
+  // The form shows the first DynamicDto row of the current page.
+  const dynamic = pageDynamics[0] as Record<string, unknown> | undefined;
 
   const count = (key: string) => designFormCount(typeof custom?.[key] === 'string' ? custom[key] : undefined);
   const rowCount = count(CONTENT_FORM_CUSTOM_ROW_COUNT);
   const columnNames = Array.from({ length: count(CONTENT_FORM_CUSTOM_COLUMN_COUNT) }, (_, columnIndex) => indexToColumnNameExcel(columnIndex));
 
-  // FieldName of each cell (owner designFormCellPropertyOwner), shown instead of "Cell".
+  // FieldName of each cell (owner designFormCellPropertyOwner), undefined if missing or empty.
   const bandName = custom?.[CONTENT_FORM_CUSTOM_BAND_NAME];
   const cellProperties = typeof bandName === 'string' && bandName !== '' ? await designFormCellPropertyLoadAll(request, bandName) : [];
-  const cellText = (rowIndex: number, columnName: string) => {
+  const fieldName = (rowIndex: number, columnName: string): string | undefined => {
     const { ownerName } = designFormCellPropertyOwner(String(bandName), rowIndex, columnName);
-    return cellProperties.find((property) => property.ownerName === ownerName && property.propertyName === 'FieldName')?.propertyValue || 'Cell';
+    return cellProperties.find((property) => property.ownerName === ownerName && property.propertyName === 'FieldName')?.propertyValue || undefined;
+  };
+  // Value row text: the dynamic row's value of the cell's FieldName ("" if missing), or "Empty" if the cell has no FieldName.
+  const valueText = (rowIndex: number, columnName: string): string => {
+    const name = fieldName(rowIndex, columnName);
+    return name !== undefined ? gridCellText(dynamic?.[name], {}) : 'Empty';
   };
 
   // No columnName on the header cells: clicking them doesn't sort and they have no filter button.
   const headerRow: GridRowDto = { cells: columnNames.map((columnName) => gridHeaderCell(undefined, undefined, columnName)) };
-  // Each form row renders as two rows: its FieldNames, then a row of "Empty" cells (same rowIndex, so both are selected together).
+  // Each form row renders as two rows: its FieldNames ("Cell" if missing), then their values (same rowIndex, so both are selected together).
   const rows: GridRowDto[] = Array.from({ length: rowCount }, (_, rowIndex) => [
-    { cells: columnNames.map((columnName): GridCellDto => ({ cellEnum: GridCellEnum.Label, text: cellText(rowIndex, columnName), rowIndex, columnName })) },
-    { cells: columnNames.map((columnName): GridCellDto => ({ cellEnum: GridCellEnum.Label, text: 'Empty', rowIndex, columnName })) },
+    { cells: columnNames.map((columnName): GridCellDto => ({ cellEnum: GridCellEnum.Label, text: fieldName(rowIndex, columnName) ?? 'Cell', rowIndex, columnName })) },
+    { cells: columnNames.map((columnName): GridCellDto => ({ cellEnum: GridCellEnum.Label, text: valueText(rowIndex, columnName), rowIndex, columnName })) },
   ]).flat();
 
   // Command (e.g. New or Save of the bar) is transient: not sent back, so it isn't re-processed on a later request.
