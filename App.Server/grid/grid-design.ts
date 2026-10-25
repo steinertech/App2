@@ -9,6 +9,7 @@ import { GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
 import { indexToColumnNameExcel } from '../util/util-main.js';
 import { gridBarRow, gridCellText, gridCellValue, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand, gridLookupSet, gridPatchDeleteMulti, gridSelectedMultiRowKeys, gridTables } from '../util/util-grid.js';
 import { gridDebugDeleteConfirm } from './grid-debug.js';
+import { gridDesignMasterDetailFilterMultiLoad, gridDesignMasterDetailLoad } from './grid-design-master-detail.js';
 
 /** The names of ContentBandEnum, e.g. "Header". */
 const DESIGN_BAND_ENUM_NAMES = Object.keys(ContentBandEnum).filter((key) => isNaN(Number(key)));
@@ -71,7 +72,8 @@ const DESIGN_PROPERTY_COLUMNS: GridConfigDto = {
 /**
  * Loads the "design" plane: the design band grid (GridPlaneDto.grids[0]),
  * the Properties grid (grids[1]) with the PropertyDto rows of the band selected in grids[0], or of the cell selected in grids[2] (no rows if no band is selected)
- * and the Form grid (grids[2]) previewing the selected band if it is a ContentBandEnum.Form.
+ * the Form grid (grids[2]) previewing the selected band if it is a ContentBandEnum.Form
+ * and the Design Master Detail grid (grids[3]), on which no other grid depends.
  */
 export async function planeDesignLoad(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
   // The Properties and Form grids depend on the reloaded design band grid (its selected row), so they are built afterwards.
@@ -82,7 +84,8 @@ export async function planeDesignLoad(request: Request, gridPlaneDto: GridPlaneD
   // The Form grid is built after the Properties grid, which saves and syncs the properties it reads.
   const propertyGridDto = await gridDesignBandFormPropertyLoad(request, gridPlaneDto.grids?.[1] ?? {}, band, cell);
   const formGridDto = await gridDesignFormLoad(request, band, formGridDtoIn);
-  return { ...gridPlaneDto, grids: [gridDto, propertyGridDto, formGridDto] };
+  const masterDetailGridDto = await gridDesignMasterDetailLoad(request, gridPlaneDto.grids?.[3] ?? {});
+  return { ...gridPlaneDto, grids: [gridDto, propertyGridDto, formGridDto, masterDetailGridDto] };
 }
 
 /** Parses a RowCount or ColumnCount propertyValue, clamped to 0..50 (empty or invalid is 0), like Content.tsx. */
@@ -453,16 +456,17 @@ async function gridDesignBandFormPropertyLoad(request: Request, gridDto: GridDto
 }
 
 /**
- * Patches the "design" plane's grids (design band grid GridPlaneDto.grids[0], Properties grid grids[1], Form grid grids[2]):
+ * Patches the "design" plane's grids (design band grid GridPlaneDto.grids[0], Properties grid grids[1], Form grid grids[2], Design Master Detail grid grids[3]):
  * GridCommandEnum.FilterMulti opens the Filter Multi lookup (distinct texts of its column);
  * GridCommandEnum.Select of a design band grid row replaces the Properties grid with the properties of the selected band and the Form grid with its preview (no cell selected);
  * GridCommandEnum.Select of a Form grid cell (GridSettingDto.isSelectPatch, isSelectColumnPatch) replaces the Properties grid with the properties of that cell;
- * any other command (MultiClick) enables/disables the design band grid's DeleteMulti button.
+ * any other command (MultiClick) enables/disables the DeleteMulti button of the design band grid or the Design Master Detail grid.
  */
 export async function planeDesignPatch(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
   const gridDto = gridPlaneDto.grids?.[0] ?? {};
   const propertyGridDto = gridPlaneDto.grids?.[1] ?? {};
   const formGridDto = gridPlaneDto.grids?.[2] ?? {};
+  const masterDetailGridDto = gridPlaneDto.grids?.[3] ?? {};
   // Other rows are shown: start on the first page with no selection, sort or filter, and drop the pending command, unsaved modifies and an open lookup.
   const propertyGridDtoSelect: GridDto = {
     ...propertyGridDto,
@@ -479,7 +483,7 @@ export async function planeDesignPatch(request: Request, gridPlaneDto: GridPlane
     const formGrid = await gridDesignFormLoad(request, band, {});
     return {
       ...gridPlaneDto,
-      grids: [{}, { patches: [{ patchEnum: GridPatchEnum.Grid, grid } satisfies GridPatchDto] }, { patches: [{ patchEnum: GridPatchEnum.Grid, grid: formGrid } satisfies GridPatchDto] }],
+      grids: [{}, { patches: [{ patchEnum: GridPatchEnum.Grid, grid } satisfies GridPatchDto] }, { patches: [{ patchEnum: GridPatchEnum.Grid, grid: formGrid } satisfies GridPatchDto] }, {}],
     };
   }
   if (formGridDto.command?.commandEnum === GridCommandEnum.Select) {
@@ -487,19 +491,26 @@ export async function planeDesignPatch(request: Request, gridPlaneDto: GridPlane
     const band = await gridDesignBandSelectedLoad(request, gridDto);
     const cell = await gridDesignFormSelectedLoad(request, band, formGridDto);
     const grid = await gridDesignBandFormPropertyLoad(request, propertyGridDtoSelect, band, cell);
-    return { ...gridPlaneDto, grids: [{}, { patches: [{ patchEnum: GridPatchEnum.Grid, grid } satisfies GridPatchDto] }, {}] };
+    return { ...gridPlaneDto, grids: [{}, { patches: [{ patchEnum: GridPatchEnum.Grid, grid } satisfies GridPatchDto] }, {}, {}] };
   }
   if (gridDto.command?.commandEnum === GridCommandEnum.FilterMulti) {
     const lookupPlane = gridFilterMultiLoad(gridDto, DESIGN_BAND_COLUMNS.columns ?? [], await designBandLoad(request));
-    return { ...gridPlaneDto, grids: [{ patches: [{ patchEnum: GridPatchEnum.Lookup, planeName: lookupPlane?.planeName, lookup: lookupPlane?.grids?.[0] } satisfies GridPatchDto] }, {}, {}] };
+    return { ...gridPlaneDto, grids: [{ patches: [{ patchEnum: GridPatchEnum.Lookup, planeName: lookupPlane?.planeName, lookup: lookupPlane?.grids?.[0] } satisfies GridPatchDto] }, {}, {}, {}] };
   }
   if (propertyGridDto.command?.commandEnum === GridCommandEnum.FilterMulti) {
     const band = await gridDesignBandSelectedLoad(request, gridDto);
     const cell = await gridDesignFormSelectedLoad(request, band, formGridDto);
     const lookupPlane = gridFilterMultiLoad(propertyGridDto, DESIGN_PROPERTY_COLUMNS.columns ?? [], await gridDesignBandFormPropertyLoadAll(request, band, cell));
-    return { ...gridPlaneDto, grids: [{}, { patches: [{ patchEnum: GridPatchEnum.Lookup, planeName: lookupPlane?.planeName, lookup: lookupPlane?.grids?.[0] } satisfies GridPatchDto] }, {}] };
+    return { ...gridPlaneDto, grids: [{}, { patches: [{ patchEnum: GridPatchEnum.Lookup, planeName: lookupPlane?.planeName, lookup: lookupPlane?.grids?.[0] } satisfies GridPatchDto] }, {}, {}] };
   }
-  return { ...gridPlaneDto, grids: [await gridPatchDeleteMulti(request, gridDto), {}, {}] };
+  if (masterDetailGridDto.command?.commandEnum === GridCommandEnum.FilterMulti) {
+    const lookupPlane = await gridDesignMasterDetailFilterMultiLoad(request, masterDetailGridDto);
+    return { ...gridPlaneDto, grids: [{}, {}, {}, { patches: [{ patchEnum: GridPatchEnum.Lookup, planeName: lookupPlane?.planeName, lookup: lookupPlane?.grids?.[0] } satisfies GridPatchDto] }] };
+  }
+  if (masterDetailGridDto.command !== undefined) {
+    return { ...gridPlaneDto, grids: [{}, {}, {}, await gridPatchDeleteMulti(request, masterDetailGridDto)] };
+  }
+  return { ...gridPlaneDto, grids: [await gridPatchDeleteMulti(request, gridDto), {}, {}, {}] };
 }
 
 /** Saves the modified propertyValue cells; RowCount, ColumnCount, ColumnSpan and RowSpan must be whole numbers (or empty). */

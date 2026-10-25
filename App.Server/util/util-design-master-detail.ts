@@ -11,6 +11,14 @@ export async function designMasterDetailLoad(request: Request): Promise<DesignMa
   return collection.find({ sectorKey: key, type: 'DesignMasterDetailDto' }).toArray();
 }
 
+/** ids are ObjectId hex strings (the grid's rowKeys); invalid ones are ignored. */
+export async function designMasterDetailLoadByIds(request: Request, ids: string[]): Promise<DesignMasterDetailDto[]> {
+  const key = await sectorKeyProjectDb(request, 'DesignMasterDetailDto');
+  const collection = client.db(DB_NAME).collection<DesignMasterDetailDto>('myCollection');
+  const objectIds = ids.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
+  return collection.find({ sectorKey: key, type: 'DesignMasterDetailDto', _id: { $in: objectIds } }).toArray();
+}
+
 /** Derives a master detail's name: contentName + "." + bandNameMaster + "." + fieldNameMaster + "." + bandNameDetail + "." + fieldNameDetail. */
 export function designMasterDetailName(masterDetail: DesignMasterDetailDto): `${string}.${string}.${string}.${string}.${string}` {
   return `${masterDetail.contentName ?? ''}.${masterDetail.bandNameMaster ?? ''}.${masterDetail.fieldNameMaster ?? ''}.${masterDetail.bandNameDetail ?? ''}.${masterDetail.fieldNameDetail ?? ''}`;

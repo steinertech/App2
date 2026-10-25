@@ -11,9 +11,8 @@ export default function Design() {
     void load('design');
   }, [load]);
 
-  // Delete confirmation, opened by the server at GridPlaneDto.grids[0].planes[1].grids[0].
-  const modalPath = [0, 1, 0];
-  const isModal = resolveGrid(gridPlaneDto.grids, modalPath) !== undefined;
+  // Delete confirmation, opened by the server at GridPlaneDto.grids[0].planes[1].grids[0] (Design Band) or grids[3].planes[1].grids[0] (Design Master Detail).
+  const modalPath = [[0, 1, 0], [3, 1, 0]].find((path) => resolveGrid(gridPlaneDto.grids, path) !== undefined);
 
   return (
     <div>
@@ -21,6 +20,7 @@ export default function Design() {
       <div className="flex flex-col gap-4 lg:flex-row lg:gap-6">
         <div className="min-w-0 flex-1">
           <Grid path={[0]} />
+          <Grid path={[3]} />
           <Grid path={[2]} />
         </div>
         {/* Properties of the selected band. */}
@@ -28,7 +28,7 @@ export default function Design() {
           <Grid path={[1]} />
         </aside>
       </div>
-      {isModal && (
+      {modalPath !== undefined && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 p-4" role="dialog" aria-modal="true">
           <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
             <Grid path={modalPath} />
