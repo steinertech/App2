@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb';
 import client, { DB_NAME } from './util-db.js';
-import { DesignMasterDetailDto } from '../dto/design-master-detail-dto.js';
+import { DesignMasterDetailDto, DesignMasterDetailName } from '../dto/design-master-detail-dto.js';
 import { sectorKeyProjectDb } from './util-main.js';
 
 // Design master details are per project: sectorKeyProjectDb (like sectorKey(request, true)) also asserts the user is signed in (redirects to /sign-in otherwise).
@@ -19,9 +19,12 @@ export async function designMasterDetailLoadByIds(request: Request, ids: string[
   return collection.find({ sectorKey: key, type: 'DesignMasterDetailDto', _id: { $in: objectIds } }).toArray();
 }
 
-/** Derives a master detail's name: contentName + "." + bandNameMaster + "." + fieldNameMaster + "." + bandNameDetail + "." + fieldNameDetail. */
-export function designMasterDetailName(masterDetail: DesignMasterDetailDto): `${string}.${string}.${string}.${string}.${string}` {
-  return `${masterDetail.contentName ?? ''}.${masterDetail.bandNameMaster ?? ''}.${masterDetail.fieldNameMaster ?? ''}.${masterDetail.bandNameDetail ?? ''}.${masterDetail.fieldNameDetail ?? ''}`;
+/**
+ * Derives a master detail's name:
+ * "ContentName/<contentName>/BandNameMaster/<bandNameMaster>/FieldNameMaster/<fieldNameMaster>/BandNameDetail/<bandNameDetail>/FieldNameDetail/<fieldNameDetail>/".
+ */
+export function designMasterDetailName(masterDetail: DesignMasterDetailDto): DesignMasterDetailName {
+  return `ContentName/${masterDetail.contentName ?? ''}/BandNameMaster/${masterDetail.bandNameMaster ?? ''}/FieldNameMaster/${masterDetail.fieldNameMaster ?? ''}/BandNameDetail/${masterDetail.bandNameDetail ?? ''}/FieldNameDetail/${masterDetail.fieldNameDetail ?? ''}/`;
 }
 
 /** Sets each master detail's name by designMasterDetailName. */

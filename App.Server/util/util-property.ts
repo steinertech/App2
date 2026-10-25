@@ -14,9 +14,12 @@ export async function propertyLoad(request: Request): Promise<PropertyDto[]> {
   return collection.find({ sectorKey: key, type: 'PropertyDto' }).toArray();
 }
 
-/** Derives a property's name from its owner and property: ownerName + "." + ownerEnum name (e.g. "DesignBand") + "." + propertyName. */
+/**
+ * Derives a property's name from its owner and property: ownerName (itself a name ending with "/", e.g. DesignBandDto.name)
+ * + "OwnerEnum/<ownerEnum name, e.g. DesignBand>/PropertyName/<propertyName>/".
+ */
 export function propertyDtoName(property: PropertyDto): string {
-  return (property.ownerName ?? '') + '.' + PropertyOwnerEnum[property.ownerEnum ?? PropertyOwnerEnum.None] + '.' + (property.propertyName ?? '');
+  return (property.ownerName ?? '') + 'OwnerEnum/' + PropertyOwnerEnum[property.ownerEnum ?? PropertyOwnerEnum.None] + '/PropertyName/' + (property.propertyName ?? '') + '/';
 }
 
 /** Returns the properties attached to any of the owners (matching both ownerName and ownerEnum); none if owners is empty. */

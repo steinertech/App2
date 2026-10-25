@@ -7,12 +7,12 @@ export interface DebugContentDto extends DbDto {
 }
 
 export interface DebugPropertyDto extends DbDto {
-  /** ownerName + "." + propertyName if ownerType is "CellTable", otherwise ownerName + "." + ownerType + "." + propertyName, set by the backend on insert and update (see gridDebugPropertyName). */
+  /** ownerName + "PropertyName/<propertyName>/" if ownerType is "CellTable", otherwise ownerName + "OwnerType/<ownerType>/PropertyName/<propertyName>/", set by the backend on insert and update (see gridDebugPropertyName). */
   name?: string;
   text?: string;
   propertyName?: string;
   propertyValue?: string;
-  /** Name of the owner this property is attached to. */
+  /** Name of the owner this property is attached to, a path ending with "/" (see gridDebugPropertyOwners). */
   ownerName?: string;
   /** Type of the owner this property is attached to. */
   ownerType?: string;

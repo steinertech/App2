@@ -1,8 +1,11 @@
 import { DbDto } from './db-dto.js';
 
+export type DesignMasterDetailName =
+  `ContentName/${string}/BandNameMaster/${string}/FieldNameMaster/${string}/BandNameDetail/${string}/FieldNameDetail/${string}/`;
+
 export interface DesignMasterDetailDto extends DbDto {
-  /** contentName + "." + bandNameMaster + "." + fieldNameMaster + "." + bandNameDetail + "." + fieldNameDetail (see designMasterDetailName). */
-  name?: `${string}.${string}.${string}.${string}.${string}`;
+  /** "ContentName/<contentName>/BandNameMaster/<bandNameMaster>/FieldNameMaster/<fieldNameMaster>/BandNameDetail/<bandNameDetail>/FieldNameDetail/<fieldNameDetail>/" (see designMasterDetailName). */
+  name?: DesignMasterDetailName;
   contentName?: string;
   /** References DesignBandDto.bandName of the master band. */
   bandNameMaster?: string;

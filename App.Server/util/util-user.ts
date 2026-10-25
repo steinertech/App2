@@ -4,12 +4,17 @@ import { UserDto } from '../dto/user-dto.js';
 import { SessionDto } from '../dto/session-dto.js';
 import { domainName, sectorKeyDb } from './util-main.js';
 
+/** Returns UserDto.name: "Domain/<domainName>/Email/<email>/". */
+function userName(request: Request, email: string): string {
+  return 'Domain/' + domainName(request) + '/Email/' + email + '/';
+}
+
 export async function signUp(request: Request, email: string, password: string) {
   const collection = client.db(DB_NAME).collection<UserDto>('myCollection');
 
   await collection.insertOne({
     email,
-    name: domainName(request) + '/' + email,
+    name: userName(request, email),
     password,
     sectorKey: await sectorKeyDb(request, 'UserDto'),
     type: 'UserDto',
@@ -22,7 +27,7 @@ export async function signIn(request: Request, email: string, password: string) 
   const user = await userCollection.findOne({
     email,
     password,
-    name: domainName(request) + '/' + email,
+    name: userName(request, email),
     sectorKey: await sectorKeyDb(request, 'UserDto'),
     type: 'UserDto',
   });
@@ -39,7 +44,7 @@ export async function signIn(request: Request, email: string, password: string) 
     type: 'SessionDto',
     isSignIn: true,
     sessionId,
-    name: sessionId,
+    name: 'SessionId/' + sessionId + '/',
     projectName: user.projectName,
   });
 

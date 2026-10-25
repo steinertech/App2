@@ -116,14 +116,15 @@ export async function debugPropertyLoadByOwners(
 }
 
 /**
- * Derives a property's name from its owner and property: ownerName + "." + propertyName if ownerType is "CellTable"
- * (ownerName being the debug table cell, see gridDebugPropertyOwners), otherwise ownerName + "." + ownerType + "." + propertyName.
+ * Derives a property's name from its owner and property (ownerName being a path ending with "/", see gridDebugPropertyOwners):
+ * ownerName + "PropertyName/<propertyName>/" if ownerType is "CellTable" (ownerName being the debug table cell),
+ * otherwise ownerName + "OwnerType/<ownerType>/PropertyName/<propertyName>/".
  */
 export function gridDebugPropertyName(property: DebugPropertyDto): string {
   if (property.ownerType === 'CellTable') {
-    return (property.ownerName ?? '') + '.' + (property.propertyName ?? '');
+    return (property.ownerName ?? '') + 'PropertyName/' + (property.propertyName ?? '') + '/';
   }
-  return (property.ownerName ?? '') + '.' + (property.ownerType ?? '') + '.' + (property.propertyName ?? '');
+  return (property.ownerName ?? '') + 'OwnerType/' + (property.ownerType ?? '') + '/PropertyName/' + (property.propertyName ?? '') + '/';
 }
 
 /** ids are ObjectId hex strings (the grid's rowKeys); invalid ones are ignored. */

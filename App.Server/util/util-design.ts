@@ -22,9 +22,9 @@ export async function designBandLoadByIds(request: Request, ids: string[]): Prom
   return collection.find({ sectorKey: key, type: 'DesignBandDto', _id: { $in: objectIds } }).toArray();
 }
 
-/** Derives a band's name from its content and band name: contentName + "." + bandName. */
-export function designBandName(band: DesignBandDto): `${string}.${string}` {
-  return `${band.contentName ?? ''}.${band.bandName ?? ''}`;
+/** Derives a band's name from its content and band name: "ContentName/<contentName>/BandName/<bandName>/". */
+export function designBandName(band: DesignBandDto): `ContentName/${string}/BandName/${string}/` {
+  return `ContentName/${band.contentName ?? ''}/BandName/${band.bandName ?? ''}/`;
 }
 
 /** Sets each band's name by designBandName. */
@@ -94,15 +94,15 @@ export async function designBandPropertyLoad(request: Request, bandName: string)
 /** The PropertyDto.propertyName list of a cell of a ContentBandEnum.Form band. */
 const DESIGN_FORM_CELL_PROPERTY_NAMES = ['FieldName', 'ColumnSpan', 'RowSpan'];
 
-/** The owner of the PropertyDto rows of a cell of a Form band (ownerName is DesignBandDto.name + "." + rowIndex + "." + columnName). */
+/** The owner of the PropertyDto rows of a cell of a Form band (ownerName is DesignBandDto.name + "RowIndex/<rowIndex>/ColumnName/<columnName>/"). */
 export function designFormCellPropertyOwner(bandName: string, rowIndex: number, columnName: string): PropertyOwner {
-  return { ownerName: bandName + '.' + rowIndex + '.' + columnName, ownerEnum: PropertyOwnerEnum.DesignFormCell };
+  return { ownerName: bandName + 'RowIndex/' + rowIndex + '/ColumnName/' + columnName + '/', ownerEnum: PropertyOwnerEnum.DesignFormCell };
 }
 
-/** Matches the ownerName of every cell of the Form band bandName (designFormCellPropertyOwner: band name + "." + rowIndex + "." + columnName). */
+/** Matches the ownerName of every cell of the Form band bandName (designFormCellPropertyOwner: band name + "RowIndex/<rowIndex>/ColumnName/<columnName>/"). */
 function designFormCellOwnerNameRegex(bandName: string): RegExp {
   const bandNameRegex = bandName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return new RegExp(`^${bandNameRegex}\\.\\d+\\.[A-Z]+$`);
+  return new RegExp(`^${bandNameRegex}RowIndex/\\d+/ColumnName/[A-Z]+/$`);
 }
 
 /** Returns the properties of all cells of the Form band bandName. */

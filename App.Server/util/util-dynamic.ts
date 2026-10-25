@@ -46,7 +46,7 @@ export async function dynamicInsert(request: Request, dynamicDtos: DynamicDto[])
 
   const dynamics = dynamicDtos.map((dynamicDto): DynamicDto => {
     const { _id, ...rest } = dynamicDto;
-    return { ...rest, name: randomUUID(), sectorKey: key, type: 'DynamicDto' };
+    return { ...rest, name: 'Id/' + randomUUID() + '/', sectorKey: key, type: 'DynamicDto' };
   });
 
   if (dynamics.length > 0) {

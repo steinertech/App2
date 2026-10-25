@@ -37,7 +37,7 @@ type DebugPropertyOwner = Parameters<typeof debugPropertyLoadByOwners>[1][number
 
 /**
  * Returns the owners of the debug property grid's rows for the selected cell of the debug content grid (its rowKey is the _id):
- * the selected row (ownerName is its name, ownerType "Row") and, if a column is selected, the selected cell (ownerName is name + "." + columnName, ownerType "Cell").
+ * the selected row (ownerName is "Name/<name>/", ownerType "Row") and, if a column is selected, the selected cell (ownerName is "Name/<name>/ColumnName/<columnName>/", ownerType "Cell").
  * None if no row is selected.
  */
 async function gridDebugContentSelectedOwners(request: Request, gridDto: GridDto): Promise<DebugPropertyOwner[]> {
@@ -47,13 +47,14 @@ async function gridDebugContentSelectedOwners(request: Request, gridDto: GridDto
   if (content === undefined) {
     return [];
   }
-  const name = content.name ?? '';
+  // DebugContentDto.name is entered by the user (a plain value, not a path), so it gets its own "Name" segment.
+  const ownerName = 'Name/' + (content.name ?? '') + '/';
   const columnName = gridDto.state?.selectedColumnName;
-  return [{ ownerName: name, ownerType: 'Row' }, ...(columnName !== undefined ? [{ ownerName: name + '.' + columnName, ownerType: 'Cell' }] : [])];
+  return [{ ownerName, ownerType: 'Row' }, ...(columnName !== undefined ? [{ ownerName: ownerName + 'ColumnName/' + columnName + '/', ownerType: 'Cell' }] : [])];
 }
 
 /**
- * Returns the owners of the debug property grid's rows: the selected cell of the debug table grid (ownerName is rowIndex + "." + columnName, ownerType "CellTable")
+ * Returns the owners of the debug property grid's rows: the selected cell of the debug table grid (ownerName is "RowIndex/<rowIndex>/ColumnName/<columnName>/", ownerType "CellTable")
  * if one is selected (and a debug content row, whose RowCount and ColumnCount size the table), otherwise owners (see gridDebugContentSelectedOwners).
  */
 function gridDebugPropertyOwners(owners: DebugPropertyOwner[], tableGridDto: GridDto): DebugPropertyOwner[] {
@@ -62,7 +63,7 @@ function gridDebugPropertyOwners(owners: DebugPropertyOwner[], tableGridDto: Gri
   if (owners.length === 0 || rowIndex === undefined || columnName === undefined) {
     return owners;
   }
-  return [{ ownerName: rowIndex + '.' + columnName, ownerType: 'CellTable' }];
+  return [{ ownerName: 'RowIndex/' + rowIndex + '/ColumnName/' + columnName + '/', ownerType: 'CellTable' }];
 }
 
 async function gridDebugContentLoad(request: Request, gridDto: GridDto): Promise<GridDto> {

@@ -3,9 +3,9 @@ import client, { DB_NAME } from './util-db.js';
 import { SchemaDto } from '../dto/schema-dto.js';
 import { sectorKeyProjectDb } from './util-main.js';
 
-/** Returns SchemaDto.name: "{tableName}.{columnName}". */
-function schemaName(schemaDto: SchemaDto): `${string}.${string}` {
-  return `${schemaDto.tableName ?? ''}.${schemaDto.columnName ?? ''}`;
+/** Returns SchemaDto.name: "TableName/{tableName}/ColumnName/{columnName}/". */
+function schemaName(schemaDto: SchemaDto): `TableName/${string}/ColumnName/${string}/` {
+  return `TableName/${schemaDto.tableName ?? ''}/ColumnName/${schemaDto.columnName ?? ''}/`;
 }
 
 // Schemas are per project: sectorKeyProjectDb (like sectorKey(request, true)) also asserts the user is signed in (redirects to /sign-in otherwise).
