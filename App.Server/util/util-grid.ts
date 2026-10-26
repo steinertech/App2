@@ -6,9 +6,10 @@ import { planeDebugLoad, planeDebugPatch } from '../grid/grid-debug.js';
 import { planeDebugPropertyLoad, planeDebugPropertyPatch } from '../grid/grid-debug-property.js';
 import { planeStorageLoad, planeStoragePatch } from '../grid/grid-storage.js';
 import { planeSchemaLoad, planeSchemaPatch } from '../grid/grid-schema.js';
-import { planeContentTableLoad, planeContentTablePatch, planeDynamicLoad, planeDynamicPatch } from '../grid/grid-dynamic.js';
-import { CONTENT_FORM_PLANE_NAME, CONTENT_TABLE_PLANE_NAME } from '../dto/shared/content-dto.js';
-import { planeContentFormLoad, planeDesignLoad, planeDesignPatch } from '../grid/grid-design.js';
+import { planeDynamicLoad, planeDynamicPatch } from '../grid/grid-dynamic.js';
+import { CONTENT_VIEW_PLANE_NAME } from '../dto/shared/content-dto.js';
+import { planeDesignLoad, planeDesignPatch } from '../grid/grid-design.js';
+import { planeContentViewLoad, planeContentViewPatch } from '../grid/grid-content-view.js';
 
 /** Returns GridDto.tables: tables[0] toolbarRows, tables[1] dataRows, tables[2] barRows and, if given, tables[3] footerRows (e.g. a dialog's Ok and Cancel buttons). */
 export function gridTables(toolbarRows: GridRowDto[], dataRows: GridRowDto[], barRows: GridRowDto[] = [], footerRows?: GridRowDto[]): GridTableDto[] {
@@ -476,8 +477,7 @@ const PLANE_LOADERS: Record<string, GridPlaneLoader> = {
   schema: planeSchemaLoad,
   dynamic: planeDynamicLoad,
   design: planeDesignLoad,
-  [CONTENT_TABLE_PLANE_NAME]: planeContentTableLoad,
-  [CONTENT_FORM_PLANE_NAME]: planeContentFormLoad,
+  [CONTENT_VIEW_PLANE_NAME]: planeContentViewLoad,
 };
 
 export async function gridPlaneLoad(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
@@ -502,7 +502,7 @@ const PLANE_GRID_PATCHERS: Record<string, GridPlanePatcher> = {
   schema: planeSchemaPatch,
   dynamic: planeDynamicPatch,
   design: planeDesignPatch,
-  [CONTENT_TABLE_PLANE_NAME]: planeContentTablePatch,
+  [CONTENT_VIEW_PLANE_NAME]: planeContentViewPatch,
 };
 
 export async function gridPlanePatch(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {

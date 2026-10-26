@@ -1,7 +1,6 @@
 import { GridCellDto, GridCellEnum, GridCommandEnum, GridDto, GridPatchDto, GridPatchEnum, GridPlaneDto, GridRowDto } from '../dto/shared/grid-dto.js';
 import { dynamicColumnNameLoad, dynamicInsert, dynamicLoad, dynamicLoadByIds, dynamicTableLoad, dynamicUpdate } from '../util/util-dynamic.js';
 import { DynamicDto, DynamicTableNameDto } from '../dto/dynamic-dto.js';
-import { CONTENT_TABLE_CUSTOM_TABLE_NAME } from '../dto/shared/content-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
 import { gridBarRow, gridCellText, gridCellValue, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridLookupSet, gridTables } from '../util/util-grid.js';
 
@@ -89,8 +88,11 @@ async function gridDynamicLoad(request: Request, gridDto: GridDto): Promise<Grid
   return result;
 }
 
-/** tableName (the selected row of the dynamic grid) filters the rows and is the default tableName of inserted rows; undefined shows all rows. */
-async function gridDynamicDataLoad(request: Request, gridDto: GridDto, tableName: string | undefined): Promise<GridDto> {
+/**
+ * Builds the Data grid. tableName (the selected row of the dynamic grid, or the TableName of a content view Table band) filters the rows and is the default tableName
+ * of inserted rows; undefined shows all rows.
+ */
+export async function gridDynamicDataLoad(request: Request, gridDto: GridDto, tableName: string | undefined): Promise<GridDto> {
   const dataColumns = await gridDynamicDataColumns(request, tableName);
   if (gridDto.command?.commandEnum === GridCommandEnum.Save) {
     await gridDynamicDataSaveUpdate(request, gridDto, dataColumns);
@@ -170,33 +172,15 @@ export async function planeDynamicPatch(request: Request, gridPlaneDto: GridPlan
     return { ...gridPlaneDto, grids: [{ patches: [{ patchEnum: GridPatchEnum.Lookup, planeName: lookupPlane?.planeName, lookup: lookupPlane?.grids?.[0] } satisfies GridPatchDto] }, {}] };
   }
   if (dataGridDto.command?.commandEnum === GridCommandEnum.FilterMulti) {
-    const lookupPlane = gridFilterMultiLoad(dataGridDto, await gridDynamicDataColumns(request, tableName), await dynamicLoad(request, tableName));
+    const lookupPlane = await gridDynamicDataFilterMultiLoad(request, dataGridDto, tableName);
     return { ...gridPlaneDto, grids: [{}, { patches: [{ patchEnum: GridPatchEnum.Lookup, planeName: lookupPlane?.planeName, lookup: lookupPlane?.grids?.[0] } satisfies GridPatchDto] }] };
   }
   return { ...gridPlaneDto, grids: [{}, {}] };
 }
 
-/** Returns the tableName of the CONTENT_TABLE_PLANE_NAME plane's Data grid (GridStateDto.custom.tableName), or undefined (all rows) if missing or empty. */
-function gridContentTableName(gridDto: GridDto): string | undefined {
-  const tableName = gridDto.state?.custom?.[CONTENT_TABLE_CUSTOM_TABLE_NAME];
-  return typeof tableName === 'string' && tableName !== '' ? tableName : undefined;
-}
-
-/** Loads the CONTENT_TABLE_PLANE_NAME plane (a ContentBandEnum.Table band of Content.tsx): only the Data grid (grids[0]) of the "dynamic" plane, with the DynamicDto rows of its GridStateDto.custom.tableName. */
-export async function planeContentTableLoad(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
-  const dataGridDto = gridPlaneDto.grids?.[0] ?? {};
-  return { ...gridPlaneDto, grids: [await gridDynamicDataLoad(request, dataGridDto, gridContentTableName(dataGridDto))] };
-}
-
-/** Patches the CONTENT_TABLE_PLANE_NAME plane's Data grid (grids[0]): GridCommandEnum.FilterMulti opens the Filter Multi lookup (distinct texts of its column). */
-export async function planeContentTablePatch(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
-  const dataGridDto = gridPlaneDto.grids?.[0] ?? {};
-  if (dataGridDto.command?.commandEnum === GridCommandEnum.FilterMulti) {
-    const tableName = gridContentTableName(dataGridDto);
-    const lookupPlane = gridFilterMultiLoad(dataGridDto, await gridDynamicDataColumns(request, tableName), await dynamicLoad(request, tableName));
-    return { ...gridPlaneDto, grids: [{ patches: [{ patchEnum: GridPatchEnum.Lookup, planeName: lookupPlane?.planeName, lookup: lookupPlane?.grids?.[0] } satisfies GridPatchDto] }] };
-  }
-  return { ...gridPlaneDto, grids: [{}] };
+/** Returns the Filter Multi lookup plane (see gridFilterMultiLoad) of the Data grid gridDto with the DynamicDto rows of tableName (all rows if undefined). */
+export async function gridDynamicDataFilterMultiLoad(request: Request, gridDto: GridDto, tableName: string | undefined): Promise<GridPlaneDto | undefined> {
+  return gridFilterMultiLoad(gridDto, await gridDynamicDataColumns(request, tableName), await dynamicLoad(request, tableName));
 }
 
 async function gridDynamicDataSaveUpdate(request: Request, gridDto: GridDto, dataColumns: GridConfigColumnDto[]): Promise<void> {

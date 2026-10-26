@@ -13,31 +13,27 @@ export const DESIGN_BAND_PROPERTY_NAMES: Record<ContentBandEnum, string[]> = {
   [ContentBandEnum.Form]: ['RowCount', 'ColumnCount', 'TableName'],
 };
 
-/** GridPlaneDto.planeName of a ContentBandEnum.Table band's grid: the Data grid of the "dynamic" plane as its only grid (grids[0]). */
-export const CONTENT_TABLE_PLANE_NAME = 'contentTable';
+/**
+ * GridPlaneDto.planeName of the grids of a content (Content.tsx): one grid per ContentBandEnum.Table or Form band, in band order. A Table band's grid is the Data grid
+ * of the "dynamic" plane with the rows of its TableName, a Form band's grid its RowCount x ColumnCount form repeated for each DynamicDto row of its TableName.
+ */
+export const CONTENT_VIEW_PLANE_NAME = 'contentView';
 
-/** GridStateDto.custom key holding the tableName (the band's TableName property) whose DynamicDto rows the CONTENT_TABLE_PLANE_NAME grid shows; missing or '' shows all rows. */
-export const CONTENT_TABLE_CUSTOM_TABLE_NAME = 'tableName';
-
-/** GridPlaneDto.planeName of a ContentBandEnum.Form band's grid (grids[0]): RowCount x ColumnCount read only cells. */
-export const CONTENT_FORM_PLANE_NAME = 'contentForm';
-
-/** GridStateDto.custom keys holding the band's RowCount and ColumnCount propertyValue the CONTENT_FORM_PLANE_NAME grid is built from. */
-export const CONTENT_FORM_CUSTOM_ROW_COUNT = 'rowCount';
-export const CONTENT_FORM_CUSTOM_COLUMN_COUNT = 'columnCount';
-
-/** GridStateDto.custom key holding the band's TableName propertyValue whose DynamicDto rows the CONTENT_FORM_PLANE_NAME grid's pager pages; missing or '' pages all rows. */
-export const CONTENT_FORM_CUSTOM_TABLE_NAME = 'tableName';
-
-/** GridStateDto.custom key holding the band's name (ContentBandDto.name) whose form cell FieldName properties the CONTENT_FORM_PLANE_NAME grid shows; missing or '' shows none. */
-export const CONTENT_FORM_CUSTOM_BAND_NAME = 'bandName';
+/** GridStateDto.custom key holding the band's name (ContentBandDto.name) a CONTENT_VIEW_PLANE_NAME grid is built from; missing, '' or not found is an empty grid. */
+export const CONTENT_VIEW_CUSTOM_BAND_NAME = 'bandName';
 
 export interface ContentBandDto {
-  /** DesignBandDto.name (contentName + "." + bandName); '' if missing. */
+  /** DesignBandDto.name ("ContentName/<contentName>/BandName/<bandName>/"); '' if missing. */
   name: string;
   bandEnum: ContentBandEnum;
   /** PropertyDto.propertyValue of each DESIGN_BAND_PROPERTY_NAMES[bandEnum], in that order ('' if missing). */
   propertyValues: string[];
+}
+
+/** propertyValue of band's property propertyName (one of DESIGN_BAND_PROPERTY_NAMES[band.bandEnum]); '' if not found. */
+export function contentBandPropertyValue(band: ContentBandDto, propertyName: string): string {
+  const index = (DESIGN_BAND_PROPERTY_NAMES[band.bandEnum] ?? []).indexOf(propertyName);
+  return band.propertyValues[index] ?? '';
 }
 
 export interface ContentDto {

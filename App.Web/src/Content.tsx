@@ -2,44 +2,21 @@ import { useState } from 'react';
 import { apiFetch, useEffectOnce } from './util/util-main.ts';
 import Grid from './Grid.tsx';
 import { GridStoreProvider, useGridStore } from './GridStore.tsx';
-import { CONTENT_FORM_CUSTOM_BAND_NAME, CONTENT_FORM_CUSTOM_COLUMN_COUNT, CONTENT_FORM_CUSTOM_ROW_COUNT, CONTENT_FORM_CUSTOM_TABLE_NAME, CONTENT_FORM_PLANE_NAME, CONTENT_TABLE_CUSTOM_TABLE_NAME, CONTENT_TABLE_PLANE_NAME, ContentBandEnum, DESIGN_BAND_PROPERTY_NAMES } from '../../App.Server/dto/shared/content-dto.ts';
+import { CONTENT_VIEW_CUSTOM_BAND_NAME, CONTENT_VIEW_PLANE_NAME, ContentBandEnum, contentBandPropertyValue } from '../../App.Server/dto/shared/content-dto.ts';
 import type { ContentBandDto, ContentDto, ContentRequestDto } from '../../App.Server/dto/shared/content-dto.ts';
 
-/** propertyValue of band's property propertyName (one of DESIGN_BAND_PROPERTY_NAMES[band.bandEnum]); '' if not found. */
-function propertyValue(band: ContentBandDto, propertyName: string): string {
-  const index = (DESIGN_BAND_PROPERTY_NAMES[band.bandEnum] ?? []).indexOf(propertyName);
-  return band.propertyValues[index] ?? '';
-}
-
-/** Data grid (like the one titled "Data" on the Dynamic page) with the rows of tableName. Must be inside its own GridStoreProvider (one plane per store). */
-function ContentTable({ tableName }: { tableName: string }) {
-  const { load } = useGridStore();
-
-  useEffectOnce(() => {
-    void load(CONTENT_TABLE_PLANE_NAME, [{ state: { custom: { [CONTENT_TABLE_CUSTOM_TABLE_NAME]: tableName } } }]);
-  }, [load, tableName]);
-
-  return <Grid path={[0]} />;
+/** Returns true if band is shown as a grid of the CONTENT_VIEW_PLANE_NAME plane (a Table or Form band). */
+function isGridBand(band: ContentBandDto): boolean {
+  return band.bandEnum === ContentBandEnum.Table || band.bandEnum === ContentBandEnum.Form;
 }
 
 /**
- * Form layout: a grid of rowCount rows by columnCount columns (named A, B, C, ...), each cell the FieldName property of that cell of band bandName ("Cell" if empty);
- * the server parses and clamps the counts. Its bar (New, Save, Reload, pager) pages the DynamicDto rows of tableName, loaded by the server only. Must be inside its own GridStoreProvider.
+ * Loads the content named contentName from /api/content, then its grids as one CONTENT_VIEW_PLANE_NAME plane (one grid per Table or Form band, in band order,
+ * each built by the server from the band named by its GridStateDto.custom), and renders every band: Header as h1 (property Text), Table as Data grid of its TableName,
+ * Form as RowCount x ColumnCount form, others as their ContentBandEnum (as number). Must be inside its own GridStoreProvider.
  */
-function ContentForm({ bandName, rowCount, columnCount, tableName }: { bandName: string; rowCount: string; columnCount: string; tableName: string }) {
+function ContentView({ contentName }: { contentName: string }) {
   const { load } = useGridStore();
-
-  useEffectOnce(() => {
-    void load(CONTENT_FORM_PLANE_NAME, [
-      { state: { custom: { [CONTENT_FORM_CUSTOM_BAND_NAME]: bandName, [CONTENT_FORM_CUSTOM_ROW_COUNT]: rowCount, [CONTENT_FORM_CUSTOM_COLUMN_COUNT]: columnCount, [CONTENT_FORM_CUSTOM_TABLE_NAME]: tableName } } },
-    ]);
-  }, [load, bandName, rowCount, columnCount, tableName]);
-
-  return <Grid path={[0]} />;
-}
-
-/** Loads the content named contentName from /api/content and renders every band: Header as h1 (property Text), Table as Data grid of its TableName, Form as RowCount x ColumnCount grid, others as their ContentBandEnum (as number). */
-export default function Content({ contentName }: { contentName: string }) {
   const [content, setContent] = useState<ContentDto>();
 
   // The server redirects to the Sign In page if the user isn't signed in (or the session expired).
@@ -48,37 +25,43 @@ export default function Content({ contentName }: { contentName: string }) {
       const body: ContentRequestDto = { contentName };
       const data = await apiFetch<ContentDto>('content', body);
       // Error (e.g. not signed in): apiFetch already shows the alert.
-      if (data !== undefined) {
-        setContent(data);
+      if (data === undefined) {
+        return;
+      }
+      setContent(data);
+      const gridBands = data.bands.filter(isGridBand);
+      if (gridBands.length > 0) {
+        await load(CONTENT_VIEW_PLANE_NAME, gridBands.map((band) => ({ state: { custom: { [CONTENT_VIEW_CUSTOM_BAND_NAME]: band.name } } })));
       }
     })().catch(() => {
       // No response; apiFetch already added an Error alert.
     });
-  }, [contentName]);
+  }, [contentName, load]);
 
+  // Grid index of each Table or Form band: its position among them.
+  let gridIndex = 0;
   return (
     <div>
       {content?.bands.map((band, index) => {
+        if (isGridBand(band)) {
+          return <Grid key={index} path={[gridIndex++]} />;
+        }
         switch (band.bandEnum) {
           case ContentBandEnum.Header:
-            return <h1 key={index}>{propertyValue(band, 'Text')}</h1>;
-          case ContentBandEnum.Table:
-            // Own store per band, so several grids (and the page's grids of the Layout store) don't share one plane.
-            return (
-              <GridStoreProvider key={index}>
-                <ContentTable tableName={propertyValue(band, 'TableName')} />
-              </GridStoreProvider>
-            );
-          case ContentBandEnum.Form:
-            return (
-              <GridStoreProvider key={index}>
-                <ContentForm bandName={band.name} rowCount={propertyValue(band, 'RowCount')} columnCount={propertyValue(band, 'ColumnCount')} tableName={propertyValue(band, 'TableName')} />
-              </GridStoreProvider>
-            );
+            return <h1 key={index}>{contentBandPropertyValue(band, 'Text')}</h1>;
           default:
             return <div key={index}>{band.bandEnum}</div>;
         }
       })}
     </div>
+  );
+}
+
+/** Renders the content named contentName (see ContentView) with its own store, so its grids don't share a plane with the page's grids of the Layout store. */
+export default function Content({ contentName }: { contentName: string }) {
+  return (
+    <GridStoreProvider>
+      <ContentView contentName={contentName} />
+    </GridStoreProvider>
   );
 }

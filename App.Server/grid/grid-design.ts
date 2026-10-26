@@ -1,10 +1,8 @@
 import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPatchDto, GridPatchEnum, GridPlaneDto, GridRowDto } from '../dto/shared/grid-dto.js';
-import { designBandDelete, designBandInsert, designBandLoad, designBandLoadByIds, designBandUpdate, designFormCellPropertyLoad, designFormCellPropertyLoadAll, designFormCellPropertyOwner, designFormCellPropertySync, designBandPropertyLoad, designBandFormPropertyLoadByIds, designBandPropertySync, designBandFormPropertyUpdate } from '../util/util-design.js';
+import { designBandDelete, designBandInsert, designBandLoad, designBandLoadByIds, designBandUpdate, designFormCellPropertyLoad, designFormCellPropertySync, designBandPropertyLoad, designBandFormPropertyLoadByIds, designBandPropertySync, designBandFormPropertyUpdate } from '../util/util-design.js';
 import { DesignBandDto } from '../dto/design-dto.js';
 import { PropertyDto } from '../dto/property-dto.js';
-import { DynamicDto } from '../dto/dynamic-dto.js';
-import { CONTENT_FORM_CUSTOM_BAND_NAME, CONTENT_FORM_CUSTOM_COLUMN_COUNT, CONTENT_FORM_CUSTOM_ROW_COUNT, CONTENT_FORM_CUSTOM_TABLE_NAME, ContentBandEnum } from '../dto/shared/content-dto.js';
-import { dynamicInsert, dynamicLoad, dynamicLoadByIds, dynamicUpdate } from '../util/util-dynamic.js';
+import { ContentBandEnum } from '../dto/shared/content-dto.js';
 import { GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
 import { indexToColumnNameExcel } from '../util/util-main.js';
 import { gridBarRow, gridCellText, gridCellValue, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand, gridLookupSet, gridPatchDeleteMulti, gridSelectedMultiRowKeys, gridTables } from '../util/util-grid.js';
@@ -88,8 +86,8 @@ export async function planeDesignLoad(request: Request, gridPlaneDto: GridPlaneD
   return { ...gridPlaneDto, grids: [gridDto, propertyGridDto, formGridDto, masterDetailGridDto] };
 }
 
-/** Parses a RowCount or ColumnCount propertyValue, clamped to 0..50 (empty or invalid is 0), like Content.tsx. */
-function designFormCount(text: string | undefined): number {
+/** Parses a RowCount or ColumnCount propertyValue, clamped to 0..50 (empty or invalid is 0); also used by the content view Form grid. */
+export function designFormCount(text: string | undefined): number {
   const value = Number((text ?? '').trim());
   return Number.isInteger(value) ? Math.min(Math.max(value, 0), 50) : 0;
 }
@@ -143,132 +141,6 @@ async function gridDesignFormLoad(request: Request, band: DesignBandDto | undefi
     state: cell !== undefined ? { selectedRowIndex: cell.rowIndex, selectedColumnName: cell.columnName } : {},
     setting: { isSelectPatch: true, isSelectColumnPatch: true },
   };
-}
-
-/**
- * Loads the CONTENT_FORM_PLANE_NAME plane (a ContentBandEnum.Form band of Content.tsx): one grid (grids[0]) with ColumnCount header columns
- * (named A, B, C, ... by indexToColumnNameExcel) and RowCount rows (each cell the FieldName property of that cell of the Form band named by GridStateDto.custom's
- * bandName, "Cell" if missing or empty), each followed by a row of their values (a text box with the value of that FieldName of the DynamicDto row, the label "Empty"
- * if the cell has no FieldName), repeated for each DynamicDto row of the current page (every cell's rowIndex is that row's index on the page), the counts taken from its GridStateDto.custom
- * (clamped like designFormCount),
- * followed by the bar (New, Save, Reload and pager). The pager pages the DynamicDto rows of GridStateDto.custom's tableName (all rows if missing or empty, like the
- * Data grid of the "dynamic" plane). Like the Debug Data grid (gridDebugNew), New appends one empty form repetition (isNew text boxes, rowIndex after the page's
- * rows), and Save writes the modified text boxes into their DynamicDto rows and inserts the new repetitions as DynamicDto rows with that tableName.
- */
-export async function planeContentFormLoad(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
-  const gridDto = gridPlaneDto.grids?.[0] ?? {};
-  const custom = gridDto.state?.custom;
-
-  const count = (key: string) => designFormCount(typeof custom?.[key] === 'string' ? custom[key] : undefined);
-  const rowCount = count(CONTENT_FORM_CUSTOM_ROW_COUNT);
-  const columnNames = Array.from({ length: count(CONTENT_FORM_CUSTOM_COLUMN_COUNT) }, (_, columnIndex) => indexToColumnNameExcel(columnIndex));
-
-  // FieldName of each cell (owner designFormCellPropertyOwner), undefined if missing or empty.
-  const bandName = custom?.[CONTENT_FORM_CUSTOM_BAND_NAME];
-  const cellProperties = typeof bandName === 'string' && bandName !== '' ? await designFormCellPropertyLoadAll(request, bandName) : [];
-  const fieldName = (rowIndex: number, columnName: string): string | undefined => {
-    const { ownerName } = designFormCellPropertyOwner(String(bandName), rowIndex, columnName);
-    return cellProperties.find((property) => property.ownerName === ownerName && property.propertyName === 'FieldName')?.propertyValue || undefined;
-  };
-  // Value row cell: a text box with the dynamic row's value of the cell's FieldName ("" if missing), or the label "Empty" if the cell has no FieldName.
-  // The text box's columnName is its FieldName (not A, B, ...): a modify is identified by rowIndex and columnName, and A, B, ... repeat for every form row
-  // of a repetition. Text boxes with the same FieldName show the same value anyway.
-  // A new repetition (dynamic undefined) has empty isNew text boxes, like gridDebugNew.
-  const valueCell = (dynamic: Record<string, unknown> | undefined, formRowIndex: number, columnName: string, rowIndex: number): GridCellDto => {
-    const name = fieldName(formRowIndex, columnName);
-    if (name === undefined) {
-      return { cellEnum: GridCellEnum.Label, text: 'Empty', rowIndex, columnName, ...(dynamic === undefined && { isNew: true }) };
-    }
-    return dynamic !== undefined
-      ? { cellEnum: GridCellEnum.Edit, text: gridCellText(dynamic[name], {}), rowIndex, columnName: name }
-      : { cellEnum: GridCellEnum.Edit, placeHolder: 'New', rowIndex, columnName: name, isNew: true };
-  };
-
-  const tableNameCustom = custom?.[CONTENT_FORM_CUSTOM_TABLE_NAME];
-  const tableName = typeof tableNameCustom === 'string' && tableNameCustom !== '' ? tableNameCustom : undefined;
-
-  if (gridDto.command?.commandEnum === GridCommandEnum.Save) {
-    const fieldNames = new Set(columnNames.flatMap((columnName) => Array.from({ length: rowCount }, (_, formRowIndex) => fieldName(formRowIndex, columnName) ?? []).flat()));
-    await gridContentFormSaveUpdate(request, gridDto, fieldNames);
-    await gridContentFormSaveInsert(request, gridDto, tableName, fieldNames);
-  }
-
-  const dynamics = await dynamicLoad(request, tableName);
-  // Filter-Sort-Page: no columns, so no filter or sort. Its selectedRowIndex (the first row of the page if none is selected) is the rowIndex of a form repetition.
-  const { rows: pageDynamics, state: fspState } = gridFsp(dynamics, [], gridDto.state);
-
-  // No columnName on the header cells: clicking them doesn't sort and they have no filter button.
-  const headerRow: GridRowDto = { cells: columnNames.map((columnName) => gridHeaderCell(undefined, undefined, columnName)) };
-  // One form repetition: each form row renders as two rows, its FieldNames ("Cell" if missing), then their values; all its cells get rowIndex
-  // (so the whole repetition is selected together).
-  const repetitionRows = (dynamic: Record<string, unknown> | undefined, rowIndex: number): GridRowDto[] => Array.from({ length: rowCount }, (_, formRowIndex) => [
-    { cells: columnNames.map((columnName): GridCellDto => ({ cellEnum: GridCellEnum.Label, text: fieldName(formRowIndex, columnName) ?? 'Cell', rowIndex, columnName, ...(dynamic === undefined && { isNew: true }) })) },
-    { cells: columnNames.map((columnName) => valueCell(dynamic, formRowIndex, columnName, rowIndex)) },
-  ]).flat();
-  // The form is repeated for each dynamic row of the page (rowIndex its index on the page); New appends one empty repetition with rowIndex after them.
-  const rows: GridRowDto[] = [
-    ...(pageDynamics as Record<string, unknown>[]).flatMap((dynamic, rowIndex) => repetitionRows(dynamic, rowIndex)),
-    ...(gridDto.command?.commandEnum === GridCommandEnum.New ? repetitionRows(undefined, pageDynamics.length) : []),
-  ];
-
-  // rowKey is the _id (ObjectId hex) of the form repetition's dynamic row, its rowIndex being the index into rowKeys.
-  const rowKeys: string[] = pageDynamics.map((dynamic) => dynamic._id?.toHexString() ?? '');
-
-  // Command (e.g. New or Save of the bar) is transient: not sent back, so it isn't re-processed on a later request.
-  const isForm = columnNames.length > 0 && rowCount > 0;
-  return {
-    ...gridPlaneDto,
-    grids: [{ tables: gridTables([], isForm ? [headerRow, ...rows] : [], [gridBarRow()]), state: { ...fspState, selectedRowIndex: isForm ? fspState.selectedRowIndex : undefined, rowKeys, custom } }],
-  };
-}
-
-/** Saves the modified text boxes of the Content Form into their DynamicDto rows (rowKeys); only those whose columnName is one of fieldNames (the form's FieldNames). */
-async function gridContentFormSaveUpdate(request: Request, gridDto: GridDto, fieldNames: Set<string>): Promise<void> {
-  const modifies = (gridDto.modifies ?? []).filter((modify) => !modify.isNew);
-  const rowKeys = gridDto.state?.rowKeys ?? [];
-
-  const ids = [
-    ...new Set(
-      modifies
-        .map((modify) => (modify.rowIndex !== undefined ? rowKeys[modify.rowIndex] : undefined))
-        .filter((rowKey): rowKey is string => rowKey !== undefined),
-    ),
-  ];
-
-  const dynamics = await dynamicLoadByIds(request, ids);
-
-  for (const modify of modifies) {
-    if (modify.rowIndex === undefined || modify.columnName === undefined || modify.cellEnum !== GridCellEnum.Edit || !fieldNames.has(modify.columnName)) {
-      continue;
-    }
-
-    const rowKey = rowKeys[modify.rowIndex];
-    const dynamic = dynamics.find((dynamic) => dynamic._id?.toHexString() === rowKey);
-    if (dynamic) {
-      (dynamic as Record<string, unknown>)[modify.columnName] = modify.textModified ?? '';
-    }
-  }
-
-  await dynamicUpdate(request, dynamics);
-}
-
-/** Inserts the new form repetitions (isNew modifies, one DynamicDto row per rowIndex) with tableName (none if undefined); only columnNames that are one of fieldNames. */
-async function gridContentFormSaveInsert(request: Request, gridDto: GridDto, tableName: string | undefined, fieldNames: Set<string>): Promise<void> {
-  const modifies = (gridDto.modifies ?? []).filter((modify) => modify.isNew);
-
-  const dynamicsByRowIndex = new Map<number, DynamicDto>();
-
-  for (const modify of modifies) {
-    if (modify.rowIndex === undefined || modify.columnName === undefined || modify.cellEnum !== GridCellEnum.Edit || !fieldNames.has(modify.columnName)) {
-      continue;
-    }
-
-    const dynamic = dynamicsByRowIndex.get(modify.rowIndex) ?? (tableName !== undefined ? { tableName } : {});
-    (dynamic as Record<string, unknown>)[modify.columnName] = modify.textModified ?? '';
-    dynamicsByRowIndex.set(modify.rowIndex, dynamic);
-  }
-
-  await dynamicInsert(request, [...dynamicsByRowIndex.values()]);
 }
 
 /** Returns the properties shown in the Properties grid: those of cell of the Form grid if one is selected, otherwise those of band; none if no band is selected. */
