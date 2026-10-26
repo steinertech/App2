@@ -1,8 +1,8 @@
-import { GridCellDto, GridCellEnum, GridCommandEnum, GridDto, GridPatchDto, GridPatchEnum, GridPlaneDto, GridRowDto } from '../dto/shared/grid-dto.js';
+import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomEnum, GridDto, GridPatchDto, GridPatchEnum, GridPlaneDto, GridRowDto } from '../dto/shared/grid-dto.js';
 import { dynamicColumnNameLoad, dynamicInsert, dynamicLoad, dynamicLoadByIds, dynamicTableLoad, dynamicUpdate } from '../util/util-dynamic.js';
 import { DynamicDto, DynamicTableNameDto } from '../dto/dynamic-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
-import { gridBarRow, gridCellText, gridCellValue, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridLookupSet, gridTables } from '../util/util-grid.js';
+import { gridBarRow, gridCellText, gridCellValue, gridColumnChooserLoad, gridColumnChooserOk, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridLookupSet, gridTables } from '../util/util-grid.js';
 
 const DYNAMIC_COLUMNS: GridConfigDto = {
   columns: (['tableName'] as const satisfies readonly (keyof DynamicTableNameDto)[]).map(
@@ -91,12 +91,17 @@ async function gridDynamicLoad(request: Request, gridDto: GridDto): Promise<Grid
 /**
  * Builds the Data grid. tableName (the selected row of the dynamic grid, or the TableName of a content view Table band) filters the rows and is the default tableName
  * of inserted rows; undefined shows all rows. rowFilter (e.g. the detail filter of a content view grid) further filters the rows, if set. newValues (e.g. the master
- * values of a content view detail grid) are set on every inserted row and shown as labels in the New row.
+ * values of a content view detail grid) are set on every inserted row and shown as labels in the New row. isColumnChooser (e.g. a content view Table band) adds the
+ * toolbar's Column Chooser button (opened by gridDynamicDataColumnChooserLoad), showing only the chosen columns (GridStateDto.columnNames).
  */
 export async function gridDynamicDataLoad(
   request: Request, gridDto: GridDto, tableName: string | undefined, rowFilter?: (dynamic: DynamicDto) => boolean, newValues?: Record<string, string>,
+  isColumnChooser?: boolean,
 ): Promise<GridDto> {
   const dataColumns = await gridDynamicDataColumns(request, tableName);
+  // Column Chooser Ok: apply the chosen columns (GridStateDto.columnNames) before the rows are built.
+  gridColumnChooserOk(gridDto, dataColumns);
+  const columns = gridColumns(dataColumns, gridDto.state);
   if (gridDto.command?.commandEnum === GridCommandEnum.Save) {
     await gridDynamicDataSaveUpdate(request, gridDto, dataColumns);
     await gridDynamicDataSaveInsert(request, gridDto, tableName, dataColumns, newValues);
@@ -111,10 +116,10 @@ export async function gridDynamicDataLoad(
   const { rows: dynamics, state: fspState } = gridFsp(allDynamics, dataColumns, gridDto.state);
 
   const headerRow: GridRowDto = {
-    cells: gridColumns(dataColumns).map((column) => gridHeaderCell(column.columnName, gridDto.state?.sort)),
+    cells: columns.map((column) => gridHeaderCell(column.columnName, gridDto.state?.sort)),
   };
   const rows: GridRowDto[] = dynamics.map((dynamic, rowIndex) => ({
-    cells: gridColumns(dataColumns).map(
+    cells: columns.map(
       (column): GridCellDto => ({
         cellEnum: GridCellEnum.Edit,
         text: gridCellText((dynamic as Record<string, unknown>)[column.columnName ?? ''], column),
@@ -126,21 +131,26 @@ export async function gridDynamicDataLoad(
 
   // rowKey is the _id (ObjectId hex).
   const rowKeys: string[] = dynamics.map((dynamic) => dynamic._id?.toHexString() ?? '');
-  const findRow = gridFindRow(gridColumns(dataColumns).map((column) => column.columnName));
+  const findRow = gridFindRow(columns.map((column) => column.columnName));
+
+  const toolbarRows: GridRowDto[] = isColumnChooser
+    ? [{ cells: [{ cellEnum: GridCellEnum.Custom, customs: [{ text: 'Column Chooser', name: 'ColumnChooser', customEnum: GridCustomEnum.ColumnChooser }] }] }]
+    : [];
 
   const result: GridDto = {
     ...gridDto,
     title: 'Data',
-    tables: gridTables([], [headerRow, findRow, ...rows], [gridBarRow()]),
+    tables: gridTables(toolbarRows, [headerRow, findRow, ...rows], [gridBarRow()]),
     state: { ...gridDto.state, ...fspState, rowKeys },
   };
 
   if (gridDto.command?.commandEnum === GridCommandEnum.New) {
-    gridDynamicDataNew(result, dataColumns, newValues);
+    gridDynamicDataNew(result, columns, newValues);
   }
 
-  // Lookup (planes[0]): Filter Multi (opened by planeDynamicPatch, kept open while planes[0].planeName is filterMulti).
-  gridLookupSet(result, gridFilterMultiLoad(gridDto, dataColumns, allDynamics));
+  // Lookup (planes[0]): Column Chooser (opened by gridDynamicDataColumnChooserLoad, kept open while planes[0].planeName is columnChooser)
+  // or Filter Multi (opened by planeDynamicPatch, kept open while planes[0].planeName is filterMulti).
+  gridLookupSet(result, gridColumnChooserLoad(gridDto, dataColumns) ?? gridFilterMultiLoad(gridDto, dataColumns, allDynamics));
 
   // Command is transient: clear it so it isn't re-processed on a later request.
   result.command = undefined;
@@ -190,6 +200,11 @@ export async function gridDynamicDataFilterMultiLoad(
 ): Promise<GridPlaneDto | undefined> {
   const dynamics = (await dynamicLoad(request, tableName)).filter((dynamic) => rowFilter?.(dynamic) ?? true);
   return gridFilterMultiLoad(gridDto, await gridDynamicDataColumns(request, tableName), dynamics);
+}
+
+/** Returns the Column Chooser lookup plane (see gridColumnChooserLoad) of the Data grid gridDto with the columns of tableName (see gridDynamicDataLoad's isColumnChooser). */
+export async function gridDynamicDataColumnChooserLoad(request: Request, gridDto: GridDto, tableName: string | undefined): Promise<GridPlaneDto | undefined> {
+  return gridColumnChooserLoad(gridDto, await gridDynamicDataColumns(request, tableName));
 }
 
 async function gridDynamicDataSaveUpdate(request: Request, gridDto: GridDto, dataColumns: GridConfigColumnDto[]): Promise<void> {
@@ -254,8 +269,8 @@ async function gridDynamicDataSaveInsert(
   await dynamicInsert(request, [...dynamicsByRowIndex.values()].map((dynamic): DynamicDto => ({ ...dynamic, ...values })));
 }
 
-/** Appends one empty, editable new row to the data table (GridDto.tables[1]). */
-function gridDynamicDataNew(gridDto: GridDto, dataColumns: GridConfigColumnDto[], newValues: Record<string, string> | undefined): void {
+/** Appends one empty, editable new row (a cell per column of columns, the rendered ones) to the data table (GridDto.tables[1]). */
+function gridDynamicDataNew(gridDto: GridDto, columns: GridConfigColumnDto[], newValues: Record<string, string> | undefined): void {
   const dataTable = gridDto.tables?.[1];
   if (dataTable === undefined) {
     return;
@@ -265,7 +280,7 @@ function gridDynamicDataNew(gridDto: GridDto, dataColumns: GridConfigColumnDto[]
 
   const newRow: GridRowDto = {
     // A column of newValues is a label with its value (set by Save insert), the others empty text boxes.
-    cells: gridColumns(dataColumns).map(
+    cells: columns.map(
       (column): GridCellDto => {
         const newValue = column.columnName !== undefined ? newValues?.[column.columnName] : undefined;
         return newValue !== undefined
