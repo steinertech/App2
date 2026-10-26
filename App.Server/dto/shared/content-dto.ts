@@ -28,6 +28,8 @@ export interface ContentBandDto {
   bandEnum: ContentBandEnum;
   /** PropertyDto.propertyValue of each DESIGN_BAND_PROPERTY_NAMES[bandEnum], in that order ('' if missing). */
   propertyValues: string[];
+  /** DesignBandDto.columns whose isVisible is false (e.g. hidden in its content view Table grid); a column not in DesignBandDto.columns is visible. */
+  hiddenColumnNames?: string[];
 }
 
 /** propertyValue of band's property propertyName (one of DESIGN_BAND_PROPERTY_NAMES[band.bandEnum]); '' if not found. */

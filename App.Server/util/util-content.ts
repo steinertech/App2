@@ -19,7 +19,7 @@ export async function loadContent(request: Request, contentName: string): Promis
 
 /**
  * Returns the ContentBandDto of each band (in bands order), carrying the propertyValue of its PropertyDto rows (owner designBandPropertyOwner(band.name))
- * in DESIGN_BAND_PROPERTY_NAMES[bandEnum] order ('' if missing, e.g. never synced).
+ * in DESIGN_BAND_PROPERTY_NAMES[bandEnum] order ('' if missing, e.g. never synced), and the columns hidden by DesignBandColumnDto.isVisible.
  */
 export async function contentBandLoad(request: Request, bands: DesignBandDto[]): Promise<ContentBandDto[]> {
   const bandNames = bands.map((band) => band.name).filter((name): name is NonNullable<DesignBandDto['name']> => !!name);
@@ -30,6 +30,7 @@ export async function contentBandLoad(request: Request, bands: DesignBandDto[]):
     const propertyValues = (DESIGN_BAND_PROPERTY_NAMES[bandEnum] ?? []).map(
       (propertyName) => properties.find((property) => property.ownerName === band.name && property.propertyName === propertyName)?.propertyValue ?? '',
     );
-    return { name: band.name ?? '', bandEnum, propertyValues };
+    const hiddenColumnNames = (band.columns ?? []).filter((column) => column.isVisible === false).map((column) => column.columnName ?? '');
+    return { name: band.name ?? '', bandEnum, propertyValues, hiddenColumnNames };
   });
 }

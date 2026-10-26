@@ -17,13 +17,16 @@ const DYNAMIC_FIELD_NAMES = new Set<string>(['_id', 'name', 'sectorKey', 'type',
  * Columns of the Data grid: DynamicDto.tableName, then the column values stored as additional fields of the DynamicDto document (not declared on DynamicDto):
  * the SchemaDto.columnName list of tableName, or the standard columns A, B if no tableName is selected.
  * Column names that aren't plain MongoDB field names (starting with "$" or containing ".") or that are DynamicDto fields are skipped.
+ * Also used by the Design Band grid's Columns lookup (DesignBandDto.columns of a Table band). hiddenColumnNames (e.g. of a content view Table band) get isHide.
  */
-async function gridDynamicDataColumns(request: Request, tableName: string | undefined): Promise<GridConfigColumnDto[]> {
+export async function gridDynamicDataColumns(request: Request, tableName: string | undefined, hiddenColumnNames?: string[]): Promise<GridConfigColumnDto[]> {
   const columnNames =
     tableName !== undefined
       ? (await dynamicColumnNameLoad(request, tableName)).filter((columnName) => !DYNAMIC_FIELD_NAMES.has(columnName) && !columnName.startsWith('$') && !columnName.includes('.'))
       : ['A', 'B'];
-  return ['tableName' satisfies keyof DynamicDto, ...new Set(columnNames)].map((columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text }));
+  return ['tableName' satisfies keyof DynamicDto, ...new Set(columnNames)].map(
+    (columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text, isHide: hiddenColumnNames?.includes(columnName) || undefined }),
+  );
 }
 
 /**
@@ -92,13 +95,14 @@ async function gridDynamicLoad(request: Request, gridDto: GridDto): Promise<Grid
  * Builds the Data grid. tableName (the selected row of the dynamic grid, or the TableName of a content view Table band) filters the rows and is the default tableName
  * of inserted rows; undefined shows all rows. rowFilter (e.g. the detail filter of a content view grid) further filters the rows, if set. newValues (e.g. the master
  * values of a content view detail grid) are set on every inserted row and shown as labels in the New row. isColumnChooser (e.g. a content view Table band) adds the
- * toolbar's Column Chooser button (opened by gridDynamicDataColumnChooserLoad), showing only the chosen columns (GridStateDto.columnNames).
+ * toolbar's Column Chooser button (opened by gridDynamicDataColumnChooserLoad), showing only the chosen columns (GridStateDto.columnNames). hiddenColumnNames (e.g. of a
+ * content view Table band, see DesignBandColumnDto.isVisible) are never shown, nor offered by the Column Chooser; newValues are still set on them.
  */
 export async function gridDynamicDataLoad(
   request: Request, gridDto: GridDto, tableName: string | undefined, rowFilter?: (dynamic: DynamicDto) => boolean, newValues?: Record<string, string>,
-  isColumnChooser?: boolean,
+  isColumnChooser?: boolean, hiddenColumnNames?: string[],
 ): Promise<GridDto> {
-  const dataColumns = await gridDynamicDataColumns(request, tableName);
+  const dataColumns = await gridDynamicDataColumns(request, tableName, hiddenColumnNames);
   // Column Chooser Ok: apply the chosen columns (GridStateDto.columnNames) before the rows are built.
   gridColumnChooserOk(gridDto, dataColumns);
   const columns = gridColumns(dataColumns, gridDto.state);
@@ -193,18 +197,23 @@ export async function planeDynamicPatch(request: Request, gridPlaneDto: GridPlan
 
 /**
  * Returns the Filter Multi lookup plane (see gridFilterMultiLoad) of the Data grid gridDto with the DynamicDto rows of tableName (all rows if undefined), only those of
- * rowFilter if set (see gridDynamicDataLoad).
+ * rowFilter if set (see gridDynamicDataLoad), without hiddenColumnNames.
  */
 export async function gridDynamicDataFilterMultiLoad(
-  request: Request, gridDto: GridDto, tableName: string | undefined, rowFilter?: (dynamic: DynamicDto) => boolean,
+  request: Request, gridDto: GridDto, tableName: string | undefined, rowFilter?: (dynamic: DynamicDto) => boolean, hiddenColumnNames?: string[],
 ): Promise<GridPlaneDto | undefined> {
   const dynamics = (await dynamicLoad(request, tableName)).filter((dynamic) => rowFilter?.(dynamic) ?? true);
-  return gridFilterMultiLoad(gridDto, await gridDynamicDataColumns(request, tableName), dynamics);
+  return gridFilterMultiLoad(gridDto, await gridDynamicDataColumns(request, tableName, hiddenColumnNames), dynamics);
 }
 
-/** Returns the Column Chooser lookup plane (see gridColumnChooserLoad) of the Data grid gridDto with the columns of tableName (see gridDynamicDataLoad's isColumnChooser). */
-export async function gridDynamicDataColumnChooserLoad(request: Request, gridDto: GridDto, tableName: string | undefined): Promise<GridPlaneDto | undefined> {
-  return gridColumnChooserLoad(gridDto, await gridDynamicDataColumns(request, tableName));
+/**
+ * Returns the Column Chooser lookup plane (see gridColumnChooserLoad) of the Data grid gridDto with the columns of tableName without hiddenColumnNames
+ * (see gridDynamicDataLoad's isColumnChooser).
+ */
+export async function gridDynamicDataColumnChooserLoad(
+  request: Request, gridDto: GridDto, tableName: string | undefined, hiddenColumnNames?: string[],
+): Promise<GridPlaneDto | undefined> {
+  return gridColumnChooserLoad(gridDto, await gridDynamicDataColumns(request, tableName, hiddenColumnNames));
 }
 
 async function gridDynamicDataSaveUpdate(request: Request, gridDto: GridDto, dataColumns: GridConfigColumnDto[]): Promise<void> {

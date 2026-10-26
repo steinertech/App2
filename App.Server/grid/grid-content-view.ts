@@ -119,7 +119,8 @@ async function gridContentViewDetail(
 }
 
 /**
- * Builds a content view grid from band: a Table as the Data grid of the "dynamic" plane with the rows of its TableName and a Column Chooser, a Form by gridContentFormLoad, both titled by
+ * Builds a content view grid from band: a Table as the Data grid of the "dynamic" plane with the rows of its TableName and a Column Chooser (without the columns hidden by
+ * DesignBandColumnDto.isVisible), a Form by gridContentFormLoad, both titled by
  * gridContentViewTitle, with only the rows of detail and its values on inserted rows (see gridContentViewDetail; all rows if undefined) and, if isMaster (band is the
  * master band of a Design Master Detail), with setting isSelectPatch; otherwise (or band not found) an empty grid.
  */
@@ -129,7 +130,7 @@ async function gridContentViewLoad(
   // Replaces any incoming setting (gridDynamicDataLoad keeps gridDto's), so a grid whose band is no longer a master stops sending Select.
   const setting = isMaster ? { isSelectPatch: true } : undefined;
   if (band?.bandEnum === ContentBandEnum.Table) {
-    return { ...await gridDynamicDataLoad(request, gridDto, gridContentViewTableName(band), detail?.rowFilter, detail?.newValues, true), title: gridContentViewTitle(band), setting };
+    return { ...await gridDynamicDataLoad(request, gridDto, gridContentViewTableName(band), detail?.rowFilter, detail?.newValues, true, band.hiddenColumnNames), title: gridContentViewTitle(band), setting };
   }
   if (band?.bandEnum === ContentBandEnum.Form) {
     return { ...await gridContentFormLoad(request, gridDto, band, detail), title: gridContentViewTitle(band), setting };
@@ -223,11 +224,11 @@ async function gridContentViewPatch(request: Request, gridDtos: GridDto[], gridI
     return {};
   }
   if (commandEnum === GridCommandEnum.ColumnChooser) {
-    const lookupPlane = await gridDynamicDataColumnChooserLoad(request, gridDto, gridContentViewTableName(band));
+    const lookupPlane = await gridDynamicDataColumnChooserLoad(request, gridDto, gridContentViewTableName(band), band.hiddenColumnNames);
     return { patches: [{ patchEnum: GridPatchEnum.Lookup, planeName: lookupPlane?.planeName, lookup: lookupPlane?.grids?.[0] } satisfies GridPatchDto] };
   }
   const detail = await gridContentViewDetail(request, await designMasterDetailLoad(request), band, gridDtos, gridBands);
-  const lookupPlane = await gridDynamicDataFilterMultiLoad(request, gridDto, gridContentViewTableName(band), detail?.rowFilter);
+  const lookupPlane = await gridDynamicDataFilterMultiLoad(request, gridDto, gridContentViewTableName(band), detail?.rowFilter, band.hiddenColumnNames);
   return { patches: [{ patchEnum: GridPatchEnum.Lookup, planeName: lookupPlane?.planeName, lookup: lookupPlane?.grids?.[0] } satisfies GridPatchDto] };
 }
 

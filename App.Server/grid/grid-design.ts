@@ -1,13 +1,14 @@
 import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPatchDto, GridPatchEnum, GridPlaneDto, GridRowDto } from '../dto/shared/grid-dto.js';
 import { designBandDelete, designBandInsert, designBandLoad, designBandLoadByIds, designBandUpdate, designFormCellPropertyLoad, designFormCellPropertySync, designBandPropertyLoad, designBandFormPropertyLoadByIds, designBandPropertySync, designBandFormPropertyUpdate } from '../util/util-design.js';
-import { DesignBandDto } from '../dto/design-dto.js';
+import { DesignBandColumnDto, DesignBandDto } from '../dto/design-dto.js';
 import { PropertyDto } from '../dto/property-dto.js';
 import { ContentBandEnum } from '../dto/shared/content-dto.js';
 import { GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
 import { indexToColumnNameExcel } from '../util/util-main.js';
-import { gridBarRow, gridCellText, gridCellValue, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand, gridLookupSet, gridPatchDeleteMulti, gridSelectedMultiRowKeys, gridTables } from '../util/util-grid.js';
+import { GridLookupMultiRow, gridBarRow, gridCellText, gridCellValue, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand, gridLoadLookupMulti, gridLookup, gridLookupMultiSelected, gridLookupSet, gridPatchDeleteMulti, gridSelectedMultiRowKeys, gridTables } from '../util/util-grid.js';
 import { gridDebugDeleteConfirm } from './grid-debug.js';
 import { gridDesignMasterDetailFilterMultiLoad, gridDesignMasterDetailLoad } from './grid-design-master-detail.js';
+import { gridDynamicDataColumns } from './grid-dynamic.js';
 
 /** The names of ContentBandEnum, e.g. "Header". */
 const DESIGN_BAND_ENUM_NAMES = Object.keys(ContentBandEnum).filter((key) => isNaN(Number(key)));
@@ -195,6 +196,8 @@ async function gridDesignBandLoad(request: Request, gridDto: GridDto): Promise<G
     await gridDesignBandSaveInsert(request, gridDto);
   }
 
+  await gridDesignBandColumnsOk(request, gridDto);
+
   const allBands = await designBandLoad(request);
 
   // Filter Multi Ok: apply the chosen texts (GridStateDto.filterMultis) before the rows are built.
@@ -221,7 +224,11 @@ async function gridDesignBandLoad(request: Request, gridDto: GridDto): Promise<G
       ),
       {
         cellEnum: GridCellEnum.Custom,
-        customs: [{ text: 'Delete', name: 'Delete', customEnum: GridCustomEnum.Button, rowIndex } satisfies GridCustomDto],
+        customs: [
+          // Columns opens the Columns lookup (gridDesignBandColumnsLoad) of a Table band.
+          ...(band.bandEnum === ContentBandEnum.Table ? [{ text: 'Columns', name: 'Columns', customEnum: GridCustomEnum.Button, rowIndex } satisfies GridCustomDto] : []),
+          { text: 'Delete', name: 'Delete', customEnum: GridCustomEnum.Button, rowIndex } satisfies GridCustomDto,
+        ],
         rowIndex,
       },
     ],
@@ -260,13 +267,80 @@ async function gridDesignBandLoad(request: Request, gridDto: GridDto): Promise<G
     gridDesignBandNew(result);
   }
 
-  // Lookup (planes[0]): Filter Multi (opened by planeDesignPatch, kept open while planes[0].planeName is filterMulti).
-  gridLookupSet(result, gridFilterMultiLoad(gridDto, DESIGN_BAND_COLUMNS.columns ?? [], allBands));
+  // Lookup (planes[0]): Columns (opened by a row's Columns button, kept open while planes[0].planeName is DESIGN_BAND_COLUMNS_PLANE)
+  // or Filter Multi (opened by planeDesignPatch, kept open while planes[0].planeName is filterMulti).
+  gridLookupSet(result, (await gridDesignBandColumnsLoad(request, gridDto)) ?? gridFilterMultiLoad(gridDto, DESIGN_BAND_COLUMNS.columns ?? [], allBands));
 
   // Command is transient: clear it so it isn't re-processed on a later request.
   result.command = undefined;
 
   return result;
+}
+
+/** GridPlaneDto.planeName of the design band grid's Columns lookup (gridDto.planes[0]). */
+const DESIGN_BAND_COLUMNS_PLANE = 'designBandColumns';
+
+/**
+ * Returns the Columns lookup plane (like the Column Chooser, see gridColumnChooserLoad) if a row's Columns button opened it, or if it is open
+ * (incoming planes[0].planeName is DESIGN_BAND_COLUMNS_PLANE) and didn't send Ok. Otherwise (or if the band isn't found) undefined.
+ * Its rows are the DesignBandDto.columns of the band (GridStateDto.custom.rowKey, its _id hex), synced by gridDesignBandColumnSync when opened; a column is selected
+ * initially if isVisible. Its Ok is handled by gridDesignBandColumnsOk.
+ */
+async function gridDesignBandColumnsLoad(request: Request, incomingGridDto: GridDto): Promise<GridPlaneDto | undefined> {
+  const isOpening = gridIsCommand(incomingGridDto, 'Columns');
+  const lookupGridDto = isOpening ? undefined : gridLookup(incomingGridDto, DESIGN_BAND_COLUMNS_PLANE);
+  if (!isOpening && (lookupGridDto === undefined || lookupGridDto.command?.commandEnum === GridCommandEnum.Ok)) {
+    return undefined;
+  }
+  const rowIndex = incomingGridDto.command?.rowIndex;
+  const rowKey = isOpening ? (rowIndex !== undefined ? incomingGridDto.state?.rowKeys?.[rowIndex] : undefined) : lookupGridDto?.state?.custom?.rowKey;
+  const band = typeof rowKey === 'string' ? (await designBandLoadByIds(request, [rowKey]))[0] : undefined;
+  if (band === undefined) {
+    return undefined;
+  }
+  if (isOpening) {
+    await gridDesignBandColumnSync(request, band);
+  }
+  const columns = band.columns ?? [];
+  const lookupRows = columns.map((column): GridLookupMultiRow => ({ rowKey: column.columnName ?? '', text: column.columnName ?? '', value: column.columnName ?? '' }));
+  const selectedInitial = new Set(columns.filter((column) => column.isVisible === true).map((column) => column.columnName ?? ''));
+  return {
+    planeName: DESIGN_BAND_COLUMNS_PLANE,
+    grids: [gridLoadLookupMulti('Columns', 'columnName', 'Column Name', GridConfigTypeEnum.Text, lookupRows, selectedInitial, lookupGridDto, { rowKey })],
+  };
+}
+
+/**
+ * Makes DesignBandDto.columns of band (saved if changed) match the columns of its TableName property (gridDynamicDataColumns, the columns of its content view Table grid;
+ * all tables' if empty), in that order: adds missing ones (visible), removes ones no longer in the table, keeps the isVisible of the others.
+ */
+async function gridDesignBandColumnSync(request: Request, band: DesignBandDto): Promise<void> {
+  const properties = band.name ? await designBandPropertyLoad(request, band.name) : [];
+  const tableName = properties.find((property) => property.propertyName === 'TableName')?.propertyValue || undefined;
+  const columnNames = (await gridDynamicDataColumns(request, tableName)).map((column) => column.columnName ?? '');
+  const columns = columnNames.map(
+    (columnName): DesignBandColumnDto => ({ columnName, isVisible: band.columns?.find((column) => column.columnName === columnName)?.isVisible ?? true }),
+  );
+  if (JSON.stringify(columns) !== JSON.stringify(band.columns ?? [])) {
+    band.columns = columns;
+    await designBandUpdate(request, [band]);
+  }
+}
+
+/** If the Columns lookup (gridDto.planes[0]) sent GridCommandEnum.Ok, sets DesignBandColumnDto.isVisible of each column of its band to whether it is selected. */
+async function gridDesignBandColumnsOk(request: Request, gridDto: GridDto): Promise<void> {
+  const lookupGridDto = gridLookup(gridDto, DESIGN_BAND_COLUMNS_PLANE);
+  const rowKey = lookupGridDto?.state?.custom?.rowKey;
+  if (lookupGridDto?.command?.commandEnum !== GridCommandEnum.Ok || typeof rowKey !== 'string') {
+    return;
+  }
+  const band = (await designBandLoadByIds(request, [rowKey]))[0];
+  if (band === undefined) {
+    return;
+  }
+  const selected = gridLookupMultiSelected(lookupGridDto);
+  band.columns = (band.columns ?? []).map((column) => ({ ...column, isVisible: selected.has(column.columnName ?? '') }));
+  await designBandUpdate(request, [band]);
 }
 
 /**

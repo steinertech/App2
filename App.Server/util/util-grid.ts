@@ -219,13 +219,13 @@ export const GRID_PLANE_COLUMN_CHOOSER = 'columnChooser';
 export const GRID_PLANE_FILTER_MULTI = 'filterMulti';
 
 /** Returns the open lookup grid gridDto.planes[0] if its GridPlaneDto.planeName is planeName, or undefined. */
-function gridLookup(gridDto: GridDto, planeName: string): GridDto | undefined {
+export function gridLookup(gridDto: GridDto, planeName: string): GridDto | undefined {
   const lookupPlane = gridDto.planes?.[0];
   return lookupPlane?.planeName === planeName ? lookupPlane.grids?.[0] : undefined;
 }
 
 /** One row of a multi select lookup (see gridLoadLookupMulti): rowKey identifies it, text is shown, value is sorted by. */
-interface GridLookupMultiRow {
+export interface GridLookupMultiRow {
   rowKey: string;
   text: string;
   value: unknown;
@@ -235,7 +235,7 @@ interface GridLookupMultiRow {
  * Returns the rowKeys selected in the multi select lookupGridDto (see gridLoadLookupMulti): GridStateDto.custom.selectedRowKeys (the selection over all pages)
  * updated with the checkboxes of the page sent back (GridStateDto.isSelectedMulti by GridStateDto.rowKeys).
  */
-function gridLookupMultiSelected(lookupGridDto: GridDto): Set<string> {
+export function gridLookupMultiSelected(lookupGridDto: GridDto): Set<string> {
   const selectedRowKeys = lookupGridDto.state?.custom?.selectedRowKeys;
   const result = new Set(Array.isArray(selectedRowKeys) ? selectedRowKeys.filter((rowKey): rowKey is string => typeof rowKey === 'string') : []);
   const isSelectedMulti = lookupGridDto.state?.isSelectedMulti;
@@ -407,7 +407,7 @@ export async function gridPatchDeleteMulti(request: Request, gridDto: GridDto): 
  * and the Filter Multi (see gridFilterMultiLoad). Without lookupGridDto (just opened) the rows of selectedInitial are selected; otherwise the selection of the
  * open lookupGridDto is kept (see gridLookupMultiSelected) and its SortClick is applied. custom is merged into GridStateDto.custom.
  */
-function gridLoadLookupMulti(
+export function gridLoadLookupMulti(
   title: string,
   columnName: string,
   columnText: string,
