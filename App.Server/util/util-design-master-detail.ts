@@ -36,10 +36,10 @@ export interface DesignMasterDetailBands {
   fieldNameDetail: string;
 }
 
-/** Returns the master and detail band of masterDetail, or undefined if it has no effect (fieldNameMaster or fieldNameDetail empty). */
+/** Returns the master and detail band of masterDetail, or undefined if it has no effect (not isActive, or fieldNameMaster or fieldNameDetail empty). */
 export function designMasterDetailBands(masterDetail: DesignMasterDetailDto): DesignMasterDetailBands | undefined {
-  const { contentName, bandNameMaster, fieldNameMaster, bandNameDetail, fieldNameDetail } = masterDetail;
-  if (!fieldNameMaster || !fieldNameDetail) {
+  const { contentName, bandNameMaster, fieldNameMaster, bandNameDetail, fieldNameDetail, isActive } = masterDetail;
+  if (isActive !== true || !fieldNameMaster || !fieldNameDetail) {
     return undefined;
   }
   return {

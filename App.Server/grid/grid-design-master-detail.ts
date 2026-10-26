@@ -9,6 +9,18 @@ import { gridDebugDeleteConfirm } from './grid-debug.js';
 
 // The Design Master Detail grid of the "design" plane (GridPlaneDto.grids[3], see planeDesignLoad/planeDesignPatch in grid-design.ts).
 
+/** Parses an "Is Active" cell text: true/yes/1 → true, false/no/0 or empty → false. */
+function designMasterDetailIsActiveFromText(text: string): boolean {
+  const value = text.trim().toLowerCase();
+  if (['true', 'yes', '1'].includes(value)) {
+    return true;
+  }
+  if (['', 'false', 'no', '0'].includes(value)) {
+    return false;
+  }
+  throw new Error(`Is Active "${text}" is not true or false!`);
+}
+
 // name is not a column, so it's never sent to App.Web (designMasterDetailInsert/designMasterDetailUpdate set it by designMasterDetailName).
 const DESIGN_MASTER_DETAIL_COLUMNS: GridConfigDto = {
   columns: [
@@ -17,6 +29,13 @@ const DESIGN_MASTER_DETAIL_COLUMNS: GridConfigDto = {
     { columnName: 'fieldNameMaster' satisfies keyof DesignMasterDetailDto, text: 'Master Field', typeEnum: GridConfigTypeEnum.Text },
     { columnName: 'bandNameDetail' satisfies keyof DesignMasterDetailDto, text: 'Detail Band', typeEnum: GridConfigTypeEnum.Text },
     { columnName: 'fieldNameDetail' satisfies keyof DesignMasterDetailDto, text: 'Detail Field', typeEnum: GridConfigTypeEnum.Text },
+    {
+      columnName: 'isActive' satisfies keyof DesignMasterDetailDto,
+      text: 'Is Active',
+      typeEnum: GridConfigTypeEnum.Text,
+      valueToText: (value) => (value === true ? 'true' : 'false'),
+      valueFromText: designMasterDetailIsActiveFromText,
+    },
   ],
 };
 

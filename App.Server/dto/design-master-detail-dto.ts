@@ -13,4 +13,6 @@ export interface DesignMasterDetailDto extends DbDto {
   /** References DesignBandDto.bandName of the detail band. */
   bandNameDetail?: string;
   fieldNameDetail?: string;
+  /** Only if true does the master detail take effect (see designMasterDetailBands); undefined (e.g. rows saved before it existed) counts as false. */
+  isActive?: boolean;
 }
