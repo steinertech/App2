@@ -179,11 +179,6 @@ export interface GridStateDto {
   pageRowCount?: number;
   /** Custom JSON data (e.g. a pending action), sent back to the server unchanged with every request. Values must be JSON serializable. */
   custom?: Record<string, unknown>;
-  /**
-   * Values of the selected row of a master grid (key: DesignMasterDetailDto.fieldNameMaster, value: that field's value of the selected row), set by the backend for a
-   * CONTENT_VIEW_PLANE_NAME grid whose band is the master band of a DesignMasterDetailDto; undefined if none applies or no row is selected.
-   */
-  masterValues?: Record<string, string>;
 }
 
 /** Default and max GridStateDto.pageRowCount, and the page sizes offered by the GridCustomEnum.Bar page size picker. */

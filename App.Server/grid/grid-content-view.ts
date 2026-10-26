@@ -3,6 +3,7 @@ import { CONTENT_VIEW_CUSTOM_BAND_NAME, ContentBandDto, ContentBandEnum, content
 import { DynamicDto } from '../dto/dynamic-dto.js';
 import { contentViewBandLoad } from '../util/util-content-view.js';
 import { designBandName, designFormCellPropertyLoadAll, designFormCellPropertyOwner } from '../util/util-design.js';
+import { DesignMasterDetailDto } from '../dto/design-master-detail-dto.js';
 import { designMasterDetailLoad } from '../util/util-design-master-detail.js';
 import { dynamicInsert, dynamicLoad, dynamicLoadByIds, dynamicUpdate } from '../util/util-dynamic.js';
 import { indexToColumnNameExcel } from '../util/util-main.js';
@@ -39,9 +40,9 @@ function gridContentViewLoadSort(band: ContentBandDto | undefined): number {
  */
 export async function planeContentViewLoad(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
   const gridDtos = gridPlaneDto.grids ?? [];
-  const bands = await contentViewBandLoad(request, gridDtos.map(gridContentViewBandName).filter((bandName): bandName is string => bandName !== undefined));
-
-  const gridBands = gridDtos.map((gridDto) => bands.find((band) => band.name === gridContentViewBandName(gridDto)));
+  const gridBands = await gridContentViewBandsLoad(request, gridDtos);
+  const masterDetails = await designMasterDetailLoad(request);
+  const masterBandNames = gridContentViewMasterBandNames(masterDetails);
   // The grids are built in the order of their band's LoadSort (see gridContentViewLoadSort). With the same LoadSort, a grid's command (e.g. Save of a Form, writing
   // DynamicDto rows) can change the rows of another grid (e.g. a Table of the same TableName), so the grids with a command are built first, otherwise in band order.
   const loadSorts = gridBands.map(gridContentViewLoadSort);
@@ -49,69 +50,167 @@ export async function planeContentViewLoad(request: Request, gridPlaneDto: GridP
     loadSorts[a] - loadSorts[b] || Number(gridDtos[b].command !== undefined) - Number(gridDtos[a].command !== undefined));
   const grids: GridDto[] = [];
   for (const gridIndex of gridIndexes) {
-    grids[gridIndex] = await gridContentViewLoad(request, gridDtos[gridIndex], gridBands[gridIndex]);
+    const band = gridBands[gridIndex];
+    // A master grid already built (LoadSort before its detail grid) gives its reloaded selection, otherwise the selection sent by App.Web.
+    const detail = band !== undefined
+      ? await gridContentViewDetail(request, masterDetails, band, gridDtos.map((gridDto, index) => grids[index] ?? gridDto), gridBands)
+      : undefined;
+    grids[gridIndex] = await gridContentViewLoad(request, gridDtos[gridIndex], band, band !== undefined && masterBandNames.has(band.name), detail);
   }
-  await gridContentViewMasterValues(request, grids, gridBands);
   return { ...gridPlaneDto, grids };
 }
 
+/** Returns the band of each CONTENT_VIEW_PLANE_NAME grid of gridDtos (see gridContentViewBandName), undefined if not found. */
+async function gridContentViewBandsLoad(request: Request, gridDtos: GridDto[]): Promise<(ContentBandDto | undefined)[]> {
+  const bands = await contentViewBandLoad(request, gridDtos.map(gridContentViewBandName).filter((bandName): bandName is string => bandName !== undefined));
+  return gridDtos.map((gridDto) => bands.find((band) => band.name === gridContentViewBandName(gridDto)));
+}
+
+/** The master values of a detail grid (see gridContentViewDetail). */
+interface GridContentViewDetail {
+  /** Only the DynamicDto rows the detail grid shows. */
+  rowFilter: (dynamic: DynamicDto) => boolean;
+  /** fieldNameDetail → master value, set on every row inserted by the detail grid (New); without the fields whose master grid has no row selected. */
+  newValues: Record<string, string>;
+}
+
 /**
- * Sets GridStateDto.masterValues of each grid whose band is the master band (DesignMasterDetailDto contentName and bandNameMaster) of a Design Master Detail: for each
- * such master detail, its fieldNameMaster value of the grid's selected row (the DynamicDto row of state.rowKeys[state.selectedRowIndex], '' if missing).
+ * Returns the master values of the grid of band, a grid of the plane whose grids are gridDtos with their bands gridBands: for each Design Master Detail (of masterDetails)
+ * whose detail band (DesignMasterDetailDto contentName and bandNameDetail) is band and whose master band (bandNameMaster) is the band of a grid of the plane, the
+ * fieldNameMaster value of that master grid's selected row, loaded by id (dynamicLoadByIds of state.rowKeys[state.selectedRowIndex]), so it never outlives the selection.
+ * The grid shows only the rows whose fieldNameDetail equals it (no rows if a master grid has no row selected) and sets it on its inserted rows. undefined (all rows) if
+ * band is no such detail band.
  */
-async function gridContentViewMasterValues(request: Request, grids: GridDto[], gridBands: (ContentBandDto | undefined)[]): Promise<void> {
-  const masterDetails = gridBands.some((band) => band !== undefined) ? await designMasterDetailLoad(request) : [];
-  for (const [gridIndex, gridDto] of grids.entries()) {
-    const band = gridBands[gridIndex];
-    const fieldNameMasters = masterDetails
-      .filter((masterDetail) => band !== undefined && designBandName({ contentName: masterDetail.contentName, bandName: masterDetail.bandNameMaster }) === band.name)
-      .map((masterDetail) => masterDetail.fieldNameMaster)
-      .filter((fieldNameMaster): fieldNameMaster is string => fieldNameMaster !== undefined && fieldNameMaster !== '');
-    const selectedRowIndex = gridDto.state?.selectedRowIndex;
-    const rowKey = selectedRowIndex !== undefined ? gridDto.state?.rowKeys?.[selectedRowIndex] : undefined;
-    const [dynamic] = fieldNameMasters.length > 0 && rowKey !== undefined && rowKey !== '' ? await dynamicLoadByIds(request, [rowKey]) : [];
-    // Always set (also to undefined): a masterValues sent back by App.Web (e.g. kept by the Table grid's state) must not outlive the selection.
-    const masterValues = dynamic !== undefined
-      ? Object.fromEntries(fieldNameMasters.map((fieldNameMaster) => [fieldNameMaster, gridCellText((dynamic as Record<string, unknown>)[fieldNameMaster], {})]))
-      : undefined;
-    grids[gridIndex] = { ...gridDto, state: { ...gridDto.state, masterValues } };
+async function gridContentViewDetail(
+  request: Request, masterDetails: DesignMasterDetailDto[], band: ContentBandDto, gridDtos: GridDto[], gridBands: (ContentBandDto | undefined)[],
+): Promise<GridContentViewDetail | undefined> {
+  // fieldNameDetail and its master value, undefined if the master grid has no row selected.
+  const detailValues: [string, string | undefined][] = [];
+  for (const { contentName, bandNameMaster, fieldNameMaster, bandNameDetail, fieldNameDetail } of masterDetails) {
+    if (designBandName({ contentName, bandName: bandNameDetail }) !== band.name || !fieldNameMaster || !fieldNameDetail) {
+      continue;
+    }
+    const masterBandName = designBandName({ contentName, bandName: bandNameMaster });
+    const masterGridDto = gridDtos[gridBands.findIndex((masterBand) => masterBand?.name === masterBandName)];
+    if (masterGridDto === undefined) {
+      continue;
+    }
+    const selectedRowIndex = masterGridDto.state?.selectedRowIndex;
+    const rowKey = selectedRowIndex !== undefined ? masterGridDto.state?.rowKeys?.[selectedRowIndex] : undefined;
+    const [masterDynamic] = rowKey !== undefined && rowKey !== '' ? await dynamicLoadByIds(request, [rowKey]) : [];
+    detailValues.push([fieldNameDetail, masterDynamic !== undefined ? gridCellText((masterDynamic as Record<string, unknown>)[fieldNameMaster], {}) : undefined]);
   }
+  return detailValues.length > 0
+    ? {
+      rowFilter: (dynamic) => detailValues.every(([fieldNameDetail, value]) => value !== undefined && gridCellText((dynamic as Record<string, unknown>)[fieldNameDetail], {}) === value),
+      newValues: Object.fromEntries(detailValues.filter((detailValue): detailValue is [string, string] => detailValue[1] !== undefined)),
+    }
+    : undefined;
 }
 
 /**
  * Builds a content view grid from band: a Table as the Data grid of the "dynamic" plane with the rows of its TableName, a Form by gridContentFormLoad, both titled by
- * gridContentViewTitle; otherwise (or band not found) an empty grid.
+ * gridContentViewTitle, with only the rows of detail and its values on inserted rows (see gridContentViewDetail; all rows if undefined) and, if isMaster (band is the
+ * master band of a Design Master Detail), with setting isSelectPatch; otherwise (or band not found) an empty grid.
  */
-async function gridContentViewLoad(request: Request, gridDto: GridDto, band: ContentBandDto | undefined): Promise<GridDto> {
+async function gridContentViewLoad(
+  request: Request, gridDto: GridDto, band: ContentBandDto | undefined, isMaster: boolean, detail: GridContentViewDetail | undefined,
+): Promise<GridDto> {
+  // Replaces any incoming setting (gridDynamicDataLoad keeps gridDto's), so a grid whose band is no longer a master stops sending Select.
+  const setting = isMaster ? { isSelectPatch: true } : undefined;
   if (band?.bandEnum === ContentBandEnum.Table) {
-    return { ...await gridDynamicDataLoad(request, gridDto, gridContentViewTableName(band)), title: gridContentViewTitle(band) };
+    return { ...await gridDynamicDataLoad(request, gridDto, gridContentViewTableName(band), detail?.rowFilter, detail?.newValues), title: gridContentViewTitle(band), setting };
   }
   if (band?.bandEnum === ContentBandEnum.Form) {
-    return { ...await gridContentFormLoad(request, gridDto, band), title: gridContentViewTitle(band) };
+    return { ...await gridContentFormLoad(request, gridDto, band, detail), title: gridContentViewTitle(band), setting };
   }
   // custom is kept, so the grid is still built from its band on a later request.
   return { state: { custom: gridDto.state?.custom } };
 }
 
-/** Patches the CONTENT_VIEW_PLANE_NAME plane's grids: GridCommandEnum.FilterMulti of a Table band's grid opens the Filter Multi lookup (distinct texts of its column). */
+/**
+ * Patches the CONTENT_VIEW_PLANE_NAME plane's grids: GridCommandEnum.FilterMulti of a Table band's grid opens the Filter Multi lookup (distinct texts of its column, only
+ * of the rows of its detail filter, see gridContentViewDetail); GridCommandEnum.Select of a master grid replaces its detail grids (see gridContentViewSelectPatch).
+ */
 export async function planeContentViewPatch(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
+  const gridDtos = gridPlaneDto.grids ?? [];
   const grids: GridDto[] = [];
-  for (const gridDto of gridPlaneDto.grids ?? []) {
-    grids.push(await gridContentViewPatch(request, gridDto));
+  for (const gridIndex of gridDtos.keys()) {
+    grids.push(await gridContentViewPatch(request, gridDtos, gridIndex));
+  }
+  const selectIndex = gridDtos.findIndex((gridDto) => gridDto.command?.commandEnum === GridCommandEnum.Select);
+  if (selectIndex !== -1) {
+    for (const [gridIndex, grid] of await gridContentViewSelectPatch(request, gridDtos, selectIndex)) {
+      grids[gridIndex] = { patches: [{ patchEnum: GridPatchEnum.Grid, grid } satisfies GridPatchDto] };
+    }
   }
   return { ...gridPlaneDto, grids };
 }
 
-async function gridContentViewPatch(request: Request, gridDto: GridDto): Promise<GridDto> {
-  const bandName = gridContentViewBandName(gridDto);
-  if (gridDto.command?.commandEnum !== GridCommandEnum.FilterMulti || bandName === undefined) {
+/** Returns the master bands (DesignBandDto.name) of masterDetails; their grids send GridCommandEnum.Select on a row change (isSelectPatch). */
+function gridContentViewMasterBandNames(masterDetails: DesignMasterDetailDto[]): Set<string> {
+  return new Set<string>(masterDetails.map((masterDetail) => designBandName({ contentName: masterDetail.contentName, bandName: masterDetail.bandNameMaster })));
+}
+
+/**
+ * Returns the detail grids (by grid index) of gridDtos[masterIndex], whose selected row changed (GridCommandEnum.Select), rebuilt with the detail filter of its new
+ * selection (see gridContentViewDetail): the grids whose band is a detail band (bandNameDetail) of a Design Master Detail with the master grid's band as master band
+ * (bandNameMaster), each starting on the first page with no selection, sort or filter (gridFsp then selects its first row). A rebuilt detail grid that is itself a master
+ * grid rebuilds its own detail grids the same way, with its new selection.
+ */
+async function gridContentViewSelectPatch(request: Request, gridDtos: GridDto[], masterIndex: number): Promise<Map<number, GridDto>> {
+  const gridBands = await gridContentViewBandsLoad(request, gridDtos);
+  const masterDetails = await designMasterDetailLoad(request);
+  const masterBandNames = gridContentViewMasterBandNames(masterDetails);
+  // The plane's grids, the rebuilt ones replacing the incoming ones, so a detail grid's filter reads the new selection of its master grid.
+  const gridDtosCurrent = [...gridDtos];
+  const result = new Map<number, GridDto>();
+  const masterIndexes = [masterIndex];
+  for (const currentMasterIndex of masterIndexes) {
+    const masterBand = gridBands[currentMasterIndex];
+    if (masterBand === undefined) {
+      continue;
+    }
+    const detailBandNames = new Set<string>(masterDetails
+      .filter(({ contentName, bandNameMaster }) => designBandName({ contentName, bandName: bandNameMaster }) === masterBand.name)
+      .map(({ contentName, bandNameDetail }) => designBandName({ contentName, bandName: bandNameDetail })));
+    for (const [gridIndex, band] of gridBands.entries()) {
+      // A grid is rebuilt once (also against a cycle of Design Master Details); the selected grid itself keeps its rows.
+      if (band === undefined || !detailBandNames.has(band.name) || gridIndex === masterIndex || result.has(gridIndex)) {
+        continue;
+      }
+      // Other rows are shown: start on the first page with no selection, sort or filter, and drop the pending command, unsaved modifies and an open lookup.
+      const gridDto = gridDtosCurrent[gridIndex];
+      const gridDtoSelect: GridDto = {
+        ...gridDto,
+        command: undefined,
+        modifies: undefined,
+        planes: undefined,
+        state: { ...gridDto.state, selectedRowIndex: undefined, selectedColumnName: undefined, isSelectedMulti: undefined, pageIndex: 0, sort: undefined, filters: undefined, filterMultis: undefined },
+      };
+      const detail = await gridContentViewDetail(request, masterDetails, band, gridDtosCurrent, gridBands);
+      const grid = await gridContentViewLoad(request, gridDtoSelect, band, masterBandNames.has(band.name), detail);
+      result.set(gridIndex, grid);
+      gridDtosCurrent[gridIndex] = grid;
+      masterIndexes.push(gridIndex);
+    }
+  }
+  return result;
+}
+
+/** Patches gridDtos[gridIndex] (see planeContentViewPatch); gridDtos are all grids of the plane, for its detail filter. */
+async function gridContentViewPatch(request: Request, gridDtos: GridDto[], gridIndex: number): Promise<GridDto> {
+  const gridDto = gridDtos[gridIndex];
+  if (gridDto.command?.commandEnum !== GridCommandEnum.FilterMulti || gridContentViewBandName(gridDto) === undefined) {
     return {};
   }
-  const [band] = await contentViewBandLoad(request, [bandName]);
+  const gridBands = await gridContentViewBandsLoad(request, gridDtos);
+  const band = gridBands[gridIndex];
   if (band?.bandEnum !== ContentBandEnum.Table) {
     return {};
   }
-  const lookupPlane = await gridDynamicDataFilterMultiLoad(request, gridDto, gridContentViewTableName(band));
+  const detail = await gridContentViewDetail(request, await designMasterDetailLoad(request), band, gridDtos, gridBands);
+  const lookupPlane = await gridDynamicDataFilterMultiLoad(request, gridDto, gridContentViewTableName(band), detail?.rowFilter);
   return { patches: [{ patchEnum: GridPatchEnum.Lookup, planeName: lookupPlane?.planeName, lookup: lookupPlane?.grids?.[0] } satisfies GridPatchDto] };
 }
 
@@ -120,10 +219,11 @@ async function gridContentViewPatch(request: Request, gridDto: GridDto): Promise
  * of that cell of band, "Cell" if missing or empty), each followed by a row of their values (a text box with the value of that FieldName of the DynamicDto row, the label
  * "Empty" if the cell has no FieldName), repeated for each DynamicDto row of the current page (every cell's rowIndex is that row's index on the page), the counts
  * clamped by designFormCount, followed by the bar (New, Save, Reload and pager). The pager pages the DynamicDto rows of the band's TableName (all rows if empty, like the
- * Data grid of the "dynamic" plane). Like the Debug Data grid (gridDebugNew), New appends one empty form repetition (isNew text boxes, rowIndex after the page's
- * rows), and Save writes the modified text boxes into their DynamicDto rows and inserts the new repetitions as DynamicDto rows with that TableName.
+ * Data grid of the "dynamic" plane), only those of detail's rowFilter (all if undefined). Like the Debug Data grid (gridDebugNew), New appends one empty form repetition
+ * (isNew text boxes, rowIndex after the page's rows; a FieldName of detail's newValues a label with its master value instead), and Save writes the modified text boxes
+ * into their DynamicDto rows and inserts the new repetitions as DynamicDto rows with that TableName and detail's newValues.
  */
-async function gridContentFormLoad(request: Request, gridDto: GridDto, band: ContentBandDto): Promise<GridDto> {
+async function gridContentFormLoad(request: Request, gridDto: GridDto, band: ContentBandDto, detail: GridContentViewDetail | undefined): Promise<GridDto> {
   const rowCount = designFormCount(contentBandPropertyValue(band, 'RowCount'));
   const columnNames = Array.from({ length: designFormCount(contentBandPropertyValue(band, 'ColumnCount')) }, (_, columnIndex) => indexToColumnNameExcel(columnIndex));
 
@@ -136,11 +236,15 @@ async function gridContentFormLoad(request: Request, gridDto: GridDto, band: Con
   // Value row cell: a text box with the dynamic row's value of the cell's FieldName ("" if missing), or the label "Empty" if the cell has no FieldName.
   // The text box's columnName is its FieldName (not A, B, ...): a modify is identified by rowIndex and columnName, and A, B, ... repeat for every form row
   // of a repetition. Text boxes with the same FieldName show the same value anyway.
-  // A new repetition (dynamic undefined) has empty isNew text boxes, like gridDebugNew.
+  // A new repetition (dynamic undefined) has empty isNew text boxes, like gridDebugNew; a FieldName set by the master grid (detail's newValues) is a label with its value.
   const valueCell = (dynamic: Record<string, unknown> | undefined, formRowIndex: number, columnName: string, rowIndex: number): GridCellDto => {
     const name = fieldName(formRowIndex, columnName);
     if (name === undefined) {
       return { cellEnum: GridCellEnum.Label, text: 'Empty', rowIndex, columnName, ...(dynamic === undefined && { isNew: true }) };
+    }
+    const newValue = detail?.newValues[name];
+    if (dynamic === undefined && newValue !== undefined) {
+      return { cellEnum: GridCellEnum.Label, text: newValue, rowIndex, columnName: name, isNew: true };
     }
     return dynamic !== undefined
       ? { cellEnum: GridCellEnum.Edit, text: gridCellText(dynamic[name], {}), rowIndex, columnName: name }
@@ -152,10 +256,10 @@ async function gridContentFormLoad(request: Request, gridDto: GridDto, band: Con
   if (gridDto.command?.commandEnum === GridCommandEnum.Save) {
     const fieldNames = new Set(columnNames.flatMap((columnName) => Array.from({ length: rowCount }, (_, formRowIndex) => fieldName(formRowIndex, columnName) ?? []).flat()));
     await gridContentFormSaveUpdate(request, gridDto, fieldNames);
-    await gridContentFormSaveInsert(request, gridDto, tableName, fieldNames);
+    await gridContentFormSaveInsert(request, gridDto, tableName, fieldNames, detail?.newValues);
   }
 
-  const dynamics = await dynamicLoad(request, tableName);
+  const dynamics = (await dynamicLoad(request, tableName)).filter((dynamic) => detail?.rowFilter(dynamic) ?? true);
   // Filter-Sort-Page: no columns, so no filter or sort. Its selectedRowIndex (the first row of the page if none is selected) is the rowIndex of a form repetition.
   const { rows: pageDynamics, state: fspState } = gridFsp(dynamics, [], gridDto.state);
 
@@ -214,8 +318,13 @@ async function gridContentFormSaveUpdate(request: Request, gridDto: GridDto, fie
   await dynamicUpdate(request, dynamics);
 }
 
-/** Inserts the new form repetitions (isNew modifies, one DynamicDto row per rowIndex) with tableName (none if undefined); only columnNames that are one of fieldNames. */
-async function gridContentFormSaveInsert(request: Request, gridDto: GridDto, tableName: string | undefined, fieldNames: Set<string>): Promise<void> {
+/**
+ * Inserts the new form repetitions (isNew modifies, one DynamicDto row per rowIndex) with tableName (none if undefined); only columnNames that are one of fieldNames.
+ * newValues (the master values of a detail grid, see gridContentViewDetail) are set on every inserted row.
+ */
+async function gridContentFormSaveInsert(
+  request: Request, gridDto: GridDto, tableName: string | undefined, fieldNames: Set<string>, newValues: Record<string, string> | undefined,
+): Promise<void> {
   const modifies = (gridDto.modifies ?? []).filter((modify) => modify.isNew);
 
   const dynamicsByRowIndex = new Map<number, DynamicDto>();
@@ -230,5 +339,7 @@ async function gridContentFormSaveInsert(request: Request, gridDto: GridDto, tab
     dynamicsByRowIndex.set(modify.rowIndex, dynamic);
   }
 
-  await dynamicInsert(request, [...dynamicsByRowIndex.values()]);
+  // The master values win over a modify of the same field, so the row is shown by the detail grid.
+  const dynamics = [...dynamicsByRowIndex.values()].map((dynamic): DynamicDto => ({ ...dynamic, ...newValues }));
+  await dynamicInsert(request, dynamics);
 }

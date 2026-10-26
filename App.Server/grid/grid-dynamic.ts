@@ -90,16 +90,19 @@ async function gridDynamicLoad(request: Request, gridDto: GridDto): Promise<Grid
 
 /**
  * Builds the Data grid. tableName (the selected row of the dynamic grid, or the TableName of a content view Table band) filters the rows and is the default tableName
- * of inserted rows; undefined shows all rows.
+ * of inserted rows; undefined shows all rows. rowFilter (e.g. the detail filter of a content view grid) further filters the rows, if set. newValues (e.g. the master
+ * values of a content view detail grid) are set on every inserted row and shown as labels in the New row.
  */
-export async function gridDynamicDataLoad(request: Request, gridDto: GridDto, tableName: string | undefined): Promise<GridDto> {
+export async function gridDynamicDataLoad(
+  request: Request, gridDto: GridDto, tableName: string | undefined, rowFilter?: (dynamic: DynamicDto) => boolean, newValues?: Record<string, string>,
+): Promise<GridDto> {
   const dataColumns = await gridDynamicDataColumns(request, tableName);
   if (gridDto.command?.commandEnum === GridCommandEnum.Save) {
     await gridDynamicDataSaveUpdate(request, gridDto, dataColumns);
-    await gridDynamicDataSaveInsert(request, gridDto, tableName, dataColumns);
+    await gridDynamicDataSaveInsert(request, gridDto, tableName, dataColumns, newValues);
   }
 
-  const allDynamics = await dynamicLoad(request, tableName);
+  const allDynamics = (await dynamicLoad(request, tableName)).filter((dynamic) => rowFilter?.(dynamic) ?? true);
 
   // Filter Multi Ok: apply the chosen texts (GridStateDto.filterMultis) before the rows are built.
   gridFilterMultiOk(gridDto, dataColumns, allDynamics);
@@ -133,7 +136,7 @@ export async function gridDynamicDataLoad(request: Request, gridDto: GridDto, ta
   };
 
   if (gridDto.command?.commandEnum === GridCommandEnum.New) {
-    gridDynamicDataNew(result, dataColumns);
+    gridDynamicDataNew(result, dataColumns, newValues);
   }
 
   // Lookup (planes[0]): Filter Multi (opened by planeDynamicPatch, kept open while planes[0].planeName is filterMulti).
@@ -178,9 +181,15 @@ export async function planeDynamicPatch(request: Request, gridPlaneDto: GridPlan
   return { ...gridPlaneDto, grids: [{}, {}] };
 }
 
-/** Returns the Filter Multi lookup plane (see gridFilterMultiLoad) of the Data grid gridDto with the DynamicDto rows of tableName (all rows if undefined). */
-export async function gridDynamicDataFilterMultiLoad(request: Request, gridDto: GridDto, tableName: string | undefined): Promise<GridPlaneDto | undefined> {
-  return gridFilterMultiLoad(gridDto, await gridDynamicDataColumns(request, tableName), await dynamicLoad(request, tableName));
+/**
+ * Returns the Filter Multi lookup plane (see gridFilterMultiLoad) of the Data grid gridDto with the DynamicDto rows of tableName (all rows if undefined), only those of
+ * rowFilter if set (see gridDynamicDataLoad).
+ */
+export async function gridDynamicDataFilterMultiLoad(
+  request: Request, gridDto: GridDto, tableName: string | undefined, rowFilter?: (dynamic: DynamicDto) => boolean,
+): Promise<GridPlaneDto | undefined> {
+  const dynamics = (await dynamicLoad(request, tableName)).filter((dynamic) => rowFilter?.(dynamic) ?? true);
+  return gridFilterMultiLoad(gridDto, await gridDynamicDataColumns(request, tableName), dynamics);
 }
 
 async function gridDynamicDataSaveUpdate(request: Request, gridDto: GridDto, dataColumns: GridConfigColumnDto[]): Promise<void> {
@@ -216,7 +225,9 @@ async function gridDynamicDataSaveUpdate(request: Request, gridDto: GridDto, dat
 }
 
 /** New rows get tableName (the selected tableName) unless their tableName cell is entered. */
-async function gridDynamicDataSaveInsert(request: Request, gridDto: GridDto, tableName: string | undefined, dataColumns: GridConfigColumnDto[]): Promise<void> {
+async function gridDynamicDataSaveInsert(
+  request: Request, gridDto: GridDto, tableName: string | undefined, dataColumns: GridConfigColumnDto[], newValues: Record<string, string> | undefined,
+): Promise<void> {
   const modifies = (gridDto.modifies ?? []).filter((modify) => modify.isNew);
 
   const columns = gridColumns(dataColumns);
@@ -235,11 +246,16 @@ async function gridDynamicDataSaveInsert(request: Request, gridDto: GridDto, tab
     dynamicsByRowIndex.set(modify.rowIndex, dynamic);
   }
 
-  await dynamicInsert(request, [...dynamicsByRowIndex.values()]);
+  // newValues win over a modify of the same column (its value from text like a modify if it is a column).
+  const values = Object.fromEntries(Object.entries(newValues ?? {}).map(([columnName, text]) => {
+    const column = columns.find((column) => column.columnName === columnName);
+    return [columnName, column !== undefined ? gridCellValue(text, column) : text];
+  }));
+  await dynamicInsert(request, [...dynamicsByRowIndex.values()].map((dynamic): DynamicDto => ({ ...dynamic, ...values })));
 }
 
 /** Appends one empty, editable new row to the data table (GridDto.tables[1]). */
-function gridDynamicDataNew(gridDto: GridDto, dataColumns: GridConfigColumnDto[]): void {
+function gridDynamicDataNew(gridDto: GridDto, dataColumns: GridConfigColumnDto[], newValues: Record<string, string> | undefined): void {
   const dataTable = gridDto.tables?.[1];
   if (dataTable === undefined) {
     return;
@@ -248,14 +264,14 @@ function gridDynamicDataNew(gridDto: GridDto, dataColumns: GridConfigColumnDto[]
   const rowIndex = rows.length;
 
   const newRow: GridRowDto = {
+    // A column of newValues is a label with its value (set by Save insert), the others empty text boxes.
     cells: gridColumns(dataColumns).map(
-      (column): GridCellDto => ({
-        cellEnum: GridCellEnum.Edit,
-        columnName: column.columnName,
-        placeHolder: 'New',
-        rowIndex,
-        isNew: true,
-      }),
+      (column): GridCellDto => {
+        const newValue = column.columnName !== undefined ? newValues?.[column.columnName] : undefined;
+        return newValue !== undefined
+          ? { cellEnum: GridCellEnum.Label, text: newValue, columnName: column.columnName, rowIndex, isNew: true }
+          : { cellEnum: GridCellEnum.Edit, columnName: column.columnName, placeHolder: 'New', rowIndex, isNew: true };
+      },
     ),
   };
 
