@@ -2,9 +2,9 @@ import { GridCellDto, GridCellEnum, GridCommandEnum, GridDto, GridPatchDto, Grid
 import { CONTENT_VIEW_CUSTOM_BAND_NAME, ContentBandDto, ContentBandEnum, contentBandPropertyValue } from '../dto/shared/content-dto.js';
 import { DynamicDto } from '../dto/dynamic-dto.js';
 import { contentViewBandLoad } from '../util/util-content-view.js';
-import { designBandName, designFormCellPropertyLoadAll, designFormCellPropertyOwner } from '../util/util-design.js';
+import { designFormCellPropertyLoadAll, designFormCellPropertyOwner } from '../util/util-design.js';
 import { DesignMasterDetailDto } from '../dto/design-master-detail-dto.js';
-import { designMasterDetailLoad } from '../util/util-design-master-detail.js';
+import { designMasterDetailBands, designMasterDetailLoad } from '../util/util-design-master-detail.js';
 import { dynamicInsert, dynamicLoad, dynamicLoadByIds, dynamicUpdate } from '../util/util-dynamic.js';
 import { indexToColumnNameExcel } from '../util/util-main.js';
 import { gridBarRow, gridCellText, gridFsp, gridHeaderCell, gridTables } from '../util/util-grid.js';
@@ -27,31 +27,41 @@ function gridContentViewTitle(band: ContentBandDto): string | undefined {
   return contentBandPropertyValue(band, 'Title') || gridContentViewTableName(band);
 }
 
-/** Returns the LoadSort property of band (Table or Form) as a number; empty, not a whole number or band not found sorts last (Infinity). */
-function gridContentViewLoadSort(band: ContentBandDto | undefined): number {
-  const text = band !== undefined ? contentBandPropertyValue(band, 'LoadSort') : '';
-  const result = Number(text);
-  return text !== '' && Number.isInteger(result) ? result : Infinity;
+/**
+ * Returns the order (grid indexes) to build the grids of gridDtos (with their bands gridBands) in: the grid with a command first, since it can change the rows of another
+ * grid (e.g. Save of a Form writing DynamicDto rows a Table of the same TableName shows); then every master grid (see gridContentViewDetail) before its detail grids, so
+ * they read its reloaded selection; otherwise in band order. A grid in a cycle of Design Master Details (rejected on Save, but e.g. left by a band rename) whose masters
+ * can't all be built first is built in band order, reading the selection App.Web sent for its masters not built yet (as does the grid with the command).
+ */
+function gridContentViewBuildOrder(gridDtos: GridDto[], gridBands: (ContentBandDto | undefined)[], masterDetails: DesignMasterDetailDto[]): number[] {
+  // Per grid: the indexes of its master grids (a band that is its own master doesn't wait for itself).
+  const masterIndexes = gridBands.map((band, gridIndex) => masterDetails
+    .map(designMasterDetailBands)
+    .filter((bands) => band !== undefined && bands?.detailBandName === band.name)
+    .map((bands) => gridBands.findIndex((masterBand) => masterBand?.name === bands?.masterBandName))
+    .filter((masterIndex) => masterIndex !== -1 && masterIndex !== gridIndex));
+  const commandIndex = gridDtos.findIndex((gridDto) => gridDto.command !== undefined);
+  const result: number[] = commandIndex !== -1 ? [commandIndex] : [];
+  while (result.length < gridDtos.length) {
+    const remaining = [...gridDtos.keys()].filter((gridIndex) => !result.includes(gridIndex));
+    result.push(remaining.find((gridIndex) => masterIndexes[gridIndex].every((masterIndex) => result.includes(masterIndex))) ?? remaining[0]);
+  }
+  return result;
 }
 
 /**
  * Loads the CONTENT_VIEW_PLANE_NAME plane (the grids of Content.tsx): every incoming grid is built from the band named by its GridStateDto.custom
- * (see gridContentViewLoad), the bands and their properties read from the database.
+ * (see gridContentViewLoad), the bands and their properties read from the database, in the order of gridContentViewBuildOrder.
  */
 export async function planeContentViewLoad(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
   const gridDtos = gridPlaneDto.grids ?? [];
   const gridBands = await gridContentViewBandsLoad(request, gridDtos);
   const masterDetails = await designMasterDetailLoad(request);
   const masterBandNames = gridContentViewMasterBandNames(masterDetails);
-  // The grids are built in the order of their band's LoadSort (see gridContentViewLoadSort). With the same LoadSort, a grid's command (e.g. Save of a Form, writing
-  // DynamicDto rows) can change the rows of another grid (e.g. a Table of the same TableName), so the grids with a command are built first, otherwise in band order.
-  const loadSorts = gridBands.map(gridContentViewLoadSort);
-  const gridIndexes = gridDtos.map((_, gridIndex) => gridIndex).sort((a, b) =>
-    loadSorts[a] - loadSorts[b] || Number(gridDtos[b].command !== undefined) - Number(gridDtos[a].command !== undefined));
   const grids: GridDto[] = [];
-  for (const gridIndex of gridIndexes) {
+  for (const gridIndex of gridContentViewBuildOrder(gridDtos, gridBands, masterDetails)) {
     const band = gridBands[gridIndex];
-    // A master grid already built (LoadSort before its detail grid) gives its reloaded selection, otherwise the selection sent by App.Web.
+    // A master grid already built gives its reloaded selection, otherwise (see gridContentViewBuildOrder) the selection sent by App.Web.
     const detail = band !== undefined
       ? await gridContentViewDetail(request, masterDetails, band, gridDtos.map((gridDto, index) => grids[index] ?? gridDto), gridBands)
       : undefined;
@@ -86,11 +96,11 @@ async function gridContentViewDetail(
 ): Promise<GridContentViewDetail | undefined> {
   // fieldNameDetail and its master value, undefined if the master grid has no row selected.
   const detailValues: [string, string | undefined][] = [];
-  for (const { contentName, bandNameMaster, fieldNameMaster, bandNameDetail, fieldNameDetail } of masterDetails) {
-    if (designBandName({ contentName, bandName: bandNameDetail }) !== band.name || !fieldNameMaster || !fieldNameDetail) {
+  for (const bands of masterDetails.map(designMasterDetailBands)) {
+    if (bands === undefined || bands.detailBandName !== band.name) {
       continue;
     }
-    const masterBandName = designBandName({ contentName, bandName: bandNameMaster });
+    const { masterBandName, fieldNameMaster, fieldNameDetail } = bands;
     const masterGridDto = gridDtos[gridBands.findIndex((masterBand) => masterBand?.name === masterBandName)];
     if (masterGridDto === undefined) {
       continue;
@@ -149,7 +159,7 @@ export async function planeContentViewPatch(request: Request, gridPlaneDto: Grid
 
 /** Returns the master bands (DesignBandDto.name) of masterDetails; their grids send GridCommandEnum.Select on a row change (isSelectPatch). */
 function gridContentViewMasterBandNames(masterDetails: DesignMasterDetailDto[]): Set<string> {
-  return new Set<string>(masterDetails.map((masterDetail) => designBandName({ contentName: masterDetail.contentName, bandName: masterDetail.bandNameMaster })));
+  return new Set<string>(masterDetails.map(designMasterDetailBands).flatMap((bands) => bands !== undefined ? [bands.masterBandName] : []));
 }
 
 /**
@@ -172,8 +182,9 @@ async function gridContentViewSelectPatch(request: Request, gridDtos: GridDto[],
       continue;
     }
     const detailBandNames = new Set<string>(masterDetails
-      .filter(({ contentName, bandNameMaster }) => designBandName({ contentName, bandName: bandNameMaster }) === masterBand.name)
-      .map(({ contentName, bandNameDetail }) => designBandName({ contentName, bandName: bandNameDetail })));
+      .map(designMasterDetailBands)
+      .filter((bands) => bands?.masterBandName === masterBand.name)
+      .map((bands) => bands?.detailBandName ?? ''));
     for (const [gridIndex, band] of gridBands.entries()) {
       // A grid is rebuilt once (also against a cycle of Design Master Details); the selected grid itself keeps its rows.
       if (band === undefined || !detailBandNames.has(band.name) || gridIndex === masterIndex || result.has(gridIndex)) {

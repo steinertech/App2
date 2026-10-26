@@ -1,7 +1,9 @@
 import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPlaneDto, GridRowDto } from '../dto/shared/grid-dto.js';
 import { DesignMasterDetailDto } from '../dto/design-master-detail-dto.js';
 import { GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
-import { designMasterDetailDelete, designMasterDetailInsert, designMasterDetailLoad, designMasterDetailLoadByIds, designMasterDetailUpdate } from '../util/util-design-master-detail.js';
+import {
+  designMasterDetailCycle, designMasterDetailDelete, designMasterDetailInsert, designMasterDetailLoad, designMasterDetailLoadByIds, designMasterDetailUpdate,
+} from '../util/util-design-master-detail.js';
 import { gridBarRow, gridCellText, gridCellValue, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand, gridLookupSet, gridSelectedMultiRowKeys, gridTables } from '../util/util-grid.js';
 import { gridDebugDeleteConfirm } from './grid-debug.js';
 
@@ -55,8 +57,20 @@ export async function gridDesignMasterDetailLoad(request: Request, gridDto: Grid
   }
 
   if (gridDto.command?.commandEnum === GridCommandEnum.Save) {
-    await gridDesignMasterDetailSaveUpdate(request, gridDto);
-    await gridDesignMasterDetailSaveInsert(request, gridDto);
+    const updates = await gridDesignMasterDetailSaveUpdate(request, gridDto);
+    const inserts = gridDesignMasterDetailSaveInsert(gridDto);
+    // Nothing is written if the saved master details would be circular (a content view can't tell which grid to filter first). The error keeps App.Web's
+    // unsaved input, so the user can correct it.
+    const cycle = designMasterDetailCycle([
+      ...(await designMasterDetailLoad(request)).map((masterDetail) =>
+        updates.find((update) => update._id?.toHexString() === masterDetail._id?.toHexString()) ?? masterDetail),
+      ...inserts,
+    ]);
+    if (cycle !== undefined) {
+      throw new Error(`Design Master Detail is circular: ${cycle.join(' → ')}`);
+    }
+    await designMasterDetailUpdate(request, updates);
+    await designMasterDetailInsert(request, inserts);
   }
 
   const allMasterDetails = await designMasterDetailLoad(request);
@@ -133,7 +147,8 @@ export async function gridDesignMasterDetailLoad(request: Request, gridDto: Grid
   return result;
 }
 
-async function gridDesignMasterDetailSaveUpdate(request: Request, gridDto: GridDto): Promise<void> {
+/** Returns the master details modified by gridDto's modifies (not written yet). */
+async function gridDesignMasterDetailSaveUpdate(request: Request, gridDto: GridDto): Promise<DesignMasterDetailDto[]> {
   const modifies = (gridDto.modifies ?? []).filter((modify) => !modify.isNew);
   const rowKeys = gridDto.state?.rowKeys ?? [];
 
@@ -162,10 +177,11 @@ async function gridDesignMasterDetailSaveUpdate(request: Request, gridDto: GridD
     }
   }
 
-  await designMasterDetailUpdate(request, masterDetails);
+  return masterDetails;
 }
 
-async function gridDesignMasterDetailSaveInsert(request: Request, gridDto: GridDto): Promise<void> {
+/** Returns the master details of gridDto's new rows (isNew modifies, not written yet). */
+function gridDesignMasterDetailSaveInsert(gridDto: GridDto): DesignMasterDetailDto[] {
   const modifies = (gridDto.modifies ?? []).filter((modify) => modify.isNew);
 
   const columns = gridColumns(DESIGN_MASTER_DETAIL_COLUMNS.columns ?? []);
@@ -183,7 +199,7 @@ async function gridDesignMasterDetailSaveInsert(request: Request, gridDto: GridD
     masterDetailsByRowIndex.set(modify.rowIndex, masterDetail);
   }
 
-  await designMasterDetailInsert(request, [...masterDetailsByRowIndex.values()]);
+  return [...masterDetailsByRowIndex.values()];
 }
 
 /** Returns the Filter Multi lookup plane (distinct texts of its column) of the Design Master Detail grid gridDto, for planeDesignPatch. */
