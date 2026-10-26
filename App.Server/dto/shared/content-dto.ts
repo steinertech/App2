@@ -9,8 +9,8 @@ export enum ContentBandEnum {
 export const DESIGN_BAND_PROPERTY_NAMES: Record<ContentBandEnum, string[]> = {
   [ContentBandEnum.None]: [],
   [ContentBandEnum.Header]: ['Text'],
-  [ContentBandEnum.Table]: ['TableName'],
-  [ContentBandEnum.Form]: ['RowCount', 'ColumnCount', 'TableName'],
+  [ContentBandEnum.Table]: ['TableName', 'LoadSort'],
+  [ContentBandEnum.Form]: ['RowCount', 'ColumnCount', 'TableName', 'LoadSort'],
 };
 
 /**
