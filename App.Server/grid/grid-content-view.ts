@@ -2,7 +2,8 @@ import { GridCellDto, GridCellEnum, GridCommandEnum, GridDto, GridPatchDto, Grid
 import { CONTENT_VIEW_CUSTOM_BAND_NAME, ContentBandDto, ContentBandEnum, contentBandPropertyValue } from '../dto/shared/content-dto.js';
 import { DynamicDto } from '../dto/dynamic-dto.js';
 import { contentViewBandLoad } from '../util/util-content-view.js';
-import { designFormCellPropertyLoadAll, designFormCellPropertyOwner } from '../util/util-design.js';
+import { designBandName, designFormCellPropertyLoadAll, designFormCellPropertyOwner } from '../util/util-design.js';
+import { designMasterDetailLoad } from '../util/util-design-master-detail.js';
 import { dynamicInsert, dynamicLoad, dynamicLoadByIds, dynamicUpdate } from '../util/util-dynamic.js';
 import { indexToColumnNameExcel } from '../util/util-main.js';
 import { gridBarRow, gridCellText, gridFsp, gridHeaderCell, gridTables } from '../util/util-grid.js';
@@ -50,7 +51,31 @@ export async function planeContentViewLoad(request: Request, gridPlaneDto: GridP
   for (const gridIndex of gridIndexes) {
     grids[gridIndex] = await gridContentViewLoad(request, gridDtos[gridIndex], gridBands[gridIndex]);
   }
+  await gridContentViewMasterValues(request, grids, gridBands);
   return { ...gridPlaneDto, grids };
+}
+
+/**
+ * Sets GridStateDto.masterValues of each grid whose band is the master band (DesignMasterDetailDto contentName and bandNameMaster) of a Design Master Detail: for each
+ * such master detail, its fieldNameMaster value of the grid's selected row (the DynamicDto row of state.rowKeys[state.selectedRowIndex], '' if missing).
+ */
+async function gridContentViewMasterValues(request: Request, grids: GridDto[], gridBands: (ContentBandDto | undefined)[]): Promise<void> {
+  const masterDetails = gridBands.some((band) => band !== undefined) ? await designMasterDetailLoad(request) : [];
+  for (const [gridIndex, gridDto] of grids.entries()) {
+    const band = gridBands[gridIndex];
+    const fieldNameMasters = masterDetails
+      .filter((masterDetail) => band !== undefined && designBandName({ contentName: masterDetail.contentName, bandName: masterDetail.bandNameMaster }) === band.name)
+      .map((masterDetail) => masterDetail.fieldNameMaster)
+      .filter((fieldNameMaster): fieldNameMaster is string => fieldNameMaster !== undefined && fieldNameMaster !== '');
+    const selectedRowIndex = gridDto.state?.selectedRowIndex;
+    const rowKey = selectedRowIndex !== undefined ? gridDto.state?.rowKeys?.[selectedRowIndex] : undefined;
+    const [dynamic] = fieldNameMasters.length > 0 && rowKey !== undefined && rowKey !== '' ? await dynamicLoadByIds(request, [rowKey]) : [];
+    // Always set (also to undefined): a masterValues sent back by App.Web (e.g. kept by the Table grid's state) must not outlive the selection.
+    const masterValues = dynamic !== undefined
+      ? Object.fromEntries(fieldNameMasters.map((fieldNameMaster) => [fieldNameMaster, gridCellText((dynamic as Record<string, unknown>)[fieldNameMaster], {})]))
+      : undefined;
+    grids[gridIndex] = { ...gridDto, state: { ...gridDto.state, masterValues } };
+  }
 }
 
 /**
