@@ -9,7 +9,7 @@ export enum ContentBandEnum {
 export const DESIGN_BAND_PROPERTY_NAMES: Record<ContentBandEnum, string[]> = {
   [ContentBandEnum.None]: [],
   [ContentBandEnum.Header]: ['Text'],
-  [ContentBandEnum.Table]: ['Title', 'TableName'],
+  [ContentBandEnum.Table]: ['Title', 'TableName', 'IsDistinct'],
   [ContentBandEnum.Form]: ['Title', 'RowCount', 'ColumnCount', 'TableName'],
 };
 

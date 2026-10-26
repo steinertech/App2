@@ -96,11 +96,12 @@ async function gridDynamicLoad(request: Request, gridDto: GridDto): Promise<Grid
  * of inserted rows; undefined shows all rows. rowFilter (e.g. the detail filter of a content view grid) further filters the rows, if set. newValues (e.g. the master
  * values of a content view detail grid) are set on every inserted row and shown as labels in the New row. isColumnChooser (e.g. a content view Table band) adds the
  * toolbar's Column Chooser button (opened by gridDynamicDataColumnChooserLoad), showing only the chosen columns (GridStateDto.columnNames). hiddenColumnNames (e.g. of a
- * content view Table band, see DesignBandColumnDto.isVisible) are never shown, nor offered by the Column Chooser; newValues are still set on them.
+ * content view Table band, see DesignBandColumnDto.isVisible) are never shown, nor offered by the Column Chooser; newValues are still set on them. isDistinct (e.g. the
+ * IsDistinct property of a content view Table band) shows one read-only row per distinct combination of the shown columns' texts (see gridDynamicDataDistinct).
  */
 export async function gridDynamicDataLoad(
   request: Request, gridDto: GridDto, tableName: string | undefined, rowFilter?: (dynamic: DynamicDto) => boolean, newValues?: Record<string, string>,
-  isColumnChooser?: boolean, hiddenColumnNames?: string[],
+  isColumnChooser?: boolean, hiddenColumnNames?: string[], isDistinct?: boolean,
 ): Promise<GridDto> {
   const dataColumns = await gridDynamicDataColumns(request, tableName, hiddenColumnNames);
   // Column Chooser Ok: apply the chosen columns (GridStateDto.columnNames) before the rows are built.
@@ -111,7 +112,8 @@ export async function gridDynamicDataLoad(
     await gridDynamicDataSaveInsert(request, gridDto, tableName, dataColumns, newValues);
   }
 
-  const allDynamics = (await dynamicLoad(request, tableName)).filter((dynamic) => rowFilter?.(dynamic) ?? true);
+  const rowFilterDynamics = (await dynamicLoad(request, tableName)).filter((dynamic) => rowFilter?.(dynamic) ?? true);
+  const allDynamics = isDistinct ? gridDynamicDataDistinct(rowFilterDynamics, columns) : rowFilterDynamics;
 
   // Filter Multi Ok: apply the chosen texts (GridStateDto.filterMultis) before the rows are built.
   gridFilterMultiOk(gridDto, dataColumns, allDynamics);
@@ -125,7 +127,8 @@ export async function gridDynamicDataLoad(
   const rows: GridRowDto[] = dynamics.map((dynamic, rowIndex) => ({
     cells: columns.map(
       (column): GridCellDto => ({
-        cellEnum: GridCellEnum.Edit,
+        // A distinct row stands for all rows of its key group, so it isn't edited.
+        cellEnum: isDistinct ? GridCellEnum.Label : GridCellEnum.Edit,
         text: gridCellText((dynamic as Record<string, unknown>)[column.columnName ?? ''], column),
         rowIndex,
         columnName: column.columnName,
@@ -133,7 +136,7 @@ export async function gridDynamicDataLoad(
     ),
   }));
 
-  // rowKey is the _id (ObjectId hex).
+  // rowKey is the _id (ObjectId hex); of a distinct row, the _id of any row of its key group (see gridDynamicDataDistinct).
   const rowKeys: string[] = dynamics.map((dynamic) => dynamic._id?.toHexString() ?? '');
   const findRow = gridFindRow(columns.map((column) => column.columnName));
 
@@ -160,6 +163,22 @@ export async function gridDynamicDataLoad(
   result.command = undefined;
 
   return result;
+}
+
+/**
+ * Returns one row per key group of dynamics, the key being the texts of columns (the shown columns): the first row of each group, in the order of dynamics.
+ * So the row's _id (rowKey) is the _id of any row of its key group, e.g. the master value a detail grid reads by it (fieldNameMaster) is the same for every row of
+ * the group if fieldNameMaster is a shown column.
+ */
+function gridDynamicDataDistinct(dynamics: DynamicDto[], columns: GridConfigColumnDto[]): DynamicDto[] {
+  const result = new Map<string, DynamicDto>();
+  for (const dynamic of dynamics) {
+    const key = JSON.stringify(columns.map((column) => gridCellText((dynamic as Record<string, unknown>)[column.columnName ?? ''], column)));
+    if (!result.has(key)) {
+      result.set(key, dynamic);
+    }
+  }
+  return [...result.values()];
 }
 
 /**

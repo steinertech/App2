@@ -43,6 +43,24 @@ function designSortFromText(text: string): number {
 /** PropertyDto.propertyName values of a design band or form cell whose propertyValue must be a whole number (or empty). */
 const DESIGN_BAND_PROPERTY_NUMBER_NAMES = new Set(['RowCount', 'ColumnCount', 'ColumnSpan', 'RowSpan']);
 
+/** PropertyDto.propertyName values of a design band whose propertyValue is a bool, saved as "true" or "false" (or empty). */
+const DESIGN_BAND_PROPERTY_BOOL_NAMES = new Set(['IsDistinct']);
+
+/** Parses a bool propertyValue: true/yes/1 → "true", false/no/0 → "false", empty stays empty. */
+function designBandPropertyBoolFromText(propertyName: string, text: string): string {
+  const value = text.toLowerCase();
+  if (['true', 'yes', '1'].includes(value)) {
+    return 'true';
+  }
+  if (['false', 'no', '0'].includes(value)) {
+    return 'false';
+  }
+  if (value === '') {
+    return '';
+  }
+  throw new Error(`${propertyName} "${text}" is not true or false!`);
+}
+
 // name is not a column, so it's never sent to App.Web (designBandInsert/designBandUpdate set it to contentName + "." + bandName).
 const DESIGN_BAND_COLUMNS: GridConfigDto = {
   columns: [
@@ -459,7 +477,7 @@ export async function planeDesignPatch(request: Request, gridPlaneDto: GridPlane
   return { ...gridPlaneDto, grids: [await gridPatchDeleteMulti(request, gridDto), {}, {}, {}] };
 }
 
-/** Saves the modified propertyValue cells; RowCount, ColumnCount, ColumnSpan and RowSpan must be whole numbers (or empty). */
+/** Saves the modified propertyValue cells; RowCount, ColumnCount, ColumnSpan and RowSpan must be whole numbers (or empty), IsDistinct a bool (or empty). */
 async function gridDesignBandFormPropertySaveUpdate(request: Request, gridDto: GridDto): Promise<void> {
   const modifies = (gridDto.modifies ?? []).filter((modify) => !modify.isNew);
   const rowKeys = gridDto.state?.rowKeys ?? [];
@@ -482,7 +500,10 @@ async function gridDesignBandFormPropertySaveUpdate(request: Request, gridDto: G
     const rowKey = rowKeys[modify.rowIndex];
     const property = properties.find((property) => property._id?.toHexString() === rowKey);
     if (property) {
-      const propertyValue = (modify.textModified ?? '').trim();
+      let propertyValue = (modify.textModified ?? '').trim();
+      if (DESIGN_BAND_PROPERTY_BOOL_NAMES.has(property.propertyName ?? '')) {
+        propertyValue = designBandPropertyBoolFromText(property.propertyName ?? '', propertyValue);
+      }
       if (DESIGN_BAND_PROPERTY_NUMBER_NAMES.has(property.propertyName ?? '') && propertyValue !== '' && !Number.isInteger(Number(propertyValue))) {
         throw new Error(`${property.propertyName} "${propertyValue}" is not a whole number!`);
       }
