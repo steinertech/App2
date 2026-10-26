@@ -20,6 +20,11 @@ function gridContentViewTableName(band: ContentBandDto): string | undefined {
   return contentBandPropertyValue(band, 'TableName') || undefined;
 }
 
+/** Returns the Title property of band (Table or Form), its TableName property if empty, or undefined (no title) if both are empty. */
+function gridContentViewTitle(band: ContentBandDto): string | undefined {
+  return contentBandPropertyValue(band, 'Title') || gridContentViewTableName(band);
+}
+
 /** Returns the LoadSort property of band (Table or Form) as a number; empty, not a whole number or band not found sorts last (Infinity). */
 function gridContentViewLoadSort(band: ContentBandDto | undefined): number {
   const text = band !== undefined ? contentBandPropertyValue(band, 'LoadSort') : '';
@@ -48,13 +53,16 @@ export async function planeContentViewLoad(request: Request, gridPlaneDto: GridP
   return { ...gridPlaneDto, grids };
 }
 
-/** Builds a content view grid from band: a Table as the Data grid of the "dynamic" plane with the rows of its TableName, a Form by gridContentFormLoad; otherwise (or band not found) an empty grid. */
+/**
+ * Builds a content view grid from band: a Table as the Data grid of the "dynamic" plane with the rows of its TableName, a Form by gridContentFormLoad, both titled by
+ * gridContentViewTitle; otherwise (or band not found) an empty grid.
+ */
 async function gridContentViewLoad(request: Request, gridDto: GridDto, band: ContentBandDto | undefined): Promise<GridDto> {
   if (band?.bandEnum === ContentBandEnum.Table) {
-    return gridDynamicDataLoad(request, gridDto, gridContentViewTableName(band));
+    return { ...await gridDynamicDataLoad(request, gridDto, gridContentViewTableName(band)), title: gridContentViewTitle(band) };
   }
   if (band?.bandEnum === ContentBandEnum.Form) {
-    return gridContentFormLoad(request, gridDto, band);
+    return { ...await gridContentFormLoad(request, gridDto, band), title: gridContentViewTitle(band) };
   }
   // custom is kept, so the grid is still built from its band on a later request.
   return { state: { custom: gridDto.state?.custom } };
