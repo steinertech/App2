@@ -20,6 +20,13 @@ function gridContentViewTableName(band: ContentBandDto): string | undefined {
   return contentBandPropertyValue(band, 'TableName') || undefined;
 }
 
+/** Returns the LoadSort property of band (Table or Form) as a number; empty, not a whole number or band not found sorts last (Infinity). */
+function gridContentViewLoadSort(band: ContentBandDto | undefined): number {
+  const text = band !== undefined ? contentBandPropertyValue(band, 'LoadSort') : '';
+  const result = Number(text);
+  return text !== '' && Number.isInteger(result) ? result : Infinity;
+}
+
 /**
  * Loads the CONTENT_VIEW_PLANE_NAME plane (the grids of Content.tsx): every incoming grid is built from the band named by its GridStateDto.custom
  * (see gridContentViewLoad), the bands and their properties read from the database.
@@ -28,12 +35,15 @@ export async function planeContentViewLoad(request: Request, gridPlaneDto: GridP
   const gridDtos = gridPlaneDto.grids ?? [];
   const bands = await contentViewBandLoad(request, gridDtos.map(gridContentViewBandName).filter((bandName): bandName is string => bandName !== undefined));
 
-  // A grid's command (e.g. Save of a Form, writing DynamicDto rows) can change the rows of another grid (e.g. a Table of the same TableName), so the grids with a command are built first.
-  const gridIndexes = gridDtos.map((_, gridIndex) => gridIndex).sort((a, b) => Number(gridDtos[b].command !== undefined) - Number(gridDtos[a].command !== undefined));
+  const gridBands = gridDtos.map((gridDto) => bands.find((band) => band.name === gridContentViewBandName(gridDto)));
+  // The grids are built in the order of their band's LoadSort (see gridContentViewLoadSort). With the same LoadSort, a grid's command (e.g. Save of a Form, writing
+  // DynamicDto rows) can change the rows of another grid (e.g. a Table of the same TableName), so the grids with a command are built first, otherwise in band order.
+  const loadSorts = gridBands.map(gridContentViewLoadSort);
+  const gridIndexes = gridDtos.map((_, gridIndex) => gridIndex).sort((a, b) =>
+    loadSorts[a] - loadSorts[b] || Number(gridDtos[b].command !== undefined) - Number(gridDtos[a].command !== undefined));
   const grids: GridDto[] = [];
   for (const gridIndex of gridIndexes) {
-    const gridDto = gridDtos[gridIndex];
-    grids[gridIndex] = await gridContentViewLoad(request, gridDto, bands.find((band) => band.name === gridContentViewBandName(gridDto)));
+    grids[gridIndex] = await gridContentViewLoad(request, gridDtos[gridIndex], gridBands[gridIndex]);
   }
   return { ...gridPlaneDto, grids };
 }

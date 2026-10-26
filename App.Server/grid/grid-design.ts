@@ -40,7 +40,7 @@ function designSortFromText(text: string): number {
 }
 
 /** PropertyDto.propertyName values of a design band or form cell whose propertyValue must be a whole number (or empty). */
-const DESIGN_BAND_PROPERTY_NUMBER_NAMES = new Set(['RowCount', 'ColumnCount', 'ColumnSpan', 'RowSpan']);
+const DESIGN_BAND_PROPERTY_NUMBER_NAMES = new Set(['RowCount', 'ColumnCount', 'ColumnSpan', 'RowSpan', 'LoadSort']);
 
 // name is not a column, so it's never sent to App.Web (designBandInsert/designBandUpdate set it to contentName + "." + bandName).
 const DESIGN_BAND_COLUMNS: GridConfigDto = {
