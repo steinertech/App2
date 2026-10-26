@@ -24,6 +24,8 @@ export interface GridConfigColumnDto {
    * Also used by the filter to parse the operands of a compare ("> 5.6kg") or range ("1kg..2kg").
    */
   valueFromText?: (text: string) => unknown;
+  /** Returns the column's raw value of a row, e.g. one nested in DynamicDto.values (see gridRowValue). Defaults to row[columnName]. */
+  rowToValue?: (row: object) => unknown;
 }
 
 export interface GridConfigDto {

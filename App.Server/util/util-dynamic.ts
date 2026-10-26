@@ -23,7 +23,7 @@ export async function dynamicColumnNameLoad(request: Request, tableName: string)
   return schemas.map((schema) => schema.columnName);
 }
 
-// DynamicDto documents carry their column values (e.g. A, B) as additional fields, which are read and written along with the declared ones.
+// DynamicDto documents carry their column values (e.g. A, B) in DynamicDto.values, which is read and written along with the static fields.
 
 /** Returns the rows with tableName, or all rows if tableName is undefined. */
 export async function dynamicLoad(request: Request, tableName?: string): Promise<DynamicDto[]> {

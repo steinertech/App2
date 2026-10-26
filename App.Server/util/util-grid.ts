@@ -61,7 +61,7 @@ export function gridColumns(columns: GridConfigColumnDto[], state?: GridStateDto
  */
 export function gridFsp<T extends object>(rows: T[], columns: GridConfigColumnDto[], state: GridStateDto | undefined): { rows: T[]; state: GridStateDto } {
   const renderedColumns = gridColumns(columns, state);
-  const value = (row: T, columnName: string): unknown => (row as Record<string, unknown>)[columnName];
+  const value = (row: T, columnName: string): unknown => gridRowValue(row, columns.find((column) => column.columnName === columnName) ?? { columnName });
 
   // Filter
   let result = rows;
@@ -96,6 +96,11 @@ export function gridFsp<T extends object>(rows: T[], columns: GridConfigColumnDt
     rows: pageRows,
     state: { pageIndex, pageCount, pageRowCount, selectedRowIndex },
   };
+}
+
+/** Returns the raw value of column in row: GridConfigColumnDto.rowToValue(row) if set, otherwise row[columnName]. */
+export function gridRowValue(row: object, column: GridConfigColumnDto): unknown {
+  return column.rowToValue !== undefined ? column.rowToValue(row) : (row as Record<string, unknown>)[column.columnName ?? ''];
 }
 
 /** Returns the cell text of a column's raw value: "" if the value is missing (undefined or null), otherwise GridConfigColumnDto.valueToText(value) if set, else String(value). */
@@ -294,7 +299,7 @@ function gridFilterMultiColumn(allColumns: GridConfigColumnDto[], state: GridSta
 function gridFilterMultiRows<T extends object>(rows: T[], column: GridConfigColumnDto): GridLookupMultiRow[] {
   const result = new Map<string, GridLookupMultiRow>();
   for (const row of rows) {
-    const value = (row as Record<string, unknown>)[column.columnName ?? ''];
+    const value = gridRowValue(row, column);
     const text = gridCellText(value, column);
     if (text !== '' && !result.has(text)) {
       result.set(text, { rowKey: text, text, value });

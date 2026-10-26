@@ -113,11 +113,11 @@ async function gridContentViewDetail(
     const selectedRowIndex = masterGridDto.state?.selectedRowIndex;
     const rowKey = selectedRowIndex !== undefined ? masterGridDto.state?.rowKeys?.[selectedRowIndex] : undefined;
     const [masterDynamic] = rowKey !== undefined && rowKey !== '' ? await dynamicLoadByIds(request, [rowKey]) : [];
-    detailValues.push([fieldNameDetail, masterDynamic !== undefined ? gridCellText((masterDynamic as Record<string, unknown>)[fieldNameMaster], {}) : undefined]);
+    detailValues.push([fieldNameDetail, masterDynamic !== undefined ? gridCellText(masterDynamic.values?.[fieldNameMaster], {}) : undefined]);
   }
   return detailValues.length > 0
     ? {
-      rowFilter: (dynamic) => detailValues.every(([fieldNameDetail, value]) => value !== undefined && gridCellText((dynamic as Record<string, unknown>)[fieldNameDetail], {}) === value),
+      rowFilter: (dynamic) => detailValues.every(([fieldNameDetail, value]) => value !== undefined && gridCellText(dynamic.values?.[fieldNameDetail], {}) === value),
       newValues: Object.fromEntries(detailValues.filter((detailValue): detailValue is [string, string] => detailValue[1] !== undefined)),
     }
     : undefined;
@@ -263,7 +263,7 @@ async function gridContentFormLoad(request: Request, gridDto: GridDto, band: Con
   // The text box's columnName is its FieldName (not A, B, ...): a modify is identified by rowIndex and columnName, and A, B, ... repeat for every form row
   // of a repetition. Text boxes with the same FieldName show the same value anyway.
   // A new repetition (dynamic undefined) has empty isNew text boxes, like gridDebugNew; a FieldName set by the master grid (detail's newValues) is a label with its value.
-  const valueCell = (dynamic: Record<string, unknown> | undefined, formRowIndex: number, columnName: string, rowIndex: number): GridCellDto => {
+  const valueCell = (dynamic: DynamicDto | undefined, formRowIndex: number, columnName: string, rowIndex: number): GridCellDto => {
     const name = fieldName(formRowIndex, columnName);
     if (name === undefined) {
       return { cellEnum: GridCellEnum.Label, text: 'Empty', rowIndex, columnName, ...(dynamic === undefined && { isNew: true }) };
@@ -273,7 +273,7 @@ async function gridContentFormLoad(request: Request, gridDto: GridDto, band: Con
       return { cellEnum: GridCellEnum.Label, text: newValue, rowIndex, columnName: name, isNew: true };
     }
     return dynamic !== undefined
-      ? { cellEnum: GridCellEnum.Edit, text: gridCellText(dynamic[name], {}), rowIndex, columnName: name }
+      ? { cellEnum: GridCellEnum.Edit, text: gridCellText(dynamic.values?.[name], {}), rowIndex, columnName: name }
       : { cellEnum: GridCellEnum.Edit, placeHolder: 'New', rowIndex, columnName: name, isNew: true };
   };
 
@@ -293,13 +293,13 @@ async function gridContentFormLoad(request: Request, gridDto: GridDto, band: Con
   const headerRow: GridRowDto = { cells: columnNames.map((columnName) => gridHeaderCell(undefined, undefined, columnName)) };
   // One form repetition: each form row renders as two rows, its FieldNames ("Cell" if missing), then their values; all its cells get rowIndex
   // (so the whole repetition is selected together).
-  const repetitionRows = (dynamic: Record<string, unknown> | undefined, rowIndex: number): GridRowDto[] => Array.from({ length: rowCount }, (_, formRowIndex) => [
+  const repetitionRows = (dynamic: DynamicDto | undefined, rowIndex: number): GridRowDto[] => Array.from({ length: rowCount }, (_, formRowIndex) => [
     { cells: columnNames.map((columnName): GridCellDto => ({ cellEnum: GridCellEnum.Label, text: fieldName(formRowIndex, columnName) ?? 'Cell', rowIndex, columnName, ...(dynamic === undefined && { isNew: true }) })) },
     { cells: columnNames.map((columnName) => valueCell(dynamic, formRowIndex, columnName, rowIndex)) },
   ]).flat();
   // The form is repeated for each dynamic row of the page (rowIndex its index on the page); New appends one empty repetition with rowIndex after them.
   const rows: GridRowDto[] = [
-    ...(pageDynamics as Record<string, unknown>[]).flatMap((dynamic, rowIndex) => repetitionRows(dynamic, rowIndex)),
+    ...pageDynamics.flatMap((dynamic, rowIndex) => repetitionRows(dynamic, rowIndex)),
     ...(gridDto.command?.commandEnum === GridCommandEnum.New ? repetitionRows(undefined, pageDynamics.length) : []),
   ];
 
@@ -337,7 +337,7 @@ async function gridContentFormSaveUpdate(request: Request, gridDto: GridDto, fie
     const rowKey = rowKeys[modify.rowIndex];
     const dynamic = dynamics.find((dynamic) => dynamic._id?.toHexString() === rowKey);
     if (dynamic) {
-      (dynamic as Record<string, unknown>)[modify.columnName] = modify.textModified ?? '';
+      dynamic.values = { ...dynamic.values, [modify.columnName]: modify.textModified ?? '' };
     }
   }
 
@@ -361,11 +361,11 @@ async function gridContentFormSaveInsert(
     }
 
     const dynamic = dynamicsByRowIndex.get(modify.rowIndex) ?? (tableName !== undefined ? { tableName } : {});
-    (dynamic as Record<string, unknown>)[modify.columnName] = modify.textModified ?? '';
+    dynamic.values = { ...dynamic.values, [modify.columnName]: modify.textModified ?? '' };
     dynamicsByRowIndex.set(modify.rowIndex, dynamic);
   }
 
   // The master values win over a modify of the same field, so the row is shown by the detail grid.
-  const dynamics = [...dynamicsByRowIndex.values()].map((dynamic): DynamicDto => ({ ...dynamic, ...newValues }));
+  const dynamics = [...dynamicsByRowIndex.values()].map((dynamic): DynamicDto => ({ ...dynamic, values: { ...dynamic.values, ...newValues } }));
   await dynamicInsert(request, dynamics);
 }
