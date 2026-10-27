@@ -1,15 +1,6 @@
 import { GRID_PAGE_ROW_COUNT_DEFAULT, GRID_PAGE_ROW_COUNT_MAX, GridCellDto, GridCellEnum, GridCommandEnum, GridCustomEnum, GridDto, GridPatchDto, GridPatchEnum, GridPlaneDto, gridPlaneGrids, GridRowDto, GridSortDto, GridStateDto, GridTableDto } from '../dto/shared/grid-dto.js';
 import { titleCase } from './util-main.js';
 import { GridConfigColumnDto, GridConfigTypeEnum } from '../dto/grid-config-dto.js';
-import { planeProjectLoad, planeProjectPatch } from '../plane/plane-project.js';
-import { planeDebugLoad, planeDebugPatch } from '../plane/plane-debug.js';
-import { planeDebugPropertyLoad, planeDebugPropertyPatch } from '../plane/plane-debug-property.js';
-import { planeStorageLoad, planeStoragePatch } from '../plane/plane-storage.js';
-import { planeSchemaLoad, planeSchemaPatch } from '../plane/plane-schema.js';
-import { planeDynamicLoad, planeDynamicPatch } from '../plane/plane-dynamic.js';
-import { CONTENT_VIEW_PLANE_NAME } from '../dto/shared/content-dto.js';
-import { planeDesignLoad, planeDesignPatch } from '../plane/plane-design.js';
-import { planeContentViewLoad, planeContentViewPatch } from '../plane/plane-content-view.js';
 
 /** Returns GridDto.tables: tables[0] toolbarRows, tables[1] dataRows, tables[2] barRows and, if given, tables[3] footerRows (e.g. a dialog's Ok and Cancel buttons). */
 export function gridTables(toolbarRows: GridRowDto[], dataRows: GridRowDto[], barRows: GridRowDto[] = [], footerRows?: GridRowDto[]): GridTableDto[] {
@@ -373,7 +364,7 @@ export function gridIsCommand(gridDto: GridDto, customName: string): boolean {
   return gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === customName;
 }
 
-function gridCommandSortClick(gridDto: GridDto): void {
+export function gridCommandSortClick(gridDto: GridDto): void {
   if (gridDto.command?.commandEnum !== GridCommandEnum.SortClick) {
     return;
   }
@@ -466,55 +457,4 @@ export function gridLoadLookupMulti(
     },
     title,
   };
-}
-
-type GridPlaneLoader = (request: Request, gridPlaneDto: GridPlaneDto) => Promise<GridPlaneDto>;
-
-/**
- * Loads the plane's grids from the incoming GridPlaneDto (each grid's state and command as sent by App.Web), including any grid that depends
- * on another grid of the plane, e.g. a detail grid of the selected row.
- */
-const PLANE_LOADERS: Record<string, GridPlaneLoader> = {
-  debug: planeDebugLoad,
-  debugProperty: planeDebugPropertyLoad,
-  project: planeProjectLoad,
-  storage: planeStorageLoad,
-  schema: planeSchemaLoad,
-  dynamic: planeDynamicLoad,
-  design: planeDesignLoad,
-  [CONTENT_VIEW_PLANE_NAME]: planeContentViewLoad,
-};
-
-export async function gridLoadApi(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
-  const loader = gridPlaneDto.planeName !== undefined ? PLANE_LOADERS[gridPlaneDto.planeName] : undefined;
-  if (loader === undefined) {
-    return { grids: [] };
-  }
-
-  (gridPlaneDto.grids ?? []).forEach((gridDto) => gridCommandSortClick(gridDto));
-
-  return { grids: (await loader(request, gridPlaneDto)).grids };
-}
-
-/** Returns the plane's patches: GridPlaneDto.grids[i] carries GridDto.patches for the incoming grids[i]. */
-type GridPlanePatcher = (request: Request, gridPlaneDto: GridPlaneDto) => Promise<GridPlaneDto>;
-
-const PLANE_GRID_PATCHERS: Record<string, GridPlanePatcher> = {
-  debug: planeDebugPatch,
-  debugProperty: planeDebugPropertyPatch,
-  project: planeProjectPatch,
-  storage: planeStoragePatch,
-  schema: planeSchemaPatch,
-  dynamic: planeDynamicPatch,
-  design: planeDesignPatch,
-  [CONTENT_VIEW_PLANE_NAME]: planeContentViewPatch,
-};
-
-export async function gridPatchApi(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
-  const patcher = gridPlaneDto.planeName !== undefined ? PLANE_GRID_PATCHERS[gridPlaneDto.planeName] : undefined;
-  if (patcher === undefined) {
-    return { grids: [] };
-  }
-
-  return { grids: (await patcher(request, gridPlaneDto)).grids };
 }
