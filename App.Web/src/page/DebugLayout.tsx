@@ -5,6 +5,7 @@ import { container } from '../style.ts';
 const linkList: SidebarLink[] = [
   { to: '/debug', label: 'Debug' },
   { to: '/debug/debug-property', label: 'Debug Property' },
+  { to: '/debug/debug-dynamic', label: 'Debug Dynamic' },
 ];
 
 // Debug page and its subpages, with a Sidebar for the second level navigation.

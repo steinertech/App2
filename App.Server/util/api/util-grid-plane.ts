@@ -4,6 +4,7 @@ import { gridCommandSortClick } from '../core/util-grid.js';
 import { planeProjectLoad, planeProjectPatch } from '../../plane/plane-project.js';
 import { planeDebugLoad, planeDebugPatch } from '../../plane/plane-debug.js';
 import { planeDebugPropertyLoad, planeDebugPropertyPatch } from '../../plane/plane-debug-property.js';
+import { planeDebugDynamicLoad, planeDebugDynamicPatch } from '../../plane/plane-debug-dynamic.js';
 import { planeStorageLoad, planeStoragePatch } from '../../plane/plane-storage.js';
 import { planeSchemaLoad, planeSchemaPatch } from '../../plane/plane-schema.js';
 import { planeDynamicLoad, planeDynamicPatch } from '../../plane/plane-dynamic.js';
@@ -19,6 +20,7 @@ type GridPlaneLoader = (request: Request, gridPlaneDto: GridPlaneDto) => Promise
 const PLANE_LOADERS: Record<string, GridPlaneLoader> = {
   debug: planeDebugLoad,
   debugProperty: planeDebugPropertyLoad,
+  debugDynamic: planeDebugDynamicLoad,
   project: planeProjectLoad,
   storage: planeStorageLoad,
   schema: planeSchemaLoad,
@@ -44,6 +46,7 @@ type GridPlanePatcher = (request: Request, gridPlaneDto: GridPlaneDto) => Promis
 const PLANE_GRID_PATCHERS: Record<string, GridPlanePatcher> = {
   debug: planeDebugPatch,
   debugProperty: planeDebugPropertyPatch,
+  debugDynamic: planeDebugDynamicPatch,
   project: planeProjectPatch,
   storage: planeStoragePatch,
   schema: planeSchemaPatch,
