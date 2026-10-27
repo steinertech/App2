@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import client, { DB_NAME, dbInsert, dbLoad, dbLoadByIds, dbUpdate } from './util-db.js';
-import { DynamicDto, DynamicTableNameDto } from '../dto/dynamic-dto.js';
-import { SchemaDto } from '../dto/schema-dto.js';
+import { DynamicDto, DynamicTableNameDto } from '../dto/db/dynamic-dto.js';
+import { SchemaDto } from '../dto/db/schema-dto.js';
 import { sectorKeyProjectDb } from './util-main.js';
 
 // Like schemas, per project: sectorKeyProjectDb (the default of the db functions; like sectorKey(request, true)) also asserts the user is signed in (redirects to /sign-in otherwise).

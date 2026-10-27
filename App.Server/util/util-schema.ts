@@ -1,5 +1,5 @@
 import { dbInsert, dbLoad, dbLoadByIds, dbUpdate } from './util-db.js';
-import { SchemaDto } from '../dto/schema-dto.js';
+import { SchemaDto } from '../dto/db/schema-dto.js';
 
 /** Returns SchemaDto.name: "TableName/{tableName}/ColumnName/{columnName}/". */
 function schemaName(schemaDto: SchemaDto): `TableName/${string}/ColumnName/${string}/` {

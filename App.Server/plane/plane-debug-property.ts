@@ -1,6 +1,6 @@
 import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPatchDto, GridPatchEnum, GridPlaneDto, GridRowDto } from '../dto/shared/grid-dto.js';
 import { debugContentLoad, debugContentLoadByIds, debugContentUpdate, debugContentInsert, debugContentDelete, debugPropertyLoadByIds, debugPropertyLoadByOwners, debugPropertyUpdate, debugPropertyInsert, gridDebugPropertyName } from '../util/util-debug-property.js';
-import { DebugContentDto, DebugPropertyDto } from '../dto/debug-property-dto.js';
+import { DebugContentDto, DebugPropertyDto } from '../dto/db/debug-property-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
 import { gridBarRow, gridCellText, gridCellValue, gridColumnChooserLoad, gridColumnChooserOk, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand, gridLookupSet, gridPatchDeleteMulti, gridSelectedMultiRowKeys, gridTables } from '../util/util-grid.js';
 import { gridDebugDeleteConfirm, gridDebugNew } from './plane-debug.js';

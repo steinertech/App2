@@ -1,6 +1,6 @@
 import { dbDelete, dbInsert, dbLoad, dbLoadByIds, dbUpdate } from './util-db.js';
-import { DesignBandDto } from '../dto/design-dto.js';
-import { PropertyDto, PropertyOwnerEnum } from '../dto/property-dto.js';
+import { DesignBandDto } from '../dto/db/design-dto.js';
+import { PropertyDto, PropertyOwnerEnum } from '../dto/db/property-dto.js';
 import { ContentBandEnum, DESIGN_BAND_PROPERTY_NAMES } from '../dto/shared/content-dto.js';
 import { PropertyOwner, propertyDeleteByOwnerNameRegex, propertyDeleteByOwners, propertyLoadByIds, propertyLoadByOwnerNameRegex, propertyLoadByOwners, propertySync, propertyUpdate } from './util-property.js';
 

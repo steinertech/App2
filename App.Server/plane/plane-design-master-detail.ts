@@ -1,5 +1,5 @@
 import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPlaneDto, GridRowDto } from '../dto/shared/grid-dto.js';
-import { DesignMasterDetailDto } from '../dto/design-master-detail-dto.js';
+import { DesignMasterDetailDto } from '../dto/db/design-master-detail-dto.js';
 import { GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
 import {
   designMasterDetailCycle, designMasterDetailDelete, designMasterDetailInsert, designMasterDetailLoad, designMasterDetailLoadByIds, designMasterDetailUpdate,

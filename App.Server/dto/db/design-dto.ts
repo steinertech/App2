@@ -1,5 +1,5 @@
 import { DbDto } from './db-dto.js';
-import { ContentBandEnum } from './shared/content-dto.js';
+import { ContentBandEnum } from '../shared/content-dto.js';
 
 /** A column of a design band, e.g. of a ContentBandEnum.Table band (see DesignBandDto.columns). */
 export interface DesignBandColumnDto {

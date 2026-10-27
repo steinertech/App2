@@ -1,5 +1,5 @@
 import client, { DB_NAME } from './util-db.js';
-import { DesignBandDto } from '../dto/design-dto.js';
+import { DesignBandDto } from '../dto/db/design-dto.js';
 import { ContentBandDto, ContentBandEnum, ContentDto, DESIGN_BAND_PROPERTY_NAMES } from '../dto/shared/content-dto.js';
 import { sectorKeyProjectDb } from './util-main.js';
 import { designBandPropertyOwner } from './util-design.js';

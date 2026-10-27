@@ -3,8 +3,8 @@ import { AlertEnum } from '../dto/shared/alert-dto.js';
 import { alertAdd } from '../util/util-main.js';
 import { projectsLoad, projectsLoadByNames, projectsUpdate, projectsInsert, projectsDeleteByNames } from '../util/util-project.js';
 import { userProject, usersLoad } from '../util/util-user.js';
-import { ProjectDto } from '../dto/project-dto.js';
-import { UserDto } from '../dto/user-dto.js';
+import { ProjectDto } from '../dto/db/project-dto.js';
+import { UserDto } from '../dto/db/user-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
 import { gridBarRow, gridCellText, gridCellValue, gridColumns, gridFindCommand, gridFindRow, gridFsp, gridHeaderCell, gridIsAnySelectedMulti, gridPatchDeleteMulti, gridRemoveCommand, gridTables } from '../util/util-grid.js';
 

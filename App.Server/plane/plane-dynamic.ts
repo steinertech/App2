@@ -1,6 +1,6 @@
 import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomEnum, GridDto, GridPatchDto, GridPatchEnum, GridPlaneDto, GridRowDto } from '../dto/shared/grid-dto.js';
 import { dynamicColumnNameLoad, dynamicInsert, dynamicLoad, dynamicLoadByIds, dynamicTableLoad, dynamicUpdate } from '../util/util-dynamic.js';
-import { DynamicDto, DynamicTableNameDto } from '../dto/dynamic-dto.js';
+import { DynamicDto, DynamicTableNameDto } from '../dto/db/dynamic-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
 import { gridBarRow, gridCellText, gridCellValue, gridColumnChooserLoad, gridColumnChooserOk, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridLookupSet, gridRowValue, gridTables } from '../util/util-grid.js';
 

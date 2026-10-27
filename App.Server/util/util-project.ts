@@ -1,5 +1,5 @@
 import client, { DB_NAME, dbInsert, dbLoad } from './util-db.js';
-import { ProjectDto } from '../dto/project-dto.js';
+import { ProjectDto } from '../dto/db/project-dto.js';
 import { sectorKeyDb } from './util-main.js';
 
 export async function projectsLoad(request: Request): Promise<ProjectDto[]> {

@@ -1,9 +1,9 @@
 import { GridCellDto, GridCellEnum, GridCommandEnum, GridDto, GridPatchDto, GridPatchEnum, GridPlaneDto, GridRowDto } from '../dto/shared/grid-dto.js';
 import { CONTENT_VIEW_CUSTOM_BAND_NAME, ContentBandDto, ContentBandEnum, contentBandPropertyValue } from '../dto/shared/content-dto.js';
-import { DynamicDto } from '../dto/dynamic-dto.js';
+import { DynamicDto } from '../dto/db/dynamic-dto.js';
 import { contentViewBandLoad } from '../util/util-content-view.js';
 import { designFormCellPropertyLoadAll, designFormCellPropertyOwner } from '../util/util-design.js';
-import { DesignMasterDetailDto } from '../dto/design-master-detail-dto.js';
+import { DesignMasterDetailDto } from '../dto/db/design-master-detail-dto.js';
 import { designMasterDetailBands, designMasterDetailLoad } from '../util/util-design-master-detail.js';
 import { dynamicInsert, dynamicLoad, dynamicLoadByIds, dynamicUpdate } from '../util/util-dynamic.js';
 import { indexToColumnNameExcel } from '../util/util-main.js';

@@ -1,5 +1,5 @@
 import { dbDelete, dbInsert, dbLoad, dbLoadByIds, dbUpdate } from './util-db.js';
-import { DesignMasterDetailDto, DesignMasterDetailName } from '../dto/design-master-detail-dto.js';
+import { DesignMasterDetailDto, DesignMasterDetailName } from '../dto/db/design-master-detail-dto.js';
 import { designBandName } from './util-design.js';
 
 // Design master details are per project: sectorKeyProjectDb (the default of the db functions; like sectorKey(request, true)) also asserts the user is signed in (redirects to /sign-in otherwise).
