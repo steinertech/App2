@@ -1,14 +1,35 @@
 import { GridCommandEnum, GridDto, GridPatchDto, GridPatchEnum, GridPlaneDto } from '../dto/shared/grid-dto.js';
-import { debugDynamicLoad } from '../util/db/util-debug-dynamic.js';
-import { DebugDynamicDto } from '../dto/db/debug-dynamic-dto.js';
+import { debugDynamicSchemaLoad } from '../util/db/util-debug-dynamic-schema.js';
+import { DebugDynamicSchemaDto } from '../dto/db/debug-dynamic-schema-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
 import { gridColumnChooserLoad, gridFilterMultiLoad, gridPatchDeleteMulti } from '../util/core/util-grid.js';
 import { gridDataLoad } from '../util/core/util-grid-data.js';
 
+/** Parses an "Is Property" cell text: true/yes/1 → true, false/no/0 or empty → false. */
+function debugDynamicSchemaIsPropertyFromText(text: string): boolean {
+  const value = text.trim().toLowerCase();
+  if (['true', 'yes', '1'].includes(value)) {
+    return true;
+  }
+  if (['', 'false', 'no', '0'].includes(value)) {
+    return false;
+  }
+  throw new Error(`Is Property "${text}" is not true or false!`);
+}
+
 const DEBUG_DYNAMIC_COLUMNS: GridConfigDto = {
-  columns: (['name', 'tableName'] as const satisfies readonly (keyof DebugDynamicDto)[]).map(
-    (columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text }),
-  ),
+  columns: [
+    ...(['name', 'text', 'dynamicTableName', 'dynamicColumnName'] as const satisfies readonly (keyof DebugDynamicSchemaDto)[]).map(
+      (columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text }),
+    ),
+    {
+      columnName: 'isProperty' satisfies keyof DebugDynamicSchemaDto,
+      text: 'Is Property',
+      typeEnum: GridConfigTypeEnum.Text,
+      valueToText: (value) => (value === true ? 'true' : 'false'),
+      valueFromText: debugDynamicSchemaIsPropertyFromText,
+    },
+  ],
 };
 
 /** Loads the "debugDynamic" plane: the debug dynamic grid (GridPlaneDto.grids[0]). */
@@ -18,7 +39,7 @@ export async function planeDebugDynamicLoad(request: Request, gridPlaneDto: Grid
 }
 
 async function gridDebugDynamicLoad(request: Request, gridDto: GridDto): Promise<GridDto> {
-  return gridDataLoad<DebugDynamicDto>(request, 'DebugDynamicDto', gridDto, { title: 'Debug Dynamic', columns: DEBUG_DYNAMIC_COLUMNS.columns ?? [], isColumnChooser: true }, false);
+  return gridDataLoad<DebugDynamicSchemaDto>(request, 'DebugDynamicSchemaDto', gridDto, { title: 'Debug Dynamic Schema', columns: DEBUG_DYNAMIC_COLUMNS.columns ?? [], isColumnChooser: true }, false);
 }
 
 /**
@@ -32,7 +53,7 @@ export async function planeDebugDynamicPatch(request: Request, gridPlaneDto: Gri
     return { ...gridPlaneDto, grids: [{ patches: [{ patchEnum: GridPatchEnum.Lookup, planeName: lookupPlane?.planeName, lookup: lookupPlane?.grids?.[0] } satisfies GridPatchDto] }] };
   }
   if (gridDto.command?.commandEnum === GridCommandEnum.FilterMulti) {
-    const lookupPlane = gridFilterMultiLoad(gridDto, DEBUG_DYNAMIC_COLUMNS.columns ?? [], await debugDynamicLoad(request));
+    const lookupPlane = gridFilterMultiLoad(gridDto, DEBUG_DYNAMIC_COLUMNS.columns ?? [], await debugDynamicSchemaLoad(request));
     return { ...gridPlaneDto, grids: [{ patches: [{ patchEnum: GridPatchEnum.Lookup, planeName: lookupPlane?.planeName, lookup: lookupPlane?.grids?.[0] } satisfies GridPatchDto] }] };
   }
   return { ...gridPlaneDto, grids: [await gridPatchDeleteMulti(request, gridDto)] };
