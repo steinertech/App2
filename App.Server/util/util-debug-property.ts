@@ -1,75 +1,32 @@
-import { ObjectId } from 'mongodb';
-import client, { DB_NAME } from './util-db.js';
+import client, { DB_NAME, dbDelete, dbInsert, dbLoad, dbLoadByIds, dbUpdate } from './util-db.js';
 import { DebugContentDto, DebugPropertyDto } from '../dto/debug-property-dto.js';
 import { sectorKeyDb } from './util-main.js';
 
 export async function debugContentLoad(request: Request): Promise<DebugContentDto[]> {
-  const key = await sectorKeyDb(request, 'DebugContentDto');
-  const collection = client.db(DB_NAME).collection<DebugContentDto>('myCollection');
-  return collection.find({ sectorKey: key, type: 'DebugContentDto' }).toArray();
+  return dbLoad<DebugContentDto>(request, 'DebugContentDto', false);
 }
 
 /** ids are ObjectId hex strings (the grid's rowKeys); invalid ones are ignored. */
 export async function debugContentLoadByIds(request: Request, ids: string[]): Promise<DebugContentDto[]> {
-  const key = await sectorKeyDb(request, 'DebugContentDto');
-  const collection = client.db(DB_NAME).collection<DebugContentDto>('myCollection');
-  const objectIds = ids.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
-  return collection.find({ sectorKey: key, type: 'DebugContentDto', _id: { $in: objectIds } }).toArray();
+  return dbLoadByIds<DebugContentDto>(request, 'DebugContentDto', ids, false);
 }
 
 export async function debugContentInsert(request: Request, debugContentDtos: DebugContentDto[]): Promise<DebugContentDto[]> {
-  const key = await sectorKeyDb(request, 'DebugContentDto');
-  const collection = client.db(DB_NAME).collection<DebugContentDto>('myCollection');
-
-  const contents = debugContentDtos.map((debugContentDto): DebugContentDto => {
-    const { _id, ...rest } = debugContentDto;
-    return { ...rest, sectorKey: key, type: 'DebugContentDto' };
-  });
-
-  if (contents.length > 0) {
-    await collection.insertMany(contents);
-  }
-
-  return contents;
+  return dbInsert<DebugContentDto>(request, 'DebugContentDto', debugContentDtos, false);
 }
 
 /** Updates debugContentDtos by _id. */
 export async function debugContentUpdate(request: Request, debugContentDtos: DebugContentDto[]): Promise<DebugContentDto[]> {
-  const key = await sectorKeyDb(request, 'DebugContentDto');
-  const collection = client.db(DB_NAME).collection<DebugContentDto>('myCollection');
-
-  const contents = debugContentDtos
-    .filter((debugContentDto) => debugContentDto._id !== undefined)
-    .map((debugContentDto): DebugContentDto => ({ ...debugContentDto, sectorKey: key, type: 'DebugContentDto' }));
-
-  if (contents.length > 0) {
-    await collection.bulkWrite(
-      contents.map(({ _id, ...content }) => ({
-        updateOne: {
-          filter: { _id, sectorKey: key, type: 'DebugContentDto' },
-          update: { $set: content },
-        },
-      })),
-    );
-  }
-
-  return contents;
+  return dbUpdate<DebugContentDto>(request, 'DebugContentDto', debugContentDtos, false);
 }
 
 /** Deletes the debug contents by ids (ObjectId hex strings, the grid's rowKeys); invalid ones are ignored. */
 export async function debugContentDelete(request: Request, ids: string[]): Promise<void> {
-  const key = await sectorKeyDb(request, 'DebugContentDto');
-  const collection = client.db(DB_NAME).collection<DebugContentDto>('myCollection');
-  const objectIds = ids.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
-  if (objectIds.length > 0) {
-    await collection.deleteMany({ sectorKey: key, type: 'DebugContentDto', _id: { $in: objectIds } });
-  }
+  return dbDelete(request, 'DebugContentDto', ids, false);
 }
 
 export async function debugPropertyLoad(request: Request): Promise<DebugPropertyDto[]> {
-  const key = await sectorKeyDb(request, 'DebugPropertyDto');
-  const collection = client.db(DB_NAME).collection<DebugPropertyDto>('myCollection');
-  return collection.find({ sectorKey: key, type: 'DebugPropertyDto' }).toArray();
+  return dbLoad<DebugPropertyDto>(request, 'DebugPropertyDto', false);
 }
 
 /** Property names every owner of an ownerType has; missing ones are inserted by debugPropertyLoadByOwners. */
@@ -129,47 +86,14 @@ export function gridDebugPropertyName(property: DebugPropertyDto): string {
 
 /** ids are ObjectId hex strings (the grid's rowKeys); invalid ones are ignored. */
 export async function debugPropertyLoadByIds(request: Request, ids: string[]): Promise<DebugPropertyDto[]> {
-  const key = await sectorKeyDb(request, 'DebugPropertyDto');
-  const collection = client.db(DB_NAME).collection<DebugPropertyDto>('myCollection');
-  const objectIds = ids.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
-  return collection.find({ sectorKey: key, type: 'DebugPropertyDto', _id: { $in: objectIds } }).toArray();
+  return dbLoadByIds<DebugPropertyDto>(request, 'DebugPropertyDto', ids, false);
 }
 
 export async function debugPropertyInsert(request: Request, debugPropertyDtos: DebugPropertyDto[]): Promise<DebugPropertyDto[]> {
-  const key = await sectorKeyDb(request, 'DebugPropertyDto');
-  const collection = client.db(DB_NAME).collection<DebugPropertyDto>('myCollection');
-
-  const properties = debugPropertyDtos.map((debugPropertyDto): DebugPropertyDto => {
-    const { _id, ...rest } = debugPropertyDto;
-    return { ...rest, sectorKey: key, type: 'DebugPropertyDto' };
-  });
-
-  if (properties.length > 0) {
-    await collection.insertMany(properties);
-  }
-
-  return properties;
+  return dbInsert<DebugPropertyDto>(request, 'DebugPropertyDto', debugPropertyDtos, false);
 }
 
 /** Updates debugPropertyDtos by _id. */
 export async function debugPropertyUpdate(request: Request, debugPropertyDtos: DebugPropertyDto[]): Promise<DebugPropertyDto[]> {
-  const key = await sectorKeyDb(request, 'DebugPropertyDto');
-  const collection = client.db(DB_NAME).collection<DebugPropertyDto>('myCollection');
-
-  const properties = debugPropertyDtos
-    .filter((debugPropertyDto) => debugPropertyDto._id !== undefined)
-    .map((debugPropertyDto): DebugPropertyDto => ({ ...debugPropertyDto, sectorKey: key, type: 'DebugPropertyDto' }));
-
-  if (properties.length > 0) {
-    await collection.bulkWrite(
-      properties.map(({ _id, ...property }) => ({
-        updateOne: {
-          filter: { _id, sectorKey: key, type: 'DebugPropertyDto' },
-          update: { $set: property },
-        },
-      })),
-    );
-  }
-
-  return properties;
+  return dbUpdate<DebugPropertyDto>(request, 'DebugPropertyDto', debugPropertyDtos, false);
 }

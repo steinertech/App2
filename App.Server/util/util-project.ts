@@ -1,11 +1,9 @@
-import client, { DB_NAME } from './util-db.js';
+import client, { DB_NAME, dbInsert, dbLoad } from './util-db.js';
 import { ProjectDto } from '../dto/project-dto.js';
 import { sectorKeyDb } from './util-main.js';
 
 export async function projectsLoad(request: Request): Promise<ProjectDto[]> {
-  const key = await sectorKeyDb(request, 'ProjectDto');
-  const collection = client.db(DB_NAME).collection<ProjectDto>('myCollection');
-  return collection.find({ sectorKey: key, type: 'ProjectDto' }).toArray();
+  return dbLoad<ProjectDto>(request, 'ProjectDto', false);
 }
 
 export async function projectsLoadByNames(request: Request, names: string[]): Promise<ProjectDto[]> {
@@ -21,19 +19,7 @@ export async function projectsDeleteByNames(request: Request, names: string[]): 
 }
 
 export async function projectsInsert(request: Request, projectDtos: ProjectDto[]): Promise<ProjectDto[]> {
-  const key = await sectorKeyDb(request, 'ProjectDto');
-  const collection = client.db(DB_NAME).collection<ProjectDto>('myCollection');
-
-  const projects = projectDtos.map((projectDto): ProjectDto => {
-    const { _id, ...rest } = projectDto;
-    return { ...rest, sectorKey: key, type: 'ProjectDto' };
-  });
-
-  if (projects.length > 0) {
-    await collection.insertMany(projects);
-  }
-
-  return projects;
+  return dbInsert<ProjectDto>(request, 'ProjectDto', projectDtos, false);
 }
 
 export async function projectsUpdate(request: Request, projectDtos: ProjectDto[]): Promise<ProjectDto[]> {

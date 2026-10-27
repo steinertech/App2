@@ -1,64 +1,27 @@
-import { ObjectId } from 'mongodb';
-import client, { DB_NAME } from './util-db.js';
+import { dbInsert, dbLoad, dbLoadByIds, dbUpdate } from './util-db.js';
 import { SchemaDto } from '../dto/schema-dto.js';
-import { sectorKeyProjectDb } from './util-main.js';
 
 /** Returns SchemaDto.name: "TableName/{tableName}/ColumnName/{columnName}/". */
 function schemaName(schemaDto: SchemaDto): `TableName/${string}/ColumnName/${string}/` {
   return `TableName/${schemaDto.tableName ?? ''}/ColumnName/${schemaDto.columnName ?? ''}/`;
 }
 
-// Schemas are per project: sectorKeyProjectDb (like sectorKey(request, true)) also asserts the user is signed in (redirects to /sign-in otherwise).
+// Schemas are per project: sectorKeyProjectDb (the default of the db functions; like sectorKey(request, true)) also asserts the user is signed in (redirects to /sign-in otherwise).
 
 export async function schemaLoad(request: Request): Promise<SchemaDto[]> {
-  const key = await sectorKeyProjectDb(request, 'SchemaDto');
-  const collection = client.db(DB_NAME).collection<SchemaDto>('myCollection');
-  return collection.find({ sectorKey: key, type: 'SchemaDto' }).toArray();
+  return dbLoad<SchemaDto>(request, 'SchemaDto');
 }
 
 /** ids are ObjectId hex strings (the grid's rowKeys); invalid ones are ignored. */
 export async function schemaLoadByIds(request: Request, ids: string[]): Promise<SchemaDto[]> {
-  const key = await sectorKeyProjectDb(request, 'SchemaDto');
-  const collection = client.db(DB_NAME).collection<SchemaDto>('myCollection');
-  const objectIds = ids.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
-  return collection.find({ sectorKey: key, type: 'SchemaDto', _id: { $in: objectIds } }).toArray();
+  return dbLoadByIds<SchemaDto>(request, 'SchemaDto', ids);
 }
 
 export async function schemaInsert(request: Request, schemaDtos: SchemaDto[]): Promise<SchemaDto[]> {
-  const key = await sectorKeyProjectDb(request, 'SchemaDto');
-  const collection = client.db(DB_NAME).collection<SchemaDto>('myCollection');
-
-  const schemas = schemaDtos.map((schemaDto): SchemaDto => {
-    const { _id, ...rest } = schemaDto;
-    return { ...rest, name: schemaName(schemaDto), sectorKey: key, type: 'SchemaDto' };
-  });
-
-  if (schemas.length > 0) {
-    await collection.insertMany(schemas);
-  }
-
-  return schemas;
+  return dbInsert<SchemaDto>(request, 'SchemaDto', schemaDtos.map((schemaDto) => ({ ...schemaDto, name: schemaName(schemaDto) })));
 }
 
 /** Updates schemaDtos by _id (not by name, since name changes with tableName or columnName). */
 export async function schemaUpdate(request: Request, schemaDtos: SchemaDto[]): Promise<SchemaDto[]> {
-  const key = await sectorKeyProjectDb(request, 'SchemaDto');
-  const collection = client.db(DB_NAME).collection<SchemaDto>('myCollection');
-
-  const schemas = schemaDtos
-    .filter((schemaDto) => schemaDto._id !== undefined)
-    .map((schemaDto): SchemaDto => ({ ...schemaDto, name: schemaName(schemaDto), sectorKey: key, type: 'SchemaDto' }));
-
-  if (schemas.length > 0) {
-    await collection.bulkWrite(
-      schemas.map(({ _id, ...schema }) => ({
-        updateOne: {
-          filter: { _id, sectorKey: key, type: 'SchemaDto' },
-          update: { $set: schema },
-        },
-      })),
-    );
-  }
-
-  return schemas;
+  return dbUpdate<SchemaDto>(request, 'SchemaDto', schemaDtos.map((schemaDto) => ({ ...schemaDto, name: schemaName(schemaDto) })));
 }

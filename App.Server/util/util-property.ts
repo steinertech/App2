@@ -1,17 +1,14 @@
-import { ObjectId } from 'mongodb';
-import client, { DB_NAME } from './util-db.js';
+import client, { DB_NAME, dbInsert, dbLoad, dbLoadByIds, dbUpdate } from './util-db.js';
 import { PropertyDto, PropertyOwnerEnum } from '../dto/property-dto.js';
 import { sectorKeyProjectDb } from './util-main.js';
 
-// Properties are per project: sectorKeyProjectDb (like sectorKey(request, true)) also asserts the user is signed in (redirects to /sign-in otherwise).
+// Properties are per project: sectorKeyProjectDb (the default of the db functions; like sectorKey(request, true)) also asserts the user is signed in (redirects to /sign-in otherwise).
 
 /** Owner a property is attached to (e.g. a design band: { ownerName: DesignBandDto.name, ownerEnum: PropertyOwnerEnum.DesignBand }). */
 export type PropertyOwner = Required<Pick<PropertyDto, 'ownerName' | 'ownerEnum'>>;
 
 export async function propertyLoad(request: Request): Promise<PropertyDto[]> {
-  const key = await sectorKeyProjectDb(request, 'PropertyDto');
-  const collection = client.db(DB_NAME).collection<PropertyDto>('myCollection');
-  return collection.find({ sectorKey: key, type: 'PropertyDto' }).toArray();
+  return dbLoad<PropertyDto>(request, 'PropertyDto');
 }
 
 /**
@@ -58,49 +55,16 @@ export async function propertyDeleteByOwnerNameRegex(request: Request, ownerEnum
 
 /** ids are ObjectId hex strings (the grid's rowKeys); invalid ones are ignored. */
 export async function propertyLoadByIds(request: Request, ids: string[]): Promise<PropertyDto[]> {
-  const key = await sectorKeyProjectDb(request, 'PropertyDto');
-  const collection = client.db(DB_NAME).collection<PropertyDto>('myCollection');
-  const objectIds = ids.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
-  return collection.find({ sectorKey: key, type: 'PropertyDto', _id: { $in: objectIds } }).toArray();
+  return dbLoadByIds<PropertyDto>(request, 'PropertyDto', ids);
 }
 
 export async function propertyInsert(request: Request, propertyDtos: PropertyDto[]): Promise<PropertyDto[]> {
-  const key = await sectorKeyProjectDb(request, 'PropertyDto');
-  const collection = client.db(DB_NAME).collection<PropertyDto>('myCollection');
-
-  const properties = propertyDtos.map((propertyDto): PropertyDto => {
-    const { _id, ...rest } = propertyDto;
-    return { ...rest, sectorKey: key, type: 'PropertyDto' };
-  });
-
-  if (properties.length > 0) {
-    await collection.insertMany(properties);
-  }
-
-  return properties;
+  return dbInsert<PropertyDto>(request, 'PropertyDto', propertyDtos);
 }
 
 /** Updates propertyDtos by _id. */
 export async function propertyUpdate(request: Request, propertyDtos: PropertyDto[]): Promise<PropertyDto[]> {
-  const key = await sectorKeyProjectDb(request, 'PropertyDto');
-  const collection = client.db(DB_NAME).collection<PropertyDto>('myCollection');
-
-  const properties = propertyDtos
-    .filter((propertyDto) => propertyDto._id !== undefined)
-    .map((propertyDto): PropertyDto => ({ ...propertyDto, sectorKey: key, type: 'PropertyDto' }));
-
-  if (properties.length > 0) {
-    await collection.bulkWrite(
-      properties.map(({ _id, ...property }) => ({
-        updateOne: {
-          filter: { _id, sectorKey: key, type: 'PropertyDto' },
-          update: { $set: property },
-        },
-      })),
-    );
-  }
-
-  return properties;
+  return dbUpdate<PropertyDto>(request, 'PropertyDto', propertyDtos);
 }
 
 /**
