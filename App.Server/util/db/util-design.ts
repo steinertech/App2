@@ -1,7 +1,7 @@
-import { dbDelete, dbInsert, dbLoad, dbLoadByIds, dbUpdate } from './util-db.js';
-import { DesignBandDto } from '../dto/db/design-dto.js';
-import { PropertyDto, PropertyOwnerEnum } from '../dto/db/property-dto.js';
-import { ContentBandEnum, DESIGN_BAND_PROPERTY_NAMES } from '../dto/shared/content-dto.js';
+import { dbDelete, dbInsert, dbLoad, dbLoadByIds, dbUpdate } from '../core/util-db.js';
+import { DesignBandDto } from '../../dto/db/design-dto.js';
+import { PropertyDto, PropertyOwnerEnum } from '../../dto/db/property-dto.js';
+import { ContentBandEnum, DESIGN_BAND_PROPERTY_NAMES } from '../../dto/shared/content-dto.js';
 import { PropertyOwner, propertyDeleteByOwnerNameRegex, propertyDeleteByOwners, propertyLoadByIds, propertyLoadByOwnerNameRegex, propertyLoadByOwners, propertySync, propertyUpdate } from './util-property.js';
 
 // Design bands are per project: sectorKeyProjectDb (the default of the db functions; like sectorKey(request, true)) also asserts the user is signed in (redirects to /sign-in otherwise).

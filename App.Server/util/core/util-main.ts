@@ -1,7 +1,7 @@
-import { userSession } from './util-user.js';
-import { type AlertDto, AlertEnum } from '../dto/shared/alert-dto.js';
-import type { ApiResponseDto } from '../dto/shared/api-response-dto.js';
-import type { ApiRequestDto, Language } from '../dto/shared/api-request-dto.js';
+import { userSession } from './util-session.js';
+import { type AlertDto, AlertEnum } from '../../dto/shared/alert-dto.js';
+import type { ApiResponseDto } from '../../dto/shared/api-response-dto.js';
+import type { ApiRequestDto, Language } from '../../dto/shared/api-request-dto.js';
 import { languageFromRequest } from './util-i18n.js';
 
 export const VERSION_SERVER = '1.20';

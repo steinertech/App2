@@ -1,8 +1,8 @@
 import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPatchDto, GridPatchEnum, GridPlaneDto, GridRowDto } from '../dto/shared/grid-dto.js';
-import { debugLoad, debugLoadByIds, debugUpdate, debugInsert, debugDelete } from '../util/util-debug.js';
+import { debugLoad, debugLoadByIds, debugUpdate, debugInsert, debugDelete } from '../util/db/util-debug.js';
 import { DebugDto } from '../dto/db/debug-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
-import { gridBarRow, gridCellText, gridCellValue, gridColumnChooserLoad, gridColumnChooserOk, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand, gridLookupSet, gridPatchDeleteMulti, gridSelectedMultiRowKeys, gridTables } from '../util/util-grid.js';
+import { gridBarRow, gridCellText, gridCellValue, gridColumnChooserLoad, gridColumnChooserOk, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand, gridLookupSet, gridPatchDeleteMulti, gridSelectedMultiRowKeys, gridTables } from '../util/core/util-grid.js';
 
 const DEBUG_COLUMNS: GridConfigDto = {
   columns: (['name', 'text'] as const satisfies readonly (keyof DebugDto)[]).map(

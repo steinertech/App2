@@ -1,6 +1,6 @@
-import client, { DB_NAME, dbDelete, dbInsert, dbLoad, dbLoadByIds, dbUpdate } from './util-db.js';
-import { DebugContentDto, DebugPropertyDto } from '../dto/db/debug-property-dto.js';
-import { sectorKeyDb } from './util-main.js';
+import client, { DB_NAME, dbDelete, dbInsert, dbLoad, dbLoadByIds, dbUpdate } from '../core/util-db.js';
+import { DebugContentDto, DebugPropertyDto } from '../../dto/db/debug-property-dto.js';
+import { sectorKeyDb } from '../core/util-main.js';
 
 export async function debugContentLoad(request: Request): Promise<DebugContentDto[]> {
   return dbLoad<DebugContentDto>(request, 'DebugContentDto', false);

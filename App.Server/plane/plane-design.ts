@@ -1,11 +1,11 @@
 import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPatchDto, GridPatchEnum, GridPlaneDto, GridRowDto } from '../dto/shared/grid-dto.js';
-import { designBandDelete, designBandInsert, designBandLoad, designBandLoadByIds, designBandUpdate, designFormCellPropertyLoad, designFormCellPropertySync, designBandPropertyLoad, designBandFormPropertyLoadByIds, designBandPropertySync, designBandFormPropertyUpdate } from '../util/util-design.js';
+import { designBandDelete, designBandInsert, designBandLoad, designBandLoadByIds, designBandUpdate, designFormCellPropertyLoad, designFormCellPropertySync, designBandPropertyLoad, designBandFormPropertyLoadByIds, designBandPropertySync, designBandFormPropertyUpdate } from '../util/db/util-design.js';
 import { DesignBandColumnDto, DesignBandDto } from '../dto/db/design-dto.js';
 import { PropertyDto } from '../dto/db/property-dto.js';
 import { ContentBandEnum } from '../dto/shared/content-dto.js';
 import { GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
-import { indexToColumnNameExcel } from '../util/util-main.js';
-import { GridLookupMultiRow, gridBarRow, gridCellText, gridCellValue, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand, gridLoadLookupMulti, gridLookup, gridLookupMultiSelected, gridLookupSet, gridPatchDeleteMulti, gridSelectedMultiRowKeys, gridTables } from '../util/util-grid.js';
+import { indexToColumnNameExcel } from '../util/core/util-main.js';
+import { GridLookupMultiRow, gridBarRow, gridCellText, gridCellValue, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand, gridLoadLookupMulti, gridLookup, gridLookupMultiSelected, gridLookupSet, gridPatchDeleteMulti, gridSelectedMultiRowKeys, gridTables } from '../util/core/util-grid.js';
 import { gridDebugDeleteConfirm } from './plane-debug.js';
 import { gridDesignMasterDetailFilterMultiLoad, gridDesignMasterDetailLoad } from './plane-design-master-detail.js';
 import { gridDynamicDataColumns } from './plane-dynamic.js';

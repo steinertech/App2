@@ -1,22 +1,9 @@
-import client, { DB_NAME } from './util-db.js';
-import { DesignBandDto } from '../dto/db/design-dto.js';
-import { ContentBandDto, ContentBandEnum, ContentDto, ContentRequestDto, DESIGN_BAND_PROPERTY_NAMES } from '../dto/shared/content-dto.js';
-import { sectorKeyProjectDb } from './util-main.js';
+import client, { DB_NAME } from '../core/util-db.js';
+import { DesignBandDto } from '../../dto/db/design-dto.js';
+import { ContentBandDto, ContentBandEnum, DESIGN_BAND_PROPERTY_NAMES } from '../../dto/shared/content-dto.js';
+import { sectorKeyProjectDb } from '../core/util-main.js';
 import { designBandPropertyOwner } from './util-design.js';
 import { propertyLoadByOwners } from './util-property.js';
-
-/**
- * Builds the ContentDto named contentRequestDto.contentName from its DesignBandDto rows (DesignBandDto.contentName), ordered by sort.
- * Each band carries the propertyValue of its PropertyDto rows (see contentBandLoad).
- */
-export async function contentApi(request: Request, contentRequestDto: ContentRequestDto): Promise<ContentDto> {
-  const contentName = contentRequestDto.contentName ?? '';
-  const key = await sectorKeyProjectDb(request, 'DesignBandDto');
-  const collection = client.db(DB_NAME).collection<DesignBandDto>('myCollection');
-  const bands = await collection.find({ sectorKey: key, type: 'DesignBandDto', contentName }).sort({ sort: 1 }).toArray();
-
-  return { name: contentName, bands: await contentBandLoad(request, bands) };
-}
 
 /**
  * Returns the ContentBandDto of each band (in bands order), carrying the propertyValue of its PropertyDto rows (owner designBandPropertyOwner(band.name))
@@ -34,4 +21,18 @@ export async function contentBandLoad(request: Request, bands: DesignBandDto[]):
     const hiddenColumnNames = (band.columns ?? []).filter((column) => column.isVisible === false).map((column) => column.columnName ?? '');
     return { name: band.name ?? '', bandEnum, propertyValues, hiddenColumnNames };
   });
+}
+
+/**
+ * Returns the ContentBandDto (with its propertyValues, see contentBandLoad) of each DesignBandDto named by bandNames (DesignBandDto.name, the GridStateDto.custom
+ * of a CONTENT_VIEW_PLANE_NAME grid); names not found are left out. Read from the database on every request, so a grid never trusts property values sent back by App.Web.
+ */
+export async function contentViewBandLoad(request: Request, bandNames: string[]): Promise<ContentBandDto[]> {
+  if (bandNames.length === 0) {
+    return [];
+  }
+  const key = await sectorKeyProjectDb(request, 'DesignBandDto');
+  const collection = client.db(DB_NAME).collection<DesignBandDto>('myCollection');
+  const bands = await collection.find({ sectorKey: key, type: 'DesignBandDto', name: { $in: bandNames as NonNullable<DesignBandDto['name']>[] } }).toArray();
+  return contentBandLoad(request, bands);
 }

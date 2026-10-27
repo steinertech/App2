@@ -1,6 +1,6 @@
 import { AnyBulkWriteOperation, Filter, MongoClient, MongoClientOptions, ObjectId, OptionalUnlessRequiredId } from "mongodb";
 import { attachDatabasePool } from "@vercel/functions";
-import { DbDto } from "../dto/db/db-dto.js";
+import { DbDto } from "../../dto/db/db-dto.js";
 import { sectorKeyDb, sectorKeyProjectDb } from "./util-main.js";
 
 const options: MongoClientOptions = {

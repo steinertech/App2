@@ -1,7 +1,6 @@
 import { put, head, issueSignedToken, presignUrl, list, createFolder, BlobNotFoundError, del, rename } from '@vercel/blob';
 import { sectorKeyProjectStorage } from './util-main.js';
-import { StorageFileDto } from '../dto/storage-file-dto.js';
-import type { StorageUploadCollectionDto } from '../dto/shared/storage-upload-dto.js';
+import { StorageFileDto } from '../../dto/storage-file-dto.js';
 
 /** Returns one presigned PUT url per fileNames entry, for uploading into folder path (e.g. "a/b/", or "" for the root) below the sector key. Urls are valid for 5 minutes and accept files up to 5 MB. */
 export async function storageUploadUrls(request: Request, path: string = '', fileNames: string[]): Promise<string[]> {
@@ -30,15 +29,6 @@ export async function storageUploadUrls(request: Request, path: string = '', fil
       return presignedUrl;
     }),
   );
-}
-
-/** Handles the StorageUploadCollectionDto of api/storage-upload.ts: sets the presigned PUT url (storageUploadUrls) of each of its files as fileUrl and returns it. */
-export async function storageUploadApi(request: Request, storageUploadCollectionDto: StorageUploadCollectionDto): Promise<StorageUploadCollectionDto> {
-  const files = storageUploadCollectionDto.files ?? [];
-  const fileUrls = await storageUploadUrls(request, storageUploadCollectionDto.path, files.map((file) => file.fileName ?? ''));
-  files.forEach((file, index) => (file.fileUrl = fileUrls[index]));
-
-  return storageUploadCollectionDto;
 }
 
 /** Temporary workaround while the Vercel Blob store is suspended: if set, storageDownloadUrls returns this static url (served by App.Web from public/) for every file instead of a presigned Blob url. Set to undefined to undo. */

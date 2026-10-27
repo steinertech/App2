@@ -3,8 +3,8 @@ import { DesignMasterDetailDto } from '../dto/db/design-master-detail-dto.js';
 import { GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
 import {
   designMasterDetailCycle, designMasterDetailDelete, designMasterDetailInsert, designMasterDetailLoad, designMasterDetailLoadByIds, designMasterDetailUpdate,
-} from '../util/util-design-master-detail.js';
-import { gridBarRow, gridCellText, gridCellValue, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand, gridLookupSet, gridSelectedMultiRowKeys, gridTables } from '../util/util-grid.js';
+} from '../util/db/util-design-master-detail.js';
+import { gridBarRow, gridCellText, gridCellValue, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand, gridLookupSet, gridSelectedMultiRowKeys, gridTables } from '../util/core/util-grid.js';
 import { gridDebugDeleteConfirm } from './plane-debug.js';
 
 // The Design Master Detail grid of the "design" plane (GridPlaneDto.grids[3], see planeDesignLoad/planeDesignPatch in plane-design.ts).

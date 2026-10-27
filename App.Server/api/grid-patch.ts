@@ -1,5 +1,5 @@
-import { gridPatchApi } from '../util/util-grid-plane.js';
-import { apiHandler, jsonResponse, requestData } from '../util/util-main.js';
+import { gridPatchApi } from '../util/api/util-grid-plane.js';
+import { apiHandler, jsonResponse, requestData } from '../util/core/util-main.js';
 import type { GridPlaneDto } from '../dto/shared/grid-dto.js';
 
 export default apiHandler('POST', async (request) => {

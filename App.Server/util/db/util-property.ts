@@ -1,6 +1,6 @@
-import client, { DB_NAME, dbInsert, dbLoad, dbLoadByIds, dbUpdate } from './util-db.js';
-import { PropertyDto, PropertyOwnerEnum } from '../dto/db/property-dto.js';
-import { sectorKeyProjectDb } from './util-main.js';
+import client, { DB_NAME, dbInsert, dbLoad, dbLoadByIds, dbUpdate } from '../core/util-db.js';
+import { PropertyDto, PropertyOwnerEnum } from '../../dto/db/property-dto.js';
+import { sectorKeyProjectDb } from '../core/util-main.js';
 
 // Properties are per project: sectorKeyProjectDb (the default of the db functions; like sectorKey(request, true)) also asserts the user is signed in (redirects to /sign-in otherwise).
 

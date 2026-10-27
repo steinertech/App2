@@ -1,8 +1,8 @@
 import { GridCellDto, GridCellEnum, GridCommandEnum, GridDto, GridPatchDto, GridPatchEnum, GridPlaneDto, GridRowDto } from '../dto/shared/grid-dto.js';
-import { schemaLoad, schemaLoadByIds, schemaUpdate, schemaInsert } from '../util/util-schema.js';
+import { schemaLoad, schemaLoadByIds, schemaUpdate, schemaInsert } from '../util/db/util-schema.js';
 import { SchemaDto } from '../dto/db/schema-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
-import { gridBarRow, gridCellText, gridCellValue, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridLookupSet, gridTables } from '../util/util-grid.js';
+import { gridBarRow, gridCellText, gridCellValue, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridLookupSet, gridTables } from '../util/core/util-grid.js';
 
 const SCHEMA_COLUMNS: GridConfigDto = {
   columns: (['tableName', 'columnName'] as const satisfies readonly (keyof SchemaDto)[]).map(

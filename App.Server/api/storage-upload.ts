@@ -1,5 +1,5 @@
-import { storageUploadApi } from '../util/util-storage.js';
-import { apiHandler, jsonResponse, requestData } from '../util/util-main.js';
+import { storageUploadApi } from '../util/api/util-storage-upload.js';
+import { apiHandler, jsonResponse, requestData } from '../util/core/util-main.js';
 import type { StorageUploadCollectionDto } from '../dto/shared/storage-upload-dto.js';
 
 export default apiHandler('POST', async (request) => {

@@ -1,4 +1,4 @@
-import type { Language } from '../dto/shared/api-request-dto.js';
+import type { Language } from '../../dto/shared/api-request-dto.js';
 
 export type { Language };
 

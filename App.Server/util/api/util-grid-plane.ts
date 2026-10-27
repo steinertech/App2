@@ -1,14 +1,14 @@
-import type { GridPlaneDto } from '../dto/shared/grid-dto.js';
-import { CONTENT_VIEW_PLANE_NAME } from '../dto/shared/content-dto.js';
-import { gridCommandSortClick } from './util-grid.js';
-import { planeProjectLoad, planeProjectPatch } from '../plane/plane-project.js';
-import { planeDebugLoad, planeDebugPatch } from '../plane/plane-debug.js';
-import { planeDebugPropertyLoad, planeDebugPropertyPatch } from '../plane/plane-debug-property.js';
-import { planeStorageLoad, planeStoragePatch } from '../plane/plane-storage.js';
-import { planeSchemaLoad, planeSchemaPatch } from '../plane/plane-schema.js';
-import { planeDynamicLoad, planeDynamicPatch } from '../plane/plane-dynamic.js';
-import { planeDesignLoad, planeDesignPatch } from '../plane/plane-design.js';
-import { planeContentViewLoad, planeContentViewPatch } from '../plane/plane-content-view.js';
+import type { GridPlaneDto } from '../../dto/shared/grid-dto.js';
+import { CONTENT_VIEW_PLANE_NAME } from '../../dto/shared/content-dto.js';
+import { gridCommandSortClick } from '../core/util-grid.js';
+import { planeProjectLoad, planeProjectPatch } from '../../plane/plane-project.js';
+import { planeDebugLoad, planeDebugPatch } from '../../plane/plane-debug.js';
+import { planeDebugPropertyLoad, planeDebugPropertyPatch } from '../../plane/plane-debug-property.js';
+import { planeStorageLoad, planeStoragePatch } from '../../plane/plane-storage.js';
+import { planeSchemaLoad, planeSchemaPatch } from '../../plane/plane-schema.js';
+import { planeDynamicLoad, planeDynamicPatch } from '../../plane/plane-dynamic.js';
+import { planeDesignLoad, planeDesignPatch } from '../../plane/plane-design.js';
+import { planeContentViewLoad, planeContentViewPatch } from '../../plane/plane-content-view.js';
 
 type GridPlaneLoader = (request: Request, gridPlaneDto: GridPlaneDto) => Promise<GridPlaneDto>;
 
