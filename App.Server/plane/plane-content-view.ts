@@ -8,8 +8,9 @@ import { designMasterDetailBands, designMasterDetailLoad } from '../util/db/util
 import { dynamicInsert, dynamicLoad, dynamicLoadByIds, dynamicUpdate } from '../util/db/util-dynamic.js';
 import { indexToColumnNameExcel } from '../util/core/util-main.js';
 import { gridBarRow, gridCellText, gridFsp, gridHeaderCell, gridTables } from '../util/core/util-grid.js';
+import { gridDataSaveInsert, gridDataSaveUpdate } from '../util/core/util-grid-data.js';
 import { designFormCount } from './plane-design.js';
-import { gridDynamicDataColumnChooserLoad, gridDynamicDataFilterMultiLoad, gridDynamicDataLoad } from './plane-dynamic.js';
+import { gridDynamicDataColumn, gridDynamicDataColumnChooserLoad, gridDynamicDataFilterMultiLoad, gridDynamicDataLoad } from './plane-dynamic.js';
 
 /** Returns the band name (DesignBandDto.name) a CONTENT_VIEW_PLANE_NAME grid is built from (GridStateDto.custom), or undefined if missing or empty. */
 function gridContentViewBandName(gridDto: GridDto): string | undefined {
@@ -281,8 +282,12 @@ async function gridContentFormLoad(request: Request, gridDto: GridDto, band: Con
 
   if (gridDto.command?.commandEnum === GridCommandEnum.Save) {
     const fieldNames = new Set(columnNames.flatMap((columnName) => Array.from({ length: rowCount }, (_, formRowIndex) => fieldName(formRowIndex, columnName) ?? []).flat()));
-    await gridContentFormSaveUpdate(request, gridDto, fieldNames);
-    await gridContentFormSaveInsert(request, gridDto, tableName, fieldNames, detail?.newValues);
+    // Only the form's FieldNames are saved, each a dynamic column (DynamicDto.values).
+    const columns = [...fieldNames].map((name) => gridDynamicDataColumn(name));
+    await dynamicUpdate(request, await gridDataSaveUpdate<DynamicDto>(request, 'DynamicDto', gridDto, columns));
+    // New repetitions are inserted with tableName (none if undefined); the master values (detail's newValues) win over a modify of the same field, so the row is shown by the detail grid.
+    const inserts = gridDataSaveInsert<DynamicDto>(gridDto, columns, () => (tableName !== undefined ? { tableName } : {}));
+    await dynamicInsert(request, inserts.map((dynamic): DynamicDto => ({ ...dynamic, values: { ...dynamic.values, ...detail?.newValues } })));
   }
 
   const dynamics = (await dynamicLoad(request, tableName)).filter((dynamic) => detail?.rowFilter(dynamic) ?? true);
@@ -312,60 +317,4 @@ async function gridContentFormLoad(request: Request, gridDto: GridDto, band: Con
     tables: gridTables([], isForm ? [headerRow, ...rows] : [], [gridBarRow()]),
     state: { ...fspState, selectedRowIndex: isForm ? fspState.selectedRowIndex : undefined, rowKeys, custom: gridDto.state?.custom },
   };
-}
-
-/** Saves the modified text boxes of the Content Form into their DynamicDto rows (rowKeys); only those whose columnName is one of fieldNames (the form's FieldNames). */
-async function gridContentFormSaveUpdate(request: Request, gridDto: GridDto, fieldNames: Set<string>): Promise<void> {
-  const modifies = (gridDto.modifies ?? []).filter((modify) => !modify.isNew);
-  const rowKeys = gridDto.state?.rowKeys ?? [];
-
-  const ids = [
-    ...new Set(
-      modifies
-        .map((modify) => (modify.rowIndex !== undefined ? rowKeys[modify.rowIndex] : undefined))
-        .filter((rowKey): rowKey is string => rowKey !== undefined),
-    ),
-  ];
-
-  const dynamics = await dynamicLoadByIds(request, ids);
-
-  for (const modify of modifies) {
-    if (modify.rowIndex === undefined || modify.columnName === undefined || modify.cellEnum !== GridCellEnum.Edit || !fieldNames.has(modify.columnName)) {
-      continue;
-    }
-
-    const rowKey = rowKeys[modify.rowIndex];
-    const dynamic = dynamics.find((dynamic) => dynamic._id?.toHexString() === rowKey);
-    if (dynamic) {
-      dynamic.values = { ...dynamic.values, [modify.columnName]: modify.textModified ?? '' };
-    }
-  }
-
-  await dynamicUpdate(request, dynamics);
-}
-
-/**
- * Inserts the new form repetitions (isNew modifies, one DynamicDto row per rowIndex) with tableName (none if undefined); only columnNames that are one of fieldNames.
- * newValues (the master values of a detail grid, see gridContentViewDetail) are set on every inserted row.
- */
-async function gridContentFormSaveInsert(
-  request: Request, gridDto: GridDto, tableName: string | undefined, fieldNames: Set<string>, newValues: Record<string, string> | undefined,
-): Promise<void> {
-  const modifies = (gridDto.modifies ?? []).filter((modify) => modify.isNew);
-
-  const dynamicsByRowIndex = new Map<number, DynamicDto>();
-
-  for (const modify of modifies) {
-    if (modify.rowIndex === undefined || modify.columnName === undefined || modify.cellEnum !== GridCellEnum.Edit || !fieldNames.has(modify.columnName)) {
-      continue;
-    }
-
-    const dynamic = dynamicsByRowIndex.get(modify.rowIndex) ?? (tableName !== undefined ? { tableName } : {});
-    dynamic.values = { ...dynamic.values, [modify.columnName]: modify.textModified ?? '' };
-    dynamicsByRowIndex.set(modify.rowIndex, dynamic);
-  }
-
-  // The master values win over a modify of the same field, so the row is shown by the detail grid.
-  const dynamics = [...dynamicsByRowIndex.values()].map((dynamic): DynamicDto => ({ ...dynamic, values: { ...dynamic.values, ...newValues } }));
-  await dynamicInsert(request, dynamics);
 }

@@ -28,18 +28,21 @@ export async function gridDynamicDataColumns(request: Request, tableName: string
   const isHide = (columnName: string): boolean | undefined => hiddenColumnNames?.includes(columnName) || undefined;
   return [
     ...DYNAMIC_STATIC_COLUMN_NAMES.map((columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text, isHide: isHide(columnName) })),
-    ...[...new Set(columnNames)].map(
-      (columnName): GridConfigColumnDto => ({
-        columnName,
-        typeEnum: GridConfigTypeEnum.Text,
-        isHide: isHide(columnName),
-        rowToValue: (row) => (row as DynamicDto).values?.[columnName],
-        rowValueSet: (row, value) => {
-          (row as DynamicDto).values = { ...(row as DynamicDto).values, [columnName]: value };
-        },
-      }),
-    ),
+    ...[...new Set(columnNames)].map((columnName) => gridDynamicDataColumn(columnName, isHide(columnName))),
   ];
+}
+
+/** Dynamic column columnName of a DynamicDto grid: its value in DynamicDto.values (read by rowToValue, written by rowValueSet); also used by the content view Form grid. */
+export function gridDynamicDataColumn(columnName: string, isHide?: boolean): GridConfigColumnDto {
+  return {
+    columnName,
+    typeEnum: GridConfigTypeEnum.Text,
+    isHide,
+    rowToValue: (row) => (row as DynamicDto).values?.[columnName],
+    rowValueSet: (row, value) => {
+      (row as DynamicDto).values = { ...(row as DynamicDto).values, [columnName]: value };
+    },
+  };
 }
 
 /**
