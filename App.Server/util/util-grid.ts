@@ -485,7 +485,7 @@ const PLANE_LOADERS: Record<string, GridPlaneLoader> = {
   [CONTENT_VIEW_PLANE_NAME]: planeContentViewLoad,
 };
 
-export async function gridPlaneLoad(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
+export async function gridLoadApi(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
   const loader = gridPlaneDto.planeName !== undefined ? PLANE_LOADERS[gridPlaneDto.planeName] : undefined;
   if (loader === undefined) {
     return { grids: [] };
@@ -510,7 +510,7 @@ const PLANE_GRID_PATCHERS: Record<string, GridPlanePatcher> = {
   [CONTENT_VIEW_PLANE_NAME]: planeContentViewPatch,
 };
 
-export async function gridPlanePatch(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
+export async function gridPatchApi(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
   const patcher = gridPlaneDto.planeName !== undefined ? PLANE_GRID_PATCHERS[gridPlaneDto.planeName] : undefined;
   if (patcher === undefined) {
     return { grids: [] };

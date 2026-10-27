@@ -33,7 +33,7 @@ export async function storageUploadUrls(request: Request, path: string = '', fil
 }
 
 /** Handles the StorageUploadCollectionDto of api/storage-upload.ts: sets the presigned PUT url (storageUploadUrls) of each of its files as fileUrl and returns it. */
-export async function storageUpload(request: Request, storageUploadCollectionDto: StorageUploadCollectionDto): Promise<StorageUploadCollectionDto> {
+export async function storageUploadApi(request: Request, storageUploadCollectionDto: StorageUploadCollectionDto): Promise<StorageUploadCollectionDto> {
   const files = storageUploadCollectionDto.files ?? [];
   const fileUrls = await storageUploadUrls(request, storageUploadCollectionDto.path, files.map((file) => file.fileName ?? ''));
   files.forEach((file, index) => (file.fileUrl = fileUrls[index]));

@@ -95,7 +95,7 @@ const json = (body: UserResponseDto | null, status = 200, headers: Record<string
   jsonResponse(body, status, headers);
 
 /** Handles a UserRequestDto of api/user.ts, the operation selected by its requestEnum. */
-export async function userRequest(request: Request, userRequestDto: UserRequestDto): Promise<ApiResult> {
+export async function userApi(request: Request, userRequestDto: UserRequestDto): Promise<ApiResult> {
   const { requestEnum, email, password } = userRequestDto;
 
   switch (requestEnum) {

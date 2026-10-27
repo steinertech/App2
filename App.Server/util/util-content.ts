@@ -9,7 +9,7 @@ import { propertyLoadByOwners } from './util-property.js';
  * Builds the ContentDto named contentName from its DesignBandDto rows (DesignBandDto.contentName), ordered by sort.
  * Each band carries the propertyValue of its PropertyDto rows (see contentBandLoad).
  */
-export async function contentLoad(request: Request, contentName: string): Promise<ContentDto> {
+export async function contentApi(request: Request, contentName: string): Promise<ContentDto> {
   const key = await sectorKeyProjectDb(request, 'DesignBandDto');
   const collection = client.db(DB_NAME).collection<DesignBandDto>('myCollection');
   const bands = await collection.find({ sectorKey: key, type: 'DesignBandDto', contentName }).sort({ sort: 1 }).toArray();

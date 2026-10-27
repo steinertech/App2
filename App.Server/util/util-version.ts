@@ -4,7 +4,7 @@ import { userSession } from './util-user.js';
 import type { VersionResponseDto } from '../dto/shared/version-dto.js';
 
 /** Returns the VersionResponseDto of api/version.ts: server version, domain, translated text and the signed-in user's email and project. */
-export async function versionLoad(request: Request): Promise<VersionResponseDto> {
+export async function versionApi(request: Request): Promise<VersionResponseDto> {
   const language = requestLanguage(request);
   const session = await userSession(request);
 
