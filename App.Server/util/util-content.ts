@@ -1,15 +1,16 @@
 import client, { DB_NAME } from './util-db.js';
 import { DesignBandDto } from '../dto/db/design-dto.js';
-import { ContentBandDto, ContentBandEnum, ContentDto, DESIGN_BAND_PROPERTY_NAMES } from '../dto/shared/content-dto.js';
+import { ContentBandDto, ContentBandEnum, ContentDto, ContentRequestDto, DESIGN_BAND_PROPERTY_NAMES } from '../dto/shared/content-dto.js';
 import { sectorKeyProjectDb } from './util-main.js';
 import { designBandPropertyOwner } from './util-design.js';
 import { propertyLoadByOwners } from './util-property.js';
 
 /**
- * Builds the ContentDto named contentName from its DesignBandDto rows (DesignBandDto.contentName), ordered by sort.
+ * Builds the ContentDto named contentRequestDto.contentName from its DesignBandDto rows (DesignBandDto.contentName), ordered by sort.
  * Each band carries the propertyValue of its PropertyDto rows (see contentBandLoad).
  */
-export async function contentApi(request: Request, contentName: string): Promise<ContentDto> {
+export async function contentApi(request: Request, contentRequestDto: ContentRequestDto): Promise<ContentDto> {
+  const contentName = contentRequestDto.contentName ?? '';
   const key = await sectorKeyProjectDb(request, 'DesignBandDto');
   const collection = client.db(DB_NAME).collection<DesignBandDto>('myCollection');
   const bands = await collection.find({ sectorKey: key, type: 'DesignBandDto', contentName }).sort({ sort: 1 }).toArray();
