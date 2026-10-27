@@ -8,8 +8,8 @@ import { designMasterDetailBands, designMasterDetailLoad } from '../util/util-de
 import { dynamicInsert, dynamicLoad, dynamicLoadByIds, dynamicUpdate } from '../util/util-dynamic.js';
 import { indexToColumnNameExcel } from '../util/util-main.js';
 import { gridBarRow, gridCellText, gridFsp, gridHeaderCell, gridTables } from '../util/util-grid.js';
-import { designFormCount } from './grid-design.js';
-import { gridDynamicDataColumnChooserLoad, gridDynamicDataFilterMultiLoad, gridDynamicDataLoad } from './grid-dynamic.js';
+import { designFormCount } from './plane-design.js';
+import { gridDynamicDataColumnChooserLoad, gridDynamicDataFilterMultiLoad, gridDynamicDataLoad } from './plane-dynamic.js';
 
 /** Returns the band name (DesignBandDto.name) a CONTENT_VIEW_PLANE_NAME grid is built from (GridStateDto.custom), or undefined if missing or empty. */
 function gridContentViewBandName(gridDto: GridDto): string | undefined {

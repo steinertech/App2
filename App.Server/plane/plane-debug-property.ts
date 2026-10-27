@@ -3,7 +3,7 @@ import { debugContentLoad, debugContentLoadByIds, debugContentUpdate, debugConte
 import { DebugContentDto, DebugPropertyDto } from '../dto/debug-property-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
 import { gridBarRow, gridCellText, gridCellValue, gridColumnChooserLoad, gridColumnChooserOk, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand, gridLookupSet, gridPatchDeleteMulti, gridSelectedMultiRowKeys, gridTables } from '../util/util-grid.js';
-import { gridDebugDeleteConfirm, gridDebugNew } from './grid-debug.js';
+import { gridDebugDeleteConfirm, gridDebugNew } from './plane-debug.js';
 import { indexToColumnNameExcel } from '../util/util-main.js';
 
 const DEBUG_CONTENT_COLUMNS: GridConfigDto = {

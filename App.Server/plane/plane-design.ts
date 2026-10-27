@@ -6,9 +6,9 @@ import { ContentBandEnum } from '../dto/shared/content-dto.js';
 import { GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
 import { indexToColumnNameExcel } from '../util/util-main.js';
 import { GridLookupMultiRow, gridBarRow, gridCellText, gridCellValue, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand, gridLoadLookupMulti, gridLookup, gridLookupMultiSelected, gridLookupSet, gridPatchDeleteMulti, gridSelectedMultiRowKeys, gridTables } from '../util/util-grid.js';
-import { gridDebugDeleteConfirm } from './grid-debug.js';
-import { gridDesignMasterDetailFilterMultiLoad, gridDesignMasterDetailLoad } from './grid-design-master-detail.js';
-import { gridDynamicDataColumns } from './grid-dynamic.js';
+import { gridDebugDeleteConfirm } from './plane-debug.js';
+import { gridDesignMasterDetailFilterMultiLoad, gridDesignMasterDetailLoad } from './plane-design-master-detail.js';
+import { gridDynamicDataColumns } from './plane-dynamic.js';
 
 /** The names of ContentBandEnum, e.g. "Header". */
 const DESIGN_BAND_ENUM_NAMES = Object.keys(ContentBandEnum).filter((key) => isNaN(Number(key)));

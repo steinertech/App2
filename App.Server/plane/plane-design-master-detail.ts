@@ -5,9 +5,9 @@ import {
   designMasterDetailCycle, designMasterDetailDelete, designMasterDetailInsert, designMasterDetailLoad, designMasterDetailLoadByIds, designMasterDetailUpdate,
 } from '../util/util-design-master-detail.js';
 import { gridBarRow, gridCellText, gridCellValue, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand, gridLookupSet, gridSelectedMultiRowKeys, gridTables } from '../util/util-grid.js';
-import { gridDebugDeleteConfirm } from './grid-debug.js';
+import { gridDebugDeleteConfirm } from './plane-debug.js';
 
-// The Design Master Detail grid of the "design" plane (GridPlaneDto.grids[3], see planeDesignLoad/planeDesignPatch in grid-design.ts).
+// The Design Master Detail grid of the "design" plane (GridPlaneDto.grids[3], see planeDesignLoad/planeDesignPatch in plane-design.ts).
 
 /** Parses an "Is Active" cell text: true/yes/1 → true, false/no/0 or empty → false. */
 function designMasterDetailIsActiveFromText(text: string): boolean {
