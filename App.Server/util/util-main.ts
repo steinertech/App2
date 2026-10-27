@@ -1,4 +1,5 @@
 import { userSession } from './util-user.js';
+import { dbConnect } from './util-db.js';
 import { type AlertDto, AlertEnum } from '../dto/shared/alert-dto.js';
 import type { ApiResponseDto } from '../dto/shared/api-response-dto.js';
 import type { ApiRequestDto, Language } from '../dto/shared/api-request-dto.js';
@@ -158,6 +159,7 @@ export function apiHandler(method: ApiMethod, handler: (request: Request) => Res
           if (requestDto.versionClient !== VERSION_SERVER) {
             alertAdd(request, AlertEnum.Warning, 'A new version is available, please reload the page.');
           }
+          await dbConnect();
         }
         result = await handler(request);
       } catch (error) {
