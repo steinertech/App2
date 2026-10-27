@@ -1,4 +1,4 @@
-import client, { DB_NAME, dbDelete, dbInsert, dbLoad, dbLoadByIds, dbUpdate } from '../core/util-db.js';
+import client, { DB_NAME, dbInsert, dbLoad, dbLoadByIds, dbUpdate } from '../core/util-db.js';
 import { DebugContentDto, DebugPropertyDto } from '../../dto/db/debug-property-dto.js';
 import { sectorKeyDb } from '../core/util-main.js';
 
@@ -9,20 +9,6 @@ export async function debugContentLoad(request: Request): Promise<DebugContentDt
 /** ids are ObjectId hex strings (the grid's rowKeys); invalid ones are ignored. */
 export async function debugContentLoadByIds(request: Request, ids: string[]): Promise<DebugContentDto[]> {
   return dbLoadByIds<DebugContentDto>(request, 'DebugContentDto', ids, false);
-}
-
-export async function debugContentInsert(request: Request, debugContentDtos: DebugContentDto[]): Promise<DebugContentDto[]> {
-  return dbInsert<DebugContentDto>(request, 'DebugContentDto', debugContentDtos, false);
-}
-
-/** Updates debugContentDtos by _id. */
-export async function debugContentUpdate(request: Request, debugContentDtos: DebugContentDto[]): Promise<DebugContentDto[]> {
-  return dbUpdate<DebugContentDto>(request, 'DebugContentDto', debugContentDtos, false);
-}
-
-/** Deletes the debug contents by ids (ObjectId hex strings, the grid's rowKeys); invalid ones are ignored. */
-export async function debugContentDelete(request: Request, ids: string[]): Promise<void> {
-  return dbDelete(request, 'DebugContentDto', ids, false);
 }
 
 export async function debugPropertyLoad(request: Request): Promise<DebugPropertyDto[]> {

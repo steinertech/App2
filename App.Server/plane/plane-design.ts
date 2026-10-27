@@ -5,8 +5,8 @@ import { PropertyDto } from '../dto/db/property-dto.js';
 import { ContentBandEnum } from '../dto/shared/content-dto.js';
 import { GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
 import { indexToColumnNameExcel } from '../util/core/util-main.js';
-import { GridLookupMultiRow, gridBarRow, gridCellText, gridCellValue, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand, gridLoadLookupMulti, gridLookup, gridLookupMultiSelected, gridLookupSet, gridPatchDeleteMulti, gridSelectedMultiRowKeys, gridTables } from '../util/core/util-grid.js';
-import { gridDebugDeleteConfirm } from './plane-debug.js';
+import { GridLookupMultiRow, gridBarRow, gridCellText, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand, gridLoadLookupMulti, gridLookup, gridLookupMultiSelected, gridLookupSet, gridPatchDeleteMulti, gridSelectedMultiRowKeys, gridTables } from '../util/core/util-grid.js';
+import { gridDataDelete, gridDataNew, gridDataSaveInsert, gridDataSaveUpdate } from '../util/core/util-grid-data.js';
 import { gridDesignMasterDetailFilterMultiLoad, gridDesignMasterDetailLoad } from './plane-design-master-detail.js';
 import { gridDynamicDataColumns } from './plane-dynamic.js';
 
@@ -181,37 +181,12 @@ async function gridDesignBandLoad(request: Request, gridDto: GridDto): Promise<G
   // Selection is by rowIndex: remember it by rowKey so it can be mapped onto the reloaded rows (deleted rows drop out).
   const selectedMultiRowKeys = new Set(gridSelectedMultiRowKeys(gridDto));
 
-  // Delete confirmation (opened by a row's Delete button or the toolbar's DeleteMulti button below) lives at gridDto.planes[1].grids[0] (planes[0] is the lookup), carrying GridStateDto.custom.rowKeys.
-  const confirmGridDto = gridDto.planes?.[1]?.grids?.[0];
-  if (confirmGridDto !== undefined) {
-    // Its Cancel button (GridCustomEnum.Cancel) closes the dialog in App.Web without a server call.
-    if (gridIsCommand(confirmGridDto, 'Yes')) {
-      const rowKeys = confirmGridDto.state?.custom?.rowKeys;
-      if (Array.isArray(rowKeys)) {
-        await designBandDelete(request, rowKeys.filter((rowKey): rowKey is string => typeof rowKey === 'string'));
-      }
-      gridDto.planes = undefined;
-    } else {
-      // Rows aren't sent back by the client: rebuild them so the dialog stays visible across other commands.
-      gridDto.planes = [null, { grids: [{ ...gridDebugDeleteConfirm(confirmGridDto.state?.custom?.rowKeys), command: undefined }] }];
-    }
-  }
-
-  if (gridIsCommand(gridDto, 'Delete')) {
-    const rowIndex = gridDto.command?.rowIndex;
-    const rowKey = rowIndex !== undefined ? gridDto.state?.rowKeys?.[rowIndex] : undefined;
-    if (rowKey !== undefined) {
-      gridDto.planes = [null, { grids: [gridDebugDeleteConfirm([rowKey])] }];
-    }
-  }
-
-  if (gridIsCommand(gridDto, 'DeleteMulti') && selectedMultiRowKeys.size > 0) {
-    gridDto.planes = [null, { grids: [gridDebugDeleteConfirm([...selectedMultiRowKeys])] }];
-  }
+  // Delete confirmation (gridDataDeleteConfirm, opened by a row's Delete button or the toolbar's DeleteMulti button below); designBandDelete also deletes the bands' properties.
+  await gridDataDelete(gridDto, (ids) => designBandDelete(request, ids));
 
   if (gridDto.command?.commandEnum === GridCommandEnum.Save) {
-    await gridDesignBandSaveUpdate(request, gridDto);
-    await gridDesignBandSaveInsert(request, gridDto);
+    await designBandUpdate(request, await gridDataSaveUpdate<DesignBandDto>(request, 'DesignBandDto', gridDto, DESIGN_BAND_COLUMNS.columns ?? []));
+    await designBandInsert(request, gridDataSaveInsert<DesignBandDto>(gridDto, DESIGN_BAND_COLUMNS.columns ?? []));
   }
 
   await gridDesignBandColumnsOk(request, gridDto);
@@ -282,7 +257,7 @@ async function gridDesignBandLoad(request: Request, gridDto: GridDto): Promise<G
   };
 
   if (gridDto.command?.commandEnum === GridCommandEnum.New) {
-    gridDesignBandNew(result);
+    gridDataNew(result, columns);
   }
 
   // Lookup (planes[0]): Columns (opened by a row's Columns button, kept open while planes[0].planeName is DESIGN_BAND_COLUMNS_PLANE_NAME)
@@ -512,81 +487,4 @@ async function gridDesignBandFormPropertySaveUpdate(request: Request, gridDto: G
   }
 
   await designBandFormPropertyUpdate(request, properties);
-}
-
-async function gridDesignBandSaveUpdate(request: Request, gridDto: GridDto): Promise<void> {
-  const modifies = (gridDto.modifies ?? []).filter((modify) => !modify.isNew);
-  const rowKeys = gridDto.state?.rowKeys ?? [];
-
-  const ids = [
-    ...new Set(
-      modifies
-        .map((modify) => (modify.rowIndex !== undefined ? rowKeys[modify.rowIndex] : undefined))
-        .filter((rowKey): rowKey is string => rowKey !== undefined),
-    ),
-  ];
-
-  const bands = await designBandLoadByIds(request, ids);
-
-  const columns = gridColumns(DESIGN_BAND_COLUMNS.columns ?? []);
-
-  for (const modify of modifies) {
-    const column = columns.find((column) => column.columnName === modify.columnName);
-    if (modify.rowIndex === undefined || modify.columnName === undefined || modify.cellEnum !== GridCellEnum.Edit || column === undefined) {
-      continue;
-    }
-
-    const rowKey = rowKeys[modify.rowIndex];
-    const band = bands.find((band) => band._id?.toHexString() === rowKey);
-    if (band) {
-      (band as unknown as Record<string, unknown>)[modify.columnName] = gridCellValue(modify.textModified, column);
-    }
-  }
-
-  await designBandUpdate(request, bands);
-}
-
-async function gridDesignBandSaveInsert(request: Request, gridDto: GridDto): Promise<void> {
-  const modifies = (gridDto.modifies ?? []).filter((modify) => modify.isNew);
-
-  const columns = gridColumns(DESIGN_BAND_COLUMNS.columns ?? []);
-
-  const bandsByRowIndex = new Map<number, DesignBandDto>();
-
-  for (const modify of modifies) {
-    const column = columns.find((column) => column.columnName === modify.columnName);
-    if (modify.rowIndex === undefined || modify.columnName === undefined || modify.cellEnum !== GridCellEnum.Edit || column === undefined) {
-      continue;
-    }
-
-    const band = bandsByRowIndex.get(modify.rowIndex) ?? {};
-    (band as unknown as Record<string, unknown>)[modify.columnName] = gridCellValue(modify.textModified, column);
-    bandsByRowIndex.set(modify.rowIndex, band);
-  }
-
-  await designBandInsert(request, [...bandsByRowIndex.values()]);
-}
-
-/** Appends one empty, editable new row to the data table (GridDto.tables[1]). */
-function gridDesignBandNew(gridDto: GridDto): void {
-  const dataTable = gridDto.tables?.[1];
-  if (dataTable === undefined) {
-    return;
-  }
-  const rows = dataTable.rows ?? [];
-  const rowIndex = rows.length;
-
-  const newRow: GridRowDto = {
-    cells: gridColumns(DESIGN_BAND_COLUMNS.columns ?? []).map(
-      (column): GridCellDto => ({
-        cellEnum: GridCellEnum.Edit,
-        columnName: column.columnName,
-        placeHolder: 'New',
-        rowIndex,
-        isNew: true,
-      }),
-    ),
-  };
-
-  dataTable.rows = [...rows, newRow];
 }

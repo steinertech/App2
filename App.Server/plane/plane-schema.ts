@@ -1,8 +1,9 @@
 import { GridCellDto, GridCellEnum, GridCommandEnum, GridDto, GridPatchDto, GridPatchEnum, GridPlaneDto, GridRowDto } from '../dto/shared/grid-dto.js';
-import { schemaLoad, schemaLoadByIds, schemaUpdate, schemaInsert } from '../util/db/util-schema.js';
+import { schemaLoad, schemaUpdate, schemaInsert } from '../util/db/util-schema.js';
 import { SchemaDto } from '../dto/db/schema-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
-import { gridBarRow, gridCellText, gridCellValue, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridLookupSet, gridTables } from '../util/core/util-grid.js';
+import { gridBarRow, gridCellText, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridLookupSet, gridTables } from '../util/core/util-grid.js';
+import { gridDataNew, gridDataSaveInsert, gridDataSaveUpdate } from '../util/core/util-grid-data.js';
 
 const SCHEMA_COLUMNS: GridConfigDto = {
   columns: (['tableName', 'columnName'] as const satisfies readonly (keyof SchemaDto)[]).map(
@@ -14,8 +15,8 @@ const SCHEMA_COLUMNS: GridConfigDto = {
 export async function planeSchemaLoad(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
   const gridDto = gridPlaneDto.grids?.[0] ?? {};
   if (gridDto.command?.commandEnum === GridCommandEnum.Save) {
-    await gridSchemaSaveUpdate(request, gridDto);
-    await gridSchemaSaveInsert(request, gridDto);
+    await schemaUpdate(request, await gridDataSaveUpdate<SchemaDto>(request, 'SchemaDto', gridDto, SCHEMA_COLUMNS.columns ?? []));
+    await schemaInsert(request, gridDataSaveInsert<SchemaDto>(gridDto, SCHEMA_COLUMNS.columns ?? [], () => ({ tableName: '', columnName: '' })));
   }
 
   const allSchemas = await schemaLoad(request);
@@ -52,7 +53,7 @@ export async function planeSchemaLoad(request: Request, gridPlaneDto: GridPlaneD
   };
 
   if (gridDto.command?.commandEnum === GridCommandEnum.New) {
-    gridSchemaNew(result);
+    gridDataNew(result, gridColumns(SCHEMA_COLUMNS.columns ?? []));
   }
 
   // Lookup (planes[0]): Filter Multi (opened by planeSchemaPatch, kept open while planes[0].planeName is filterMulti).
@@ -72,81 +73,4 @@ export async function planeSchemaPatch(request: Request, gridPlaneDto: GridPlane
     return { ...gridPlaneDto, grids: [{ patches: [{ patchEnum: GridPatchEnum.Lookup, planeName: lookupPlane?.planeName, lookup: lookupPlane?.grids?.[0] } satisfies GridPatchDto] }] };
   }
   return { ...gridPlaneDto, grids: [{}] };
-}
-
-async function gridSchemaSaveUpdate(request: Request, gridDto: GridDto): Promise<void> {
-  const modifies = (gridDto.modifies ?? []).filter((modify) => !modify.isNew);
-  const rowKeys = gridDto.state?.rowKeys ?? [];
-
-  const ids = [
-    ...new Set(
-      modifies
-        .map((modify) => (modify.rowIndex !== undefined ? rowKeys[modify.rowIndex] : undefined))
-        .filter((rowKey): rowKey is string => rowKey !== undefined),
-    ),
-  ];
-
-  const schemas = await schemaLoadByIds(request, ids);
-
-  const columns = gridColumns(SCHEMA_COLUMNS.columns ?? []);
-
-  for (const modify of modifies) {
-    const column = columns.find((column) => column.columnName === modify.columnName);
-    if (modify.rowIndex === undefined || modify.columnName === undefined || modify.cellEnum !== GridCellEnum.Edit || column === undefined) {
-      continue;
-    }
-
-    const rowKey = rowKeys[modify.rowIndex];
-    const schema = schemas.find((schema) => schema._id?.toHexString() === rowKey);
-    if (schema) {
-      (schema as unknown as Record<string, unknown>)[modify.columnName] = gridCellValue(modify.textModified, column);
-    }
-  }
-
-  await schemaUpdate(request, schemas);
-}
-
-async function gridSchemaSaveInsert(request: Request, gridDto: GridDto): Promise<void> {
-  const modifies = (gridDto.modifies ?? []).filter((modify) => modify.isNew);
-
-  const columns = gridColumns(SCHEMA_COLUMNS.columns ?? []);
-
-  const schemasByRowIndex = new Map<number, SchemaDto>();
-
-  for (const modify of modifies) {
-    const column = columns.find((column) => column.columnName === modify.columnName);
-    if (modify.rowIndex === undefined || modify.columnName === undefined || modify.cellEnum !== GridCellEnum.Edit || column === undefined) {
-      continue;
-    }
-
-    const schema = schemasByRowIndex.get(modify.rowIndex) ?? { tableName: '', columnName: '' };
-    (schema as unknown as Record<string, unknown>)[modify.columnName] = gridCellValue(modify.textModified, column);
-    schemasByRowIndex.set(modify.rowIndex, schema);
-  }
-
-  await schemaInsert(request, [...schemasByRowIndex.values()]);
-}
-
-/** Appends one empty, editable new row to the data table (GridDto.tables[1]). */
-function gridSchemaNew(gridDto: GridDto): void {
-  const dataTable = gridDto.tables?.[1];
-  if (dataTable === undefined) {
-    return;
-  }
-  const rows = dataTable.rows ?? [];
-  const rowIndex = rows.length;
-
-  const newRow: GridRowDto = {
-    cells: gridColumns(SCHEMA_COLUMNS.columns ?? []).map(
-      (column): GridCellDto => ({
-        cellEnum: GridCellEnum.Edit,
-        columnName: column.columnName,
-        placeHolder: 'New',
-        rowIndex,
-        isNew: true,
-      }),
-    ),
-  };
-
-  dataTable.rows = [...rows, newRow];
 }

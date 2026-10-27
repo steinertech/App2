@@ -245,7 +245,7 @@ async function gridContentViewPatch(request: Request, gridDtos: GridDto[], gridI
  * of that cell of band, "Cell" if missing or empty), each followed by a row of their values (a text box with the value of that FieldName of the DynamicDto row, the label
  * "Empty" if the cell has no FieldName), repeated for each DynamicDto row of the current page (every cell's rowIndex is that row's index on the page), the counts
  * clamped by designFormCount, followed by the bar (New, Save, Reload and pager). The pager pages the DynamicDto rows of the band's TableName (all rows if empty, like the
- * Data grid of the "dynamic" plane), only those of detail's rowFilter (all if undefined). Like the Debug Data grid (gridDebugNew), New appends one empty form repetition
+ * Data grid of the "dynamic" plane), only those of detail's rowFilter (all if undefined). Like the Debug Data grid (gridDataNew), New appends one empty form repetition
  * (isNew text boxes, rowIndex after the page's rows; a FieldName of detail's newValues a label with its master value instead), and Save writes the modified text boxes
  * into their DynamicDto rows and inserts the new repetitions as DynamicDto rows with that TableName and detail's newValues.
  */
@@ -262,7 +262,7 @@ async function gridContentFormLoad(request: Request, gridDto: GridDto, band: Con
   // Value row cell: a text box with the dynamic row's value of the cell's FieldName ("" if missing), or the label "Empty" if the cell has no FieldName.
   // The text box's columnName is its FieldName (not A, B, ...): a modify is identified by rowIndex and columnName, and A, B, ... repeat for every form row
   // of a repetition. Text boxes with the same FieldName show the same value anyway.
-  // A new repetition (dynamic undefined) has empty isNew text boxes, like gridDebugNew; a FieldName set by the master grid (detail's newValues) is a label with its value.
+  // A new repetition (dynamic undefined) has empty isNew text boxes, like gridDataNew; a FieldName set by the master grid (detail's newValues) is a label with its value.
   const valueCell = (dynamic: DynamicDto | undefined, formRowIndex: number, columnName: string, rowIndex: number): GridCellDto => {
     const name = fieldName(formRowIndex, columnName);
     if (name === undefined) {

@@ -1,4 +1,4 @@
-import { dbInsert, dbLoad, dbLoadByIds, dbUpdate } from '../core/util-db.js';
+import { dbInsert, dbLoad, dbUpdate } from '../core/util-db.js';
 import { SchemaDto } from '../../dto/db/schema-dto.js';
 
 /** Returns SchemaDto.name: "TableName/{tableName}/ColumnName/{columnName}/". */
@@ -10,11 +10,6 @@ function schemaName(schemaDto: SchemaDto): `TableName/${string}/ColumnName/${str
 
 export async function schemaLoad(request: Request): Promise<SchemaDto[]> {
   return dbLoad<SchemaDto>(request, 'SchemaDto');
-}
-
-/** ids are ObjectId hex strings (the grid's rowKeys); invalid ones are ignored. */
-export async function schemaLoadByIds(request: Request, ids: string[]): Promise<SchemaDto[]> {
-  return dbLoadByIds<SchemaDto>(request, 'SchemaDto', ids);
 }
 
 export async function schemaInsert(request: Request, schemaDtos: SchemaDto[]): Promise<SchemaDto[]> {

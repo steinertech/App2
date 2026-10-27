@@ -1,4 +1,4 @@
-import { dbDelete, dbInsert, dbLoad, dbLoadByIds, dbUpdate } from '../core/util-db.js';
+import { dbDelete, dbInsert, dbLoad, dbUpdate } from '../core/util-db.js';
 import { DesignMasterDetailDto, DesignMasterDetailName } from '../../dto/db/design-master-detail-dto.js';
 import { designBandName } from './util-design.js';
 
@@ -6,11 +6,6 @@ import { designBandName } from './util-design.js';
 
 export async function designMasterDetailLoad(request: Request): Promise<DesignMasterDetailDto[]> {
   return dbLoad<DesignMasterDetailDto>(request, 'DesignMasterDetailDto');
-}
-
-/** ids are ObjectId hex strings (the grid's rowKeys); invalid ones are ignored. */
-export async function designMasterDetailLoadByIds(request: Request, ids: string[]): Promise<DesignMasterDetailDto[]> {
-  return dbLoadByIds<DesignMasterDetailDto>(request, 'DesignMasterDetailDto', ids);
 }
 
 /**
