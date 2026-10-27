@@ -61,7 +61,7 @@ function designBandPropertyBoolFromText(propertyName: string, text: string): str
   throw new Error(`${propertyName} "${text}" is not true or false!`);
 }
 
-// name is not a column, so it's never sent to App.Web (designBandInsert/designBandUpdate set it to contentName + "." + bandName).
+// name is not a column, so it's never sent to App.Web (designBandInsert/designBandUpdate set it to designBandName: ContentName/<contentName>/BandName/<bandName>/).
 const DESIGN_BAND_COLUMNS: GridConfigDto = {
   columns: [
     { columnName: 'contentName' satisfies keyof DesignBandDto, text: 'Content', typeEnum: GridConfigTypeEnum.Text },
@@ -285,7 +285,7 @@ async function gridDesignBandLoad(request: Request, gridDto: GridDto): Promise<G
     gridDesignBandNew(result);
   }
 
-  // Lookup (planes[0]): Columns (opened by a row's Columns button, kept open while planes[0].planeName is DESIGN_BAND_COLUMNS_PLANE)
+  // Lookup (planes[0]): Columns (opened by a row's Columns button, kept open while planes[0].planeName is DESIGN_BAND_COLUMNS_PLANE_NAME)
   // or Filter Multi (opened by planeDesignPatch, kept open while planes[0].planeName is filterMulti).
   gridLookupSet(result, (await gridDesignBandColumnsLoad(request, gridDto)) ?? gridFilterMultiLoad(gridDto, DESIGN_BAND_COLUMNS.columns ?? [], allBands));
 
@@ -296,17 +296,17 @@ async function gridDesignBandLoad(request: Request, gridDto: GridDto): Promise<G
 }
 
 /** GridPlaneDto.planeName of the design band grid's Columns lookup (gridDto.planes[0]). */
-const DESIGN_BAND_COLUMNS_PLANE = 'designBandColumns';
+const DESIGN_BAND_COLUMNS_PLANE_NAME = 'designBandColumns';
 
 /**
  * Returns the Columns lookup plane (like the Column Chooser, see gridColumnChooserLoad) if a row's Columns button opened it, or if it is open
- * (incoming planes[0].planeName is DESIGN_BAND_COLUMNS_PLANE) and didn't send Ok. Otherwise (or if the band isn't found) undefined.
+ * (incoming planes[0].planeName is DESIGN_BAND_COLUMNS_PLANE_NAME) and didn't send Ok. Otherwise (or if the band isn't found) undefined.
  * Its rows are the DesignBandDto.columns of the band (GridStateDto.custom.rowKey, its _id hex), synced by gridDesignBandColumnSync when opened; a column is selected
  * initially if isVisible. Its Ok is handled by gridDesignBandColumnsOk.
  */
 async function gridDesignBandColumnsLoad(request: Request, incomingGridDto: GridDto): Promise<GridPlaneDto | undefined> {
   const isOpening = gridIsCommand(incomingGridDto, 'Columns');
-  const lookupGridDto = isOpening ? undefined : gridLookup(incomingGridDto, DESIGN_BAND_COLUMNS_PLANE);
+  const lookupGridDto = isOpening ? undefined : gridLookup(incomingGridDto, DESIGN_BAND_COLUMNS_PLANE_NAME);
   if (!isOpening && (lookupGridDto === undefined || lookupGridDto.command?.commandEnum === GridCommandEnum.Ok)) {
     return undefined;
   }
@@ -323,7 +323,7 @@ async function gridDesignBandColumnsLoad(request: Request, incomingGridDto: Grid
   const lookupRows = columns.map((column): GridLookupMultiRow => ({ rowKey: column.columnName ?? '', text: column.columnName ?? '', value: column.columnName ?? '' }));
   const selectedInitial = new Set(columns.filter((column) => column.isVisible === true).map((column) => column.columnName ?? ''));
   return {
-    planeName: DESIGN_BAND_COLUMNS_PLANE,
+    planeName: DESIGN_BAND_COLUMNS_PLANE_NAME,
     grids: [gridLoadLookupMulti('Columns', 'columnName', 'Column Name', GridConfigTypeEnum.Text, lookupRows, selectedInitial, lookupGridDto, { rowKey })],
   };
 }
@@ -347,7 +347,7 @@ async function gridDesignBandColumnSync(request: Request, band: DesignBandDto): 
 
 /** If the Columns lookup (gridDto.planes[0]) sent GridCommandEnum.Ok, sets DesignBandColumnDto.isVisible of each column of its band to whether it is selected. */
 async function gridDesignBandColumnsOk(request: Request, gridDto: GridDto): Promise<void> {
-  const lookupGridDto = gridLookup(gridDto, DESIGN_BAND_COLUMNS_PLANE);
+  const lookupGridDto = gridLookup(gridDto, DESIGN_BAND_COLUMNS_PLANE_NAME);
   const rowKey = lookupGridDto?.state?.custom?.rowKey;
   if (lookupGridDto?.command?.commandEnum !== GridCommandEnum.Ok || typeof rowKey !== 'string') {
     return;
