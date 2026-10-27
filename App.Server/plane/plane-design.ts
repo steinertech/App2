@@ -1,6 +1,6 @@
 import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPatchDto, GridPatchEnum, GridPlaneDto, GridRowDto } from '../dto/shared/grid-dto.js';
 import { designBandDelete, designBandInsert, designBandLoad, designBandLoadByIds, designBandUpdate, designFormCellPropertyLoad, designFormCellPropertySync, designBandPropertyLoad, designBandFormPropertyLoadByIds, designBandPropertySync, designBandFormPropertyUpdate } from '../util/db/util-design.js';
-import { DesignBandColumnDto, DesignBandDto } from '../dto/db/design-dto.js';
+import { DesignBandColumnDto, DesignBandDto } from '../dto/db/design-band-dto.js';
 import { PropertyDto } from '../dto/db/property-dto.js';
 import { ContentBandEnum } from '../dto/shared/content-dto.js';
 import { GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
