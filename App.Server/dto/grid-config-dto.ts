@@ -26,6 +26,8 @@ export interface GridConfigColumnDto {
   valueFromText?: (text: string) => unknown;
   /** Returns the column's raw value of a row, e.g. one nested in DynamicDto.values (see gridRowValue). Defaults to row[columnName]. */
   rowToValue?: (row: object) => unknown;
+  /** Sets the column's raw value on a row, the counterpart of rowToValue (see gridRowValueSet). Defaults to row[columnName] = value. */
+  rowValueSet?: (row: object, value: unknown) => void;
 }
 
 export interface GridConfigDto {

@@ -1,8 +1,9 @@
 import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomEnum, GridDto, GridPatchDto, GridPatchEnum, GridPlaneDto, GridRowDto } from '../dto/shared/grid-dto.js';
-import { dynamicColumnNameLoad, dynamicInsert, dynamicLoad, dynamicLoadByIds, dynamicTableLoad, dynamicUpdate } from '../util/db/util-dynamic.js';
+import { dynamicColumnNameLoad, dynamicInsert, dynamicLoad, dynamicTableLoad, dynamicUpdate } from '../util/db/util-dynamic.js';
 import { DynamicDto, DynamicTableNameDto } from '../dto/db/dynamic-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
 import { gridBarRow, gridCellText, gridCellValue, gridColumnChooserLoad, gridColumnChooserOk, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridLookupSet, gridRowValue, gridTables } from '../util/core/util-grid.js';
+import { gridDataNew, gridDataSaveInsert, gridDataSaveUpdate } from '../util/core/util-grid-data.js';
 
 const DYNAMIC_TABLE_NAME_COLUMNS: GridConfigDto = {
   columns: (['tableName'] as const satisfies readonly (keyof DynamicTableNameDto)[]).map(
@@ -14,7 +15,7 @@ const DYNAMIC_TABLE_NAME_COLUMNS: GridConfigDto = {
 const DYNAMIC_STATIC_COLUMN_NAMES: readonly string[] = ['tableName'] satisfies (keyof DynamicDto)[];
 
 /**
- * Columns of the Data grid: the static columns (DYNAMIC_STATIC_COLUMN_NAMES, DynamicDto fields), then the dynamic ones (DynamicDto.values, see rowToValue):
+ * Columns of the Data grid: the static columns (DYNAMIC_STATIC_COLUMN_NAMES, DynamicDto fields), then the dynamic ones (DynamicDto.values, see rowToValue and rowValueSet):
  * the SchemaDto.columnName list of tableName, or the standard columns A, B if no tableName is selected.
  * Column names that aren't plain MongoDB field names (starting with "$" or containing ".") or that are static column names are skipped.
  * Also used by the Design Band grid's Columns lookup (DesignBandDto.columns of a Table band). hiddenColumnNames (e.g. of a content view Table band) get isHide.
@@ -29,19 +30,16 @@ export async function gridDynamicDataColumns(request: Request, tableName: string
     ...DYNAMIC_STATIC_COLUMN_NAMES.map((columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text, isHide: isHide(columnName) })),
     ...[...new Set(columnNames)].map(
       (columnName): GridConfigColumnDto => ({
-        columnName, typeEnum: GridConfigTypeEnum.Text, isHide: isHide(columnName), rowToValue: (row) => (row as DynamicDto).values?.[columnName],
+        columnName,
+        typeEnum: GridConfigTypeEnum.Text,
+        isHide: isHide(columnName),
+        rowToValue: (row) => (row as DynamicDto).values?.[columnName],
+        rowValueSet: (row, value) => {
+          (row as DynamicDto).values = { ...(row as DynamicDto).values, [columnName]: value };
+        },
       }),
     ),
   ];
-}
-
-/** Sets value of columnName on dynamic: a static column (DYNAMIC_STATIC_COLUMN_NAMES) as its DynamicDto field, any other in DynamicDto.values. */
-function gridDynamicDataValueSet(dynamic: DynamicDto, columnName: string, value: unknown): void {
-  if (DYNAMIC_STATIC_COLUMN_NAMES.includes(columnName)) {
-    (dynamic as Record<string, unknown>)[columnName] = value;
-  } else {
-    dynamic.values = { ...dynamic.values, [columnName]: value };
-  }
 }
 
 /**
@@ -123,7 +121,7 @@ export async function gridDynamicDataLoad(
   gridColumnChooserOk(gridDto, dataColumns);
   const columns = gridColumns(dataColumns, gridDto.state);
   if (gridDto.command?.commandEnum === GridCommandEnum.Save) {
-    await gridDynamicDataSaveUpdate(request, gridDto, dataColumns);
+    await dynamicUpdate(request, await gridDataSaveUpdate<DynamicDto>(request, 'DynamicDto', gridDto, dataColumns));
     await gridDynamicDataSaveInsert(request, gridDto, tableName, dataColumns, newValues);
   }
 
@@ -167,7 +165,7 @@ export async function gridDynamicDataLoad(
   };
 
   if (gridDto.command?.commandEnum === GridCommandEnum.New) {
-    gridDynamicDataNew(result, columns, newValues);
+    gridDataNew(result, columns, newValues);
   }
 
   // Lookup (planes[0]): Column Chooser (opened by gridDynamicDataColumnChooserLoad, kept open while planes[0].planeName is columnChooser)
@@ -250,88 +248,18 @@ export async function gridDynamicDataColumnChooserLoad(
   return gridColumnChooserLoad(gridDto, await gridDynamicDataColumns(request, tableName, hiddenColumnNames));
 }
 
-async function gridDynamicDataSaveUpdate(request: Request, gridDto: GridDto, dataColumns: GridConfigColumnDto[]): Promise<void> {
-  const modifies = (gridDto.modifies ?? []).filter((modify) => !modify.isNew);
-  const rowKeys = gridDto.state?.rowKeys ?? [];
-
-  const ids = [
-    ...new Set(
-      modifies
-        .map((modify) => (modify.rowIndex !== undefined ? rowKeys[modify.rowIndex] : undefined))
-        .filter((rowKey): rowKey is string => rowKey !== undefined),
-    ),
-  ];
-
-  const dynamics = await dynamicLoadByIds(request, ids);
-
-  const columns = gridColumns(dataColumns);
-
-  for (const modify of modifies) {
-    const column = columns.find((column) => column.columnName === modify.columnName);
-    if (modify.rowIndex === undefined || modify.columnName === undefined || modify.cellEnum !== GridCellEnum.Edit || column === undefined) {
-      continue;
-    }
-
-    const rowKey = rowKeys[modify.rowIndex];
-    const dynamic = dynamics.find((dynamic) => dynamic._id?.toHexString() === rowKey);
-    if (dynamic) {
-      gridDynamicDataValueSet(dynamic, modify.columnName, gridCellValue(modify.textModified, column));
-    }
-  }
-
-  await dynamicUpdate(request, dynamics);
-}
-
 /** New rows get tableName (the selected tableName) unless their tableName cell is entered. */
 async function gridDynamicDataSaveInsert(
   request: Request, gridDto: GridDto, tableName: string | undefined, dataColumns: GridConfigColumnDto[], newValues: Record<string, string> | undefined,
 ): Promise<void> {
-  const modifies = (gridDto.modifies ?? []).filter((modify) => modify.isNew);
-
+  // No tableName field if undefined (the driver would store null).
+  const dynamics = gridDataSaveInsert<DynamicDto>(gridDto, dataColumns, () => (tableName !== undefined ? { tableName } : {}));
   const columns = gridColumns(dataColumns);
-
-  const dynamicsByRowIndex = new Map<number, DynamicDto>();
-
-  for (const modify of modifies) {
-    const column = columns.find((column) => column.columnName === modify.columnName);
-    if (modify.rowIndex === undefined || modify.columnName === undefined || modify.cellEnum !== GridCellEnum.Edit || column === undefined) {
-      continue;
-    }
-
-    // No tableName field if undefined (the driver would store null).
-    const dynamic = dynamicsByRowIndex.get(modify.rowIndex) ?? (tableName !== undefined ? { tableName } : {});
-    gridDynamicDataValueSet(dynamic, modify.columnName, gridCellValue(modify.textModified, column));
-    dynamicsByRowIndex.set(modify.rowIndex, dynamic);
-  }
 
   // newValues (DynamicDto.values, like the fields a content view detail filters by) win over a modify of the same column (its value from text like a modify if it is a column).
   const values = Object.fromEntries(Object.entries(newValues ?? {}).map(([columnName, text]) => {
     const column = columns.find((column) => column.columnName === columnName);
     return [columnName, column !== undefined ? gridCellValue(text, column) : text];
   }));
-  await dynamicInsert(request, [...dynamicsByRowIndex.values()].map((dynamic): DynamicDto => ({ ...dynamic, values: { ...dynamic.values, ...values } })));
-}
-
-/** Appends one empty, editable new row (a cell per column of columns, the rendered ones) to the data table (GridDto.tables[1]). */
-function gridDynamicDataNew(gridDto: GridDto, columns: GridConfigColumnDto[], newValues: Record<string, string> | undefined): void {
-  const dataTable = gridDto.tables?.[1];
-  if (dataTable === undefined) {
-    return;
-  }
-  const rows = dataTable.rows ?? [];
-  const rowIndex = rows.length;
-
-  const newRow: GridRowDto = {
-    // A column of newValues is a label with its value (set by Save insert), the others empty text boxes.
-    cells: columns.map(
-      (column): GridCellDto => {
-        const newValue = column.columnName !== undefined ? newValues?.[column.columnName] : undefined;
-        return newValue !== undefined
-          ? { cellEnum: GridCellEnum.Label, text: newValue, columnName: column.columnName, rowIndex, isNew: true }
-          : { cellEnum: GridCellEnum.Edit, columnName: column.columnName, placeHolder: 'New', rowIndex, isNew: true };
-      },
-    ),
-  };
-
-  dataTable.rows = [...rows, newRow];
+  await dynamicInsert(request, dynamics.map((dynamic): DynamicDto => ({ ...dynamic, values: { ...dynamic.values, ...values } })));
 }

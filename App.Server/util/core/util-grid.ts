@@ -94,6 +94,15 @@ export function gridRowValue(row: object, column: GridConfigColumnDto): unknown 
   return column.rowToValue !== undefined ? column.rowToValue(row) : (row as Record<string, unknown>)[column.columnName ?? ''];
 }
 
+/** Sets the raw value of column on row: GridConfigColumnDto.rowValueSet(row, value) if set, otherwise row[columnName] = value. */
+export function gridRowValueSet(row: object, column: GridConfigColumnDto, value: unknown): void {
+  if (column.rowValueSet !== undefined) {
+    column.rowValueSet(row, value);
+  } else {
+    (row as Record<string, unknown>)[column.columnName ?? ''] = value;
+  }
+}
+
 /** Returns the cell text of a column's raw value: "" if the value is missing (undefined or null), otherwise GridConfigColumnDto.valueToText(value) if set, else String(value). */
 export function gridCellText(value: unknown, column: GridConfigColumnDto): string {
   if (value === undefined || value === null) {

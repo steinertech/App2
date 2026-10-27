@@ -4,7 +4,7 @@ import { DbDto } from '../../dto/db/db-dto.js';
 import { dbDelete, dbInsert, dbLoad, dbLoadByIds, dbUpdate } from './util-db.js';
 import {
   gridBarRow, gridCellText, gridCellValue, gridColumnChooserLoad, gridColumnChooserOk, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand,
-  gridLookupSet, gridSelectedMultiRowKeys, gridTables,
+  gridLookupSet, gridRowValueSet, gridSelectedMultiRowKeys, gridTables,
 } from './util-grid.js';
 
 // Generic data grid of the DbDto documents of one type (like the db functions of util-db.ts: sector by sectorKeyProjectDb, or sectorKeyDb if not isProject).
@@ -169,7 +169,7 @@ export async function gridDataDelete(gridDto: GridDto, deleteIds: (ids: string[]
 
 /**
  * Returns the documents of type modified by gridDto's modifies (not isNew; loaded by their rowKey with dbLoadByIds) with the modified Edit cells
- * of the rendered columns (gridColumns(columns)) set by gridCellValue. Not written.
+ * of the rendered columns (gridColumns(columns)) set by gridCellValue and gridRowValueSet. Not written.
  */
 export async function gridDataSaveUpdate<T extends DbDto>(request: Request, type: string, gridDto: GridDto, columns: GridConfigColumnDto[], isProject = true): Promise<T[]> {
   const modifies = (gridDto.modifies ?? []).filter((modify) => !modify.isNew);
@@ -196,14 +196,14 @@ export async function gridDataSaveUpdate<T extends DbDto>(request: Request, type
     const rowKey = rowKeys[modify.rowIndex];
     const dto = dtos.find((dto) => dto._id?.toHexString() === rowKey);
     if (dto) {
-      (dto as Record<string, unknown>)[modify.columnName] = gridCellValue(modify.textModified, column);
+      gridRowValueSet(dto, column, gridCellValue(modify.textModified, column));
     }
   }
 
   return dtos;
 }
 
-/** Returns one new document per new row (isNew modifies, by rowIndex; dtoNew its initial value) with its Edit cells of the rendered columns set by gridCellValue. Not written. */
+/** Returns one new document per new row (isNew modifies, by rowIndex; dtoNew its initial value) with its Edit cells of the rendered columns set by gridCellValue and gridRowValueSet. Not written. */
 export function gridDataSaveInsert<T extends DbDto>(gridDto: GridDto, columns: GridConfigColumnDto[], dtoNew: () => T = () => ({}) as T): T[] {
   const modifies = (gridDto.modifies ?? []).filter((modify) => modify.isNew);
 
@@ -218,7 +218,7 @@ export function gridDataSaveInsert<T extends DbDto>(gridDto: GridDto, columns: G
     }
 
     const dto = dtosByRowIndex.get(modify.rowIndex) ?? dtoNew();
-    (dto as Record<string, unknown>)[modify.columnName] = gridCellValue(modify.textModified, column);
+    gridRowValueSet(dto, column, gridCellValue(modify.textModified, column));
     dtosByRowIndex.set(modify.rowIndex, dto);
   }
 
@@ -246,8 +246,11 @@ export function gridDataDeleteConfirm(rowKeys: unknown): GridDto {
   return { title: 'Confirmation', tables: gridTables([], [textRow, buttonRow]), state: { custom: { rowKeys } } };
 }
 
-/** Appends one empty, editable new row (one cell per rendered column) to the data table (GridDto.tables[1]). */
-export function gridDataNew(gridDto: GridDto, columns: GridConfigColumnDto[]): void {
+/**
+ * Appends one empty, editable new row (one cell per rendered column) to the data table (GridDto.tables[1]). A column of newValues (e.g. the master values of a
+ * content view detail grid, set by its Save insert) is a label with its value instead.
+ */
+export function gridDataNew(gridDto: GridDto, columns: GridConfigColumnDto[], newValues?: Record<string, string>): void {
   const dataTable = gridDto.tables?.[1];
   if (dataTable === undefined) {
     return;
@@ -256,15 +259,12 @@ export function gridDataNew(gridDto: GridDto, columns: GridConfigColumnDto[]): v
   const rowIndex = rows.length;
 
   const newRow: GridRowDto = {
-    cells: columns.map(
-      (column): GridCellDto => ({
-        cellEnum: GridCellEnum.Edit,
-        columnName: column.columnName,
-        placeHolder: 'New',
-        rowIndex,
-        isNew: true,
-      }),
-    ),
+    cells: columns.map((column): GridCellDto => {
+      const newValue = column.columnName !== undefined ? newValues?.[column.columnName] : undefined;
+      return newValue !== undefined
+        ? { cellEnum: GridCellEnum.Label, text: newValue, columnName: column.columnName, rowIndex, isNew: true }
+        : { cellEnum: GridCellEnum.Edit, columnName: column.columnName, placeHolder: 'New', rowIndex, isNew: true };
+    }),
   };
 
   dataTable.rows = [...rows, newRow];
