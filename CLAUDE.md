@@ -47,7 +47,7 @@ Every file in `App.Server/api/` is a standalone Vercel function, mapped by filen
 
 Shared logic lives in `App.Server/util/` (not directly in `api/`):
 - `util-main.ts` — `VERSION_SERVER`, `domainName(request)`, `sectorKeyDb(request, type)`, `sectorKeyProjectDb(request, type)`, `sectorKeyStorage(request)`, `sectorKeyProjectStorage(request)`, `corsHeaders(request, method)`, `jsonResponse(...)`/`ApiResult`, `apiHandler(method, handler)`, `alertAdd(request, alertEnum, text)`, `redirectSet(request, url)`
-- `util-db.ts` — the shared MongoDB `client` (via `@vercel/functions` `attachDatabasePool`) and `DB_NAME` (`myDatabase`; always `client.db(DB_NAME)`, never `client.db()`, which would use the `MONGODB_URI` path or `test`); creates the unique index `{ sectorKey: 1, name: 1 }` on `myCollection` (errors only logged)
+- `util-db.ts` — the shared MongoDB `client` (via `@vercel/functions` `attachDatabasePool`) and `DB_NAME` (`myDatabase`; always `client.db(DB_NAME)`, never `client.db()`, which would use the `MONGODB_URI` path or `test`); creates the unique index `{ sectorKey: 1, name: 1 }` on `myCollection` (errors only logged); `dbConnect()`, awaited by `apiHandler` before every POST handler, calls `client.connect()` so a topology the driver closed after a failed connect is replaced instead of every later query throwing "Topology is closed"
 - `util-user.ts` — user sign-up/sign-in/session/sign-out
 - `util-debug.ts` — `DebugDto` load/insert/update/delete (`dto/debug-dto.ts`)
 - `util-debug-property.ts` — `DebugContentDto` load/insert/update/delete and `DebugPropertyDto` load/insert/update (`dto/debug-property-dto.ts`)
