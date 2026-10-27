@@ -12,5 +12,7 @@
     "moduleDetection": "force",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true
-  }
+  },
+  // script/ is run by node directly and imports with .ts: type checked by its own tsconfig (pnpm exec tsc --noEmit -p script).
+  "exclude": ["node_modules", "script"]
 }

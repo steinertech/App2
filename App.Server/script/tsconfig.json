@@ -1,0 +1,9 @@
+{
+  // script/ is run by node directly (type stripping), so its relative imports have the .ts extension.
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "allowImportingTsExtensions": true
+  },
+  "include": ["."],
+  "exclude": []
+}

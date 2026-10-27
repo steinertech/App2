@@ -1,6 +1,9 @@
 {
   "type": "module",
   "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "db-setup": "node script/db-setup.ts"
+  },
   "dependencies": {
     "@vercel/blob": "^2.6.1",
     "@vercel/functions": "^3.7.7",

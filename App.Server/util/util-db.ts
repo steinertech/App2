@@ -1,4 +1,4 @@
-import { MongoClient, MongoClientOptions } from "mongodb";
+import { MongoClient, type MongoClientOptions } from "mongodb";
 import { attachDatabasePool } from "@vercel/functions";
 
 const options: MongoClientOptions = {
@@ -11,9 +11,7 @@ export const DB_NAME = "myDatabase";
 
 const client = new MongoClient(process.env.MONGODB_URI!, options);
 attachDatabasePool(client);
-
-/** DbDto.name is unique within its sectorKey (once per cold start; a no-op if the index already exists). */
-client.db(DB_NAME).collection("myCollection").createIndex({ sectorKey: 1, name: 1 }, { unique: true }).catch((error) => console.error("createIndex failed!", error));
+// Indexes (e.g. DbDto.name unique within its sectorKey) are created by script/db-setup.ts, not on a cold start.
 
 /**
  * Connects the client unless it is already connected (called by apiHandler before every POST handler).
