@@ -1,12 +1,13 @@
 import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridPlaneDto, GridRowDto } from '../dto/shared/grid-dto.js';
 import { AlertEnum } from '../dto/shared/alert-dto.js';
 import { alertAdd } from '../util/core/util-main.js';
-import { projectsLoad, projectsLoadByNames, projectsUpdate, projectsInsert, projectsDeleteByNames } from '../util/db/util-project.js';
+import { projectsLoad, projectsLoadByIds, projectsUpdate, projectsInsert, projectsDelete } from '../util/db/util-project.js';
 import { userProject, usersLoad } from '../util/db/util-user.js';
 import { ProjectDto } from '../dto/db/project-dto.js';
 import { UserDto } from '../dto/db/user-dto.js';
 import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
-import { gridBarRow, gridCellText, gridCellValue, gridColumns, gridFindCommand, gridFindRow, gridFsp, gridHeaderCell, gridIsAnySelectedMulti, gridPatchDeleteMulti, gridRemoveCommand, gridTables } from '../util/core/util-grid.js';
+import { gridBarRow, gridCellText, gridColumns, gridFindCommand, gridFindRow, gridFsp, gridHeaderCell, gridIsAnySelectedMulti, gridPatchDeleteMulti, gridRemoveCommand, gridSelectedMultiRowKeys, gridTables } from '../util/core/util-grid.js';
+import { gridDataNew, gridDataSaveInsert, gridDataSaveUpdate } from '../util/core/util-grid-data.js';
 
 const PROJECT_COLUMNS: GridConfigDto = {
   columns: (['name', 'description'] as const satisfies readonly (keyof ProjectDto)[]).map(
@@ -73,14 +74,15 @@ async function gridUserLoadGrid(request: Request, gridDto: GridDto): Promise<Gri
 
 async function gridProjectLoadGrid(request: Request, gridDto: GridDto): Promise<GridDto> {
   if (gridDto.command?.commandEnum === GridCommandEnum.Save) {
-    await gridProjectSaveUpdate(request, gridDto);
-    await gridProjectSaveInsert(request, gridDto);
+    await projectsUpdate(request, await gridDataSaveUpdate<ProjectDto>(request, 'ProjectDto', gridDto, PROJECT_COLUMNS.columns ?? [], false));
+    await projectsInsert(request, gridDataSaveInsert<ProjectDto>(gridDto, PROJECT_COLUMNS.columns ?? []));
   }
 
   if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === 'Switch') {
     const rowIndex = gridDto.command.rowIndex;
     if (rowIndex !== undefined) {
-      const projectName = gridDto.state?.rowKeys?.[rowIndex];
+      const rowKey = gridDto.state?.rowKeys?.[rowIndex];
+      const projectName = rowKey !== undefined ? (await projectsLoadByIds(request, [rowKey]))[0]?.name : undefined;
       if (projectName !== undefined) {
         await userProject(request, projectName);
         alertAdd(request, AlertEnum.Success, `You switched to project ${projectName}!`);
@@ -91,9 +93,9 @@ async function gridProjectLoadGrid(request: Request, gridDto: GridDto): Promise<
   if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === 'Delete') {
     const rowIndex = gridDto.command.rowIndex;
     if (rowIndex !== undefined) {
-      const projectName = gridDto.state?.rowKeys?.[rowIndex];
-      if (projectName !== undefined) {
-        await projectsDeleteByNames(request, [projectName]);
+      const rowKey = gridDto.state?.rowKeys?.[rowIndex];
+      if (rowKey !== undefined) {
+        await projectsDelete(request, [rowKey]);
         // Selection is by rowIndex, which no longer matches the remaining rows.
         gridDto.state = { ...gridDto.state, isSelectedMulti: [] };
       }
@@ -101,12 +103,9 @@ async function gridProjectLoadGrid(request: Request, gridDto: GridDto): Promise<
   }
 
   if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === 'DeleteMulti') {
-    const rowKeys = gridDto.state?.rowKeys ?? [];
-    const projectNames = (gridDto.state?.isSelectedMulti ?? [])
-      .map((isSelected, rowIndex) => (isSelected ? rowKeys[rowIndex] : undefined))
-      .filter((projectName): projectName is string => projectName !== undefined);
-    if (projectNames.length > 0) {
-      await projectsDeleteByNames(request, projectNames);
+    const rowKeys = gridSelectedMultiRowKeys(gridDto);
+    if (rowKeys.length > 0) {
+      await projectsDelete(request, rowKeys);
     }
     // Selection is by rowIndex, which no longer matches the remaining rows.
     gridDto.state = { ...gridDto.state, isSelectedMulti: [] };
@@ -144,7 +143,8 @@ async function gridProjectLoadGrid(request: Request, gridDto: GridDto): Promise<
     ],
   }));
 
-  const rowKeys: string[] = projects.map((project) => project.name ?? '');
+  // rowKey is the _id (ObjectId hex), since name is editable.
+  const rowKeys: string[] = projects.map((project) => project._id?.toHexString() ?? '');
   const findRow = gridFindRow([...gridColumns(PROJECT_COLUMNS.columns ?? []).map((column) => column.columnName), undefined]);
 
   const deleteMultiRow: GridRowDto = {
@@ -174,7 +174,9 @@ async function gridProjectLoadGrid(request: Request, gridDto: GridDto): Promise<
   };
 
   if (gridDto.command?.commandEnum === GridCommandEnum.New) {
-    await gridProjectNew(request, result);
+    // Two new rows.
+    gridDataNew(result, gridColumns(PROJECT_COLUMNS.columns ?? []));
+    gridDataNew(result, gridColumns(PROJECT_COLUMNS.columns ?? []));
   }
 
   if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === 'Confirm') {
@@ -195,83 +197,4 @@ async function gridProjectLoadGrid(request: Request, gridDto: GridDto): Promise<
   result.command = undefined;
 
   return result;
-}
-
-async function gridProjectSaveUpdate(request: Request, gridDto: GridDto): Promise<void> {
-  const modifies = gridDto.modifies ?? [];
-  const rowKeys = gridDto.state?.rowKeys ?? [];
-
-  const names = [
-    ...new Set(
-      modifies
-        .map((modify) => (modify.rowIndex !== undefined ? rowKeys[modify.rowIndex] : undefined))
-        .filter((rowKey): rowKey is string => rowKey !== undefined),
-    ),
-  ];
-
-  const projects = await projectsLoadByNames(request, names);
-
-  const columns = gridColumns(PROJECT_COLUMNS.columns ?? []);
-
-  for (const modify of modifies) {
-    const column = columns.find((column) => column.columnName === modify.columnName);
-    if (modify.rowIndex === undefined || modify.columnName === undefined || modify.cellEnum !== GridCellEnum.Edit || column === undefined) {
-      continue;
-    }
-
-    const rowKey = rowKeys[modify.rowIndex];
-    const project = projects.find((project) => project.name === rowKey);
-    if (project) {
-      (project as Record<string, unknown>)[modify.columnName] = gridCellValue(modify.textModified, column);
-    }
-  }
-
-  await projectsUpdate(request, projects);
-}
-
-async function gridProjectSaveInsert(request: Request, gridDto: GridDto): Promise<void> {
-  const modifies = (gridDto.modifies ?? []).filter((modify) => modify.isNew);
-
-  const columns = gridColumns(PROJECT_COLUMNS.columns ?? []);
-
-  const projectsByRowIndex = new Map<number, ProjectDto>();
-
-  for (const modify of modifies) {
-    const column = columns.find((column) => column.columnName === modify.columnName);
-    if (modify.rowIndex === undefined || modify.columnName === undefined || modify.cellEnum !== GridCellEnum.Edit || column === undefined) {
-      continue;
-    }
-
-    const project = projectsByRowIndex.get(modify.rowIndex) ?? {};
-    (project as Record<string, unknown>)[modify.columnName] = gridCellValue(modify.textModified, column);
-    projectsByRowIndex.set(modify.rowIndex, project);
-  }
-
-  await projectsInsert(request, [...projectsByRowIndex.values()]);
-}
-
-/** Appends two empty, editable new rows to the data table (GridDto.tables[1]). */
-async function gridProjectNew(request: Request, gridDto: GridDto): Promise<void> {
-  const dataTable = gridDto.tables?.[1];
-  if (dataTable === undefined) {
-    return;
-  }
-  const rows = dataTable.rows ?? [];
-
-  const newRows: GridRowDto[] = [0, 1].map((rowOffset) => {
-    const rowIndex = rows.length + rowOffset;
-    return {
-      cells: gridColumns(PROJECT_COLUMNS.columns ?? []).map(
-        (column): GridCellDto => ({
-          cellEnum: GridCellEnum.Edit,
-          columnName: column.columnName,
-          placeHolder: 'New',
-          rowIndex,
-          isNew: true,
-        }),
-      ),
-    };
-  });
-
-  dataTable.rows = [...rows, ...newRows];
 }

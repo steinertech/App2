@@ -1,46 +1,27 @@
-import client, { DB_NAME, dbInsert, dbLoad } from '../core/util-db.js';
+import { dbDelete, dbInsert, dbLoad, dbLoadByIds, dbUpdate } from '../core/util-db.js';
 import { ProjectDto } from '../../dto/db/project-dto.js';
-import { sectorKeyDb } from '../core/util-main.js';
+
+// Projects are global (sectorKeyDb): they are looked up by domain, without a selected project.
 
 export async function projectsLoad(request: Request): Promise<ProjectDto[]> {
   return dbLoad<ProjectDto>(request, 'ProjectDto', false);
 }
 
-export async function projectsLoadByNames(request: Request, names: string[]): Promise<ProjectDto[]> {
-  const key = await sectorKeyDb(request, 'ProjectDto');
-  const collection = client.db(DB_NAME).collection<ProjectDto>('myCollection');
-  return collection.find({ sectorKey: key, type: 'ProjectDto', name: { $in: names } }).toArray();
+/** ids are ObjectId hex strings (the grid's rowKeys); invalid ones are ignored. */
+export async function projectsLoadByIds(request: Request, ids: string[]): Promise<ProjectDto[]> {
+  return dbLoadByIds<ProjectDto>(request, 'ProjectDto', ids, false);
 }
 
-export async function projectsDeleteByNames(request: Request, names: string[]): Promise<void> {
-  const key = await sectorKeyDb(request, 'ProjectDto');
-  const collection = client.db(DB_NAME).collection<ProjectDto>('myCollection');
-  await collection.deleteMany({ sectorKey: key, type: 'ProjectDto', name: { $in: names } });
+/** Deletes the projects by ids (ObjectId hex strings, the grid's rowKeys); invalid ones are ignored. */
+export async function projectsDelete(request: Request, ids: string[]): Promise<void> {
+  return dbDelete(request, 'ProjectDto', ids, false);
 }
 
 export async function projectsInsert(request: Request, projectDtos: ProjectDto[]): Promise<ProjectDto[]> {
   return dbInsert<ProjectDto>(request, 'ProjectDto', projectDtos, false);
 }
 
+/** Updates projectDtos by _id (not by name, since name is editable). */
 export async function projectsUpdate(request: Request, projectDtos: ProjectDto[]): Promise<ProjectDto[]> {
-  const key = await sectorKeyDb(request, 'ProjectDto');
-  const collection = client.db(DB_NAME).collection<ProjectDto>('myCollection');
-
-  const projects = projectDtos.map((projectDto): ProjectDto => {
-    const { _id, ...rest } = projectDto;
-    return { ...rest, sectorKey: key, type: 'ProjectDto' };
-  });
-
-  if (projects.length > 0) {
-    await collection.bulkWrite(
-      projects.map((project) => ({
-        updateOne: {
-          filter: { name: project.name, sectorKey: key, type: 'ProjectDto' },
-          update: { $set: project },
-        },
-      })),
-    );
-  }
-
-  return projects;
+  return dbUpdate<ProjectDto>(request, 'ProjectDto', projectDtos, false);
 }
