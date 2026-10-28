@@ -4,7 +4,7 @@ import { DbDto } from '../../dto/db/db-dto.js';
 import { dbDelete, dbInsert, dbLoad, dbLoadByIds, dbUpdate } from './util-db.js';
 import {
   gridBarRow, gridCellText, gridCellValue, gridColumnChooserLoad, gridColumnChooserOk, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand,
-  gridLookupSet, gridRowValueSet, gridSelectedMultiRowKeys, gridTables,
+  gridLookupSet, gridRowValue, gridRowValueSet, gridSelectedMultiRowKeys, gridTables,
 } from './util-grid.js';
 
 // Generic data grid of the DbDto documents of one type (like the db functions of util-db.ts: sector by sectorKeyProjectDb, or sectorKeyDb if not isProject).
@@ -75,7 +75,7 @@ export async function gridDataLoad<T extends DbDto>(request: Request, type: stri
       ...columns.map(
         (column, columnIndex): GridCellDto => ({
           cellEnum: GridCellEnum.Edit,
-          text: gridCellText(dto[column.columnName as keyof T], column),
+          text: gridCellText(gridRowValue(dto, column), column),
           rowIndex,
           columnName: column.columnName,
           isSelectMulti: columnIndex === 0 ? true : undefined,
