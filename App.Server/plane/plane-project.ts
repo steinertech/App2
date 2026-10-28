@@ -163,11 +163,9 @@ async function gridProjectLoadGrid(request: Request, gridDto: GridDto): Promise<
     ],
   };
 
-  const time = new Date().toISOString().slice(11, 19);
-
   const result: GridDto = {
     ...gridDto,
-    title: `Project Data (${time})`,
+    title: 'Project Data',
     setting: { isSelectMultiPatch: true },
     tables: gridTables([deleteMultiRow], [headerRow, findRow, ...rows], [gridBarRow()]),
     state: { ...gridDto.state, ...fspState, rowKeys },

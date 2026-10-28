@@ -1,24 +1,20 @@
-import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridRowDto, GridSettingDto } from '../../dto/shared/grid-dto.js';
+import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomEnum, GridDto, GridRowDto } from '../../dto/shared/grid-dto.js';
 import { GridConfigColumnDto } from '../../dto/grid-config-dto.js';
 import { DbDto } from '../../dto/db/db-dto.js';
 import { dbDelete, dbInsert, dbLoad, dbLoadByIds, dbUpdate } from './util-db.js';
 import {
-  gridBarRow, gridCellText, gridCellValue, gridColumnChooserLoad, gridColumnChooserOk, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand,
-  gridLookupSet, gridRowValue, gridRowValueSet, gridSelectedMultiRowKeys, gridTables,
+  gridCellValue, gridColumnChooserLoad, gridColumnChooserOk, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFsp, gridIsCommand, gridLookupSet, gridRowValueSet,
+  gridSelectedMultiRowKeys, gridTables,
 } from './util-grid.js';
+import { GridRenderConfig, gridRender } from './util-grid-render.js';
 
 // Generic data grid of the DbDto documents of one type (like the db functions of util-db.ts: sector by sectorKeyProjectDb, or sectorKeyDb if not isProject).
 // Every rowKey is the document's _id (ObjectId hex), since name is editable or not sent to App.Web.
 
 /** Options of gridDataLoad. */
-export interface GridDataConfig<T extends DbDto> {
-  title: string;
+export interface GridDataConfig<T extends DbDto> extends GridRenderConfig {
   /** All columns (GridConfigDto.columns); the rendered ones are those of gridColumns. */
   columns: GridConfigColumnDto[];
-  /** Toolbar Column Chooser button (its lookup opened by the plane's patcher with gridColumnChooserLoad). */
-  isColumnChooser?: boolean;
-  /** Merged over { isSelectMultiPatch: true }. */
-  setting?: GridSettingDto;
   /** Writes Save's modified rows (gridDataSaveUpdate) and new rows (gridDataSaveInsert); default dbUpdate and dbInsert. */
   save?: (updates: T[], inserts: T[]) => Promise<void>;
   /** Deletes the confirmed rows by ids (ObjectId hex); default dbDelete. */
@@ -26,10 +22,9 @@ export interface GridDataConfig<T extends DbDto> {
 }
 
 /**
- * Builds a data grid of all documents of type: toolbar (Column Chooser if config.isColumnChooser, multi select Delete), header, find row, one row per document
- * of the page (every column editable, a Delete button) and the bar (New, Save, Reload, pager). Handles Delete and DeleteMulti (gridDataDelete), Save
- * (gridDataSaveUpdate, gridDataSaveInsert, written by config.save), New (gridDataNew), Column Chooser Ok and Filter Multi Ok; the lookup (planes[0]) is the
- * Column Chooser or Filter Multi kept open.
+ * Builds a data grid of all documents of type, rendered by gridRender (toolbar, header, find row, one row per document of the page, bar). Handles Delete and
+ * DeleteMulti (gridDataDelete), Save (gridDataSaveUpdate, gridDataSaveInsert, written by config.save), New (gridDataNew), Column Chooser Ok and Filter Multi
+ * Ok; the lookup (planes[0]) is the Column Chooser or Filter Multi kept open.
  */
 export async function gridDataLoad<T extends DbDto>(request: Request, type: string, gridDto: GridDto, config: GridDataConfig<T>, isProject = true): Promise<GridDto> {
   const { columns: allColumns, isColumnChooser } = config;
@@ -64,59 +59,7 @@ export async function gridDataLoad<T extends DbDto>(request: Request, type: stri
   const { rows: dtos, state: fspState } = gridFsp(allDtos, allColumns, gridDto.state);
   const columns = gridColumns(allColumns, isColumnChooser ? gridDto.state : undefined);
 
-  const headerRow: GridRowDto = {
-    cells: [
-      ...columns.map((column) => gridHeaderCell(column.columnName, gridDto.state?.sort, column.text)),
-      { cellEnum: GridCellEnum.Header, text: 'Command' },
-    ],
-  };
-  const rows: GridRowDto[] = dtos.map((dto, rowIndex) => ({
-    cells: [
-      ...columns.map(
-        (column, columnIndex): GridCellDto => ({
-          cellEnum: GridCellEnum.Edit,
-          text: gridCellText(gridRowValue(dto, column), column),
-          rowIndex,
-          columnName: column.columnName,
-          isSelectMulti: columnIndex === 0 ? true : undefined,
-        }),
-      ),
-      {
-        cellEnum: GridCellEnum.Custom,
-        customs: [{ text: 'Delete', name: 'Delete', customEnum: GridCustomEnum.Button, rowIndex } satisfies GridCustomDto],
-        rowIndex,
-      },
-    ],
-  }));
-
-  const rowKeys: string[] = dtos.map((dto) => dto._id?.toHexString() ?? '');
-  const isSelectedMulti = rowKeys.map((rowKey) => selectedMultiRowKeys.has(rowKey));
-  const findRow = gridFindRow([...columns.map((column) => column.columnName), undefined]);
-
-  const toolbarRow: GridRowDto = {
-    cells: [
-      {
-        cellEnum: GridCellEnum.Custom,
-        customs: [
-          ...(isColumnChooser ? [{ text: 'Column Chooser', name: 'ColumnChooser', customEnum: GridCustomEnum.ColumnChooser } satisfies GridCustomDto] : []),
-          {
-            text: 'Delete',
-            name: 'DeleteMulti',
-            customEnum: GridCustomEnum.Button,
-            isDisabled: !isSelectedMulti.some((isSelected) => isSelected),
-          },
-        ],
-      },
-    ],
-  };
-
-  const result: GridDto = {
-    ...gridDto,
-    title: config.title,
-    tables: gridTables([toolbarRow], [headerRow, findRow, ...rows], [gridBarRow()]),
-    state: { ...gridDto.state, ...fspState, rowKeys, isSelectedMulti },
-    setting: { isSelectMultiPatch: true, ...config.setting },
-  };
+  const result = gridRender(gridDto, dtos, columns, fspState, selectedMultiRowKeys, config);
 
   if (gridDto.command?.commandEnum === GridCommandEnum.New) {
     gridDataNew(result, columns);
