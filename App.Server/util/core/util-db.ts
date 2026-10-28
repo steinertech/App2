@@ -1,4 +1,4 @@
-import { AnyBulkWriteOperation, Filter, MongoClient, MongoClientOptions, ObjectId, OptionalUnlessRequiredId } from "mongodb";
+import { AnyBulkWriteOperation, Filter, MongoClient, MongoClientOptions, ObjectId, OptionalUnlessRequiredId, Sort } from "mongodb";
 import { attachDatabasePool } from "@vercel/functions";
 import { DbDto } from "../../dto/db/db-dto.js";
 import { sectorKeyDb, sectorKeyProjectDb } from "./util-main.js";
@@ -31,9 +31,15 @@ export default client;
 
 /** Loads all documents of type (the DTO interface name, e.g. 'PropertyDto') in its project (sectorKeyProjectDb, default) or, if not isProject, global (sectorKeyDb) sector. */
 export async function dbLoad<T extends DbDto>(request: Request, type: string, isProject = true): Promise<T[]> {
+  return dbLoadByFilter<T>(request, type, {}, isProject);
+}
+
+/** Like dbLoad, only the documents matching filter (its sectorKey and type are always overwritten by the ones of dbLoad), sorted by sort if set. */
+export async function dbLoadByFilter<T extends DbDto>(request: Request, type: string, filter: Filter<T>, isProject = true, sort?: Sort): Promise<T[]> {
   const key = await dbSectorKey(request, type, isProject);
   const collection = client.db(DB_NAME).collection<T>("myCollection");
-  return (await collection.find({ sectorKey: key, type } as Filter<T>).toArray()) as T[];
+  const cursor = collection.find({ ...filter, sectorKey: key, type } as Filter<T>);
+  return (await (sort === undefined ? cursor : cursor.sort(sort)).toArray()) as T[];
 }
 
 /** Sector key of dbLoad (and the other db functions) for type and isProject. */
@@ -43,10 +49,8 @@ async function dbSectorKey(request: Request, type: string, isProject: boolean): 
 
 /** Like dbLoad; ids are ObjectId hex strings (the grid's rowKeys); invalid ones are ignored. */
 export async function dbLoadByIds<T extends DbDto>(request: Request, type: string, ids: string[], isProject = true): Promise<T[]> {
-  const key = await dbSectorKey(request, type, isProject);
-  const collection = client.db(DB_NAME).collection<T>("myCollection");
   const objectIds = ids.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
-  return (await collection.find({ sectorKey: key, type, _id: { $in: objectIds } } as Filter<T>).toArray()) as T[];
+  return dbLoadByFilter<T>(request, type, { _id: { $in: objectIds } } as Filter<T>, isProject);
 }
 
 /** Inserts dtos (their _id ignored, sectorKey and type set) in the sector of dbLoad. */

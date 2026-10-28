@@ -1,4 +1,4 @@
-import client, { DB_NAME, dbInsert, dbLoad, dbLoadByIds, dbUpdate } from '../core/util-db.js';
+import client, { DB_NAME, dbInsert, dbLoad, dbLoadByFilter, dbLoadByIds, dbUpdate } from '../core/util-db.js';
 import { PropertyDto, PropertyOwnerEnum } from '../../dto/db/property-dto.js';
 import { sectorKeyProjectDb } from '../core/util-main.js';
 
@@ -24,9 +24,7 @@ export async function propertyLoadByOwners(request: Request, owners: PropertyOwn
   if (owners.length === 0) {
     return [];
   }
-  const key = await sectorKeyProjectDb(request, 'PropertyDto');
-  const collection = client.db(DB_NAME).collection<PropertyDto>('myCollection');
-  return collection.find({ sectorKey: key, type: 'PropertyDto', $or: owners.map(({ ownerName, ownerEnum }) => ({ ownerName, ownerEnum })) }).toArray();
+  return dbLoadByFilter<PropertyDto>(request, 'PropertyDto', { $or: owners.map(({ ownerName, ownerEnum }) => ({ ownerName, ownerEnum })) });
 }
 
 /** Deletes the properties attached to any of the owners (matching both ownerName and ownerEnum); none if owners is empty. */
@@ -41,9 +39,7 @@ export async function propertyDeleteByOwners(request: Request, owners: PropertyO
 
 /** Returns the properties of ownerEnum whose ownerName matches ownerNameRegex (e.g. all cells of a design form). */
 export async function propertyLoadByOwnerNameRegex(request: Request, ownerEnum: PropertyOwnerEnum, ownerNameRegex: RegExp): Promise<PropertyDto[]> {
-  const key = await sectorKeyProjectDb(request, 'PropertyDto');
-  const collection = client.db(DB_NAME).collection<PropertyDto>('myCollection');
-  return collection.find({ sectorKey: key, type: 'PropertyDto', ownerEnum, ownerName: { $regex: ownerNameRegex } }).toArray();
+  return dbLoadByFilter<PropertyDto>(request, 'PropertyDto', { ownerEnum, ownerName: { $regex: ownerNameRegex } });
 }
 
 /** Deletes the properties of ownerEnum whose ownerName matches ownerNameRegex (e.g. all cells of a design form). */

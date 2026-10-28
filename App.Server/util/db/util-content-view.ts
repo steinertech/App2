@@ -1,7 +1,6 @@
-import client, { DB_NAME } from '../core/util-db.js';
+import { dbLoadByFilter } from '../core/util-db.js';
 import { DesignBandDto } from '../../dto/db/design-band-dto.js';
 import { ContentBandDto, ContentBandEnum, DESIGN_BAND_PROPERTY_NAMES } from '../../dto/shared/content-dto.js';
-import { sectorKeyProjectDb } from '../core/util-main.js';
 import { designBandPropertyOwner } from './util-design.js';
 import { propertyLoadByOwners } from './util-property.js';
 
@@ -31,8 +30,6 @@ export async function contentViewBandLoad(request: Request, bandNames: string[])
   if (bandNames.length === 0) {
     return [];
   }
-  const key = await sectorKeyProjectDb(request, 'DesignBandDto');
-  const collection = client.db(DB_NAME).collection<DesignBandDto>('myCollection');
-  const bands = await collection.find({ sectorKey: key, type: 'DesignBandDto', name: { $in: bandNames as NonNullable<DesignBandDto['name']>[] } }).toArray();
+  const bands = await dbLoadByFilter<DesignBandDto>(request, 'DesignBandDto', { name: { $in: bandNames as NonNullable<DesignBandDto['name']>[] } });
   return contentBandLoad(request, bands);
 }

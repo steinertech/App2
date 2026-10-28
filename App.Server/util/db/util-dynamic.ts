@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import client, { DB_NAME, dbInsert, dbLoad, dbLoadByIds, dbUpdate } from '../core/util-db.js';
+import client, { DB_NAME, dbInsert, dbLoadByFilter, dbLoadByIds, dbUpdate } from '../core/util-db.js';
 import { DynamicDto, DynamicTableNameDto } from '../../dto/db/dynamic-dto.js';
 import { SchemaDto } from '../../dto/db/schema-dto.js';
 import { sectorKeyProjectDb } from '../core/util-main.js';
@@ -16,9 +16,7 @@ export async function dynamicTableLoad(request: Request): Promise<DynamicTableNa
 
 /** Returns the SchemaDto.columnName values of tableName, in creation order. */
 export async function dynamicColumnNameLoad(request: Request, tableName: string): Promise<string[]> {
-  const key = await sectorKeyProjectDb(request, 'SchemaDto');
-  const collection = client.db(DB_NAME).collection<SchemaDto>('myCollection');
-  const schemas = await collection.find({ sectorKey: key, type: 'SchemaDto', tableName }).sort({ _id: 1 }).toArray();
+  const schemas = await dbLoadByFilter<SchemaDto>(request, 'SchemaDto', { tableName }, true, { _id: 1 });
   return schemas.map((schema) => schema.columnName);
 }
 
@@ -26,12 +24,7 @@ export async function dynamicColumnNameLoad(request: Request, tableName: string)
 
 /** Returns the rows with tableName, or all rows if tableName is undefined. */
 export async function dynamicLoad(request: Request, tableName?: string): Promise<DynamicDto[]> {
-  if (tableName === undefined) {
-    return dbLoad<DynamicDto>(request, 'DynamicDto');
-  }
-  const key = await sectorKeyProjectDb(request, 'DynamicDto');
-  const collection = client.db(DB_NAME).collection<DynamicDto>('myCollection');
-  return collection.find({ sectorKey: key, type: 'DynamicDto', tableName }).toArray();
+  return dbLoadByFilter<DynamicDto>(request, 'DynamicDto', tableName === undefined ? {} : { tableName });
 }
 
 /** ids are ObjectId hex strings (the grid's rowKeys); invalid ones are ignored. */

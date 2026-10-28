@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import client, { DB_NAME, dbInsert, dbLoad, dbUpdate } from '../core/util-db.js';
+import client, { DB_NAME, dbInsert, dbLoad, dbLoadByFilter, dbUpdate } from '../core/util-db.js';
 import { UserDto } from '../../dto/db/user-dto.js';
 import { SessionDto } from '../../dto/db/session-dto.js';
 import { domainName, sectorKeyDb } from '../core/util-main.js';
@@ -15,15 +15,7 @@ export async function signUp(request: Request, email: string, password: string) 
 }
 
 export async function signIn(request: Request, email: string, password: string) {
-  const userCollection = client.db(DB_NAME).collection<UserDto>('myCollection');
-
-  const user = await userCollection.findOne({
-    email,
-    password,
-    name: userName(request, email),
-    sectorKey: await sectorKeyDb(request, 'UserDto'),
-    type: 'UserDto',
-  });
+  const user = (await dbLoadByFilter<UserDto>(request, 'UserDto', { email, password, name: userName(request, email) }, false))[0];
   if (!user) {
     return null;
   }

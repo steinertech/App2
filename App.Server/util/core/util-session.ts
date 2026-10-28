@@ -1,6 +1,5 @@
-import client, { DB_NAME } from './util-db.js';
+import { dbLoadByFilter } from './util-db.js';
 import { SessionDto } from '../../dto/db/session-dto.js';
-import { sectorKeyDb } from './util-main.js';
 
 export async function userSession(request: Request) {
   const cookieHeader = request.headers.get('cookie') ?? '';
@@ -14,11 +13,6 @@ export async function userSession(request: Request) {
     return null;
   }
 
-  const sessionCollection = client.db(DB_NAME).collection<SessionDto>('myCollection');
-  return sessionCollection.findOne({
-    sessionId,
-    isSignIn: true,
-    sectorKey: await sectorKeyDb(request, 'SessionDto'),
-    type: 'SessionDto',
-  });
+  // Global sector (isProject false): the project sector key itself needs the session.
+  return (await dbLoadByFilter<SessionDto>(request, 'SessionDto', { sessionId, isSignIn: true }, false))[0] ?? null;
 }

@@ -1,6 +1,5 @@
-import client, { DB_NAME, dbInsert, dbLoad, dbLoadByIds, dbUpdate } from '../core/util-db.js';
+import { dbInsert, dbLoad, dbLoadByFilter, dbLoadByIds, dbUpdate } from '../core/util-db.js';
 import { DebugContentDto, DebugPropertyDto } from '../../dto/db/debug-property-dto.js';
-import { sectorKeyDb } from '../core/util-main.js';
 
 export async function debugContentLoad(request: Request): Promise<DebugContentDto[]> {
   return dbLoad<DebugContentDto>(request, 'DebugContentDto', false);
@@ -33,10 +32,8 @@ export async function debugPropertyLoadByOwners(
   if (owners.length === 0) {
     return [];
   }
-  const key = await sectorKeyDb(request, 'DebugPropertyDto');
-  const collection = client.db(DB_NAME).collection<DebugPropertyDto>('myCollection');
   const load = () =>
-    collection.find({ sectorKey: key, type: 'DebugPropertyDto', $or: owners.map(({ ownerName, ownerType }) => ({ ownerName, ownerType })) }).toArray();
+    dbLoadByFilter<DebugPropertyDto>(request, 'DebugPropertyDto', { $or: owners.map(({ ownerName, ownerType }) => ({ ownerName, ownerType })) }, false);
 
   const properties = await load();
 
