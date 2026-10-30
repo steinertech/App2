@@ -34,4 +34,6 @@ export interface GridConfigDto {
   /** Grid title (GridDto.title). */
   title: string;
   columns?: GridConfigColumnDto[];
+  /** Toolbar Column Chooser button (its lookup opened by the plane's patcher with gridColumnChooserLoad). */
+  isColumnChooser?: boolean;
 }

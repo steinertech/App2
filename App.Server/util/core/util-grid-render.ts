@@ -1,5 +1,5 @@
 import { GridCellDto, GridCellEnum, GridCustomDto, GridCustomEnum, GridDto, GridRowDto, GridSettingDto, GridStateDto } from '../../dto/shared/grid-dto.js';
-import { GridConfigColumnDto } from '../../dto/grid-config-dto.js';
+import { GridConfigColumnDto, GridConfigDto } from '../../dto/grid-config-dto.js';
 import { DbDto } from '../../dto/db/db-dto.js';
 import { gridBarRow, gridCellText, gridFindRow, gridHeaderCell, gridRowValue, gridTables } from './util-grid.js';
 
@@ -7,10 +7,7 @@ import { gridBarRow, gridCellText, gridFindRow, gridHeaderCell, gridRowValue, gr
 // Every rowKey is the document's _id (ObjectId hex), since name is editable or not sent to App.Web.
 
 /** Options of gridRender. */
-export interface GridRenderConfig {
-  title: string;
-  /** Toolbar Column Chooser button (its lookup opened by the plane's patcher with gridColumnChooserLoad). */
-  isColumnChooser?: boolean;
+export interface GridRenderConfig extends GridConfigDto {
   /** Merged over { isSelectMultiPatch: true }. */
   setting?: GridSettingDto;
 }

@@ -10,6 +10,7 @@ const DEBUG_CONFIG: GridConfigDto = {
   columns: (['name', 'text'] as const satisfies readonly (keyof DebugDto)[]).map(
     (columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text }),
   ),
+  isColumnChooser: true,
 };
 
 /** Loads the "debug" plane: the debug grid (GridPlaneDto.grids[0]). */
@@ -19,7 +20,7 @@ export async function planeDebugLoad(request: Request, gridPlaneDto: GridPlaneDt
 }
 
 async function gridDebugLoad(request: Request, gridDto: GridDto): Promise<GridDto> {
-  return gridDataLoad<DebugDto>(request, 'DebugDto', gridDto, { title: DEBUG_CONFIG.title, columns: DEBUG_CONFIG.columns ?? [], isColumnChooser: true }, false);
+  return gridDataLoad<DebugDto>(request, 'DebugDto', gridDto, { ...DEBUG_CONFIG, columns: DEBUG_CONFIG.columns ?? [] }, false);
 }
 
 /**

@@ -31,6 +31,7 @@ const DEBUG_DYNAMIC_CONFIG: GridConfigDto = {
       valueFromText: debugDynamicSchemaIsPropertyFromText,
     },
   ],
+  isColumnChooser: true,
 };
 
 /** Loads the "debugDynamic" plane: the debug dynamic grid (GridPlaneDto.grids[0]). */
@@ -40,7 +41,7 @@ export async function planeDebugDynamicLoad(request: Request, gridPlaneDto: Grid
 }
 
 async function gridDebugDynamicLoad(request: Request, gridDto: GridDto): Promise<GridDto> {
-  return gridDataLoad<DebugDynamicSchemaDto>(request, 'DebugDynamicSchemaDto', gridDto, { title: DEBUG_DYNAMIC_CONFIG.title, columns: DEBUG_DYNAMIC_CONFIG.columns ?? [], isColumnChooser: true }, false);
+  return gridDataLoad<DebugDynamicSchemaDto>(request, 'DebugDynamicSchemaDto', gridDto, { ...DEBUG_DYNAMIC_CONFIG, columns: DEBUG_DYNAMIC_CONFIG.columns ?? [] }, false);
 }
 
 /**

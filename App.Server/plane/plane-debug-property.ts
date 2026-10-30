@@ -11,6 +11,7 @@ const DEBUG_CONTENT_CONFIG: GridConfigDto = {
   columns: (['name', 'text'] as const satisfies readonly (keyof DebugContentDto)[]).map(
     (columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text }),
   ),
+  isColumnChooser: true,
 };
 
 const DEBUG_PROPERTY_CONFIG: GridConfigDto = {
@@ -75,7 +76,7 @@ async function gridDebugContentLoad(request: Request, gridDto: GridDto): Promise
     request,
     'DebugContentDto',
     gridDto,
-    { title: DEBUG_CONTENT_CONFIG.title, columns: DEBUG_CONTENT_CONFIG.columns ?? [], isColumnChooser: true, setting: { isSelectPatch: true, isSelectColumnPatch: true } },
+    { ...DEBUG_CONTENT_CONFIG, columns: DEBUG_CONTENT_CONFIG.columns ?? [], setting: { isSelectPatch: true, isSelectColumnPatch: true } },
     false,
   );
 }
