@@ -7,16 +7,20 @@ import { gridDataLoad, gridDataNew, gridDataSaveInsert, gridDataSaveUpdate } fro
 import { indexToColumnNameExcel } from '../util/core/util-main.js';
 
 const DEBUG_CONTENT_COLUMNS: GridConfigDto = {
+  title: 'Debug Content',
   columns: (['name', 'text'] as const satisfies readonly (keyof DebugContentDto)[]).map(
     (columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text }),
   ),
 };
 
 const DEBUG_PROPERTY_COLUMNS: GridConfigDto = {
+  title: 'Debug Property',
   columns: (['name', 'ownerName', 'ownerType', 'propertyName', 'propertyValue'] as const satisfies readonly (keyof DebugPropertyDto)[]).map(
     (columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text }),
   ),
 };
+
+const DEBUG_TABLE_CONFIG: GridConfigDto = { title: 'Debug Table' };
 
 /**
  * Loads the "debugProperty" plane: the debug content grid (GridPlaneDto.grids[0]), the debug property grid (grids[1])
@@ -71,7 +75,7 @@ async function gridDebugContentLoad(request: Request, gridDto: GridDto): Promise
     request,
     'DebugContentDto',
     gridDto,
-    { title: 'Debug Content', columns: DEBUG_CONTENT_COLUMNS.columns ?? [], isColumnChooser: true, setting: { isSelectPatch: true, isSelectColumnPatch: true } },
+    { title: DEBUG_CONTENT_COLUMNS.title, columns: DEBUG_CONTENT_COLUMNS.columns ?? [], isColumnChooser: true, setting: { isSelectPatch: true, isSelectColumnPatch: true } },
     false,
   );
 }
@@ -112,7 +116,7 @@ async function gridDebugPropertyLoad(request: Request, gridDto: GridDto, owners:
 
   const result: GridDto = {
     ...gridDto,
-    title: 'Debug Property',
+    title: DEBUG_PROPERTY_COLUMNS.title,
     tables: gridTables([], [headerRow, findRow, ...rows], [gridBarRow()]),
     state: { ...gridDto.state, ...fspState, rowKeys },
     setting: { isReloadPatch: true },
@@ -164,7 +168,7 @@ async function gridDebugTableLoad(request: Request, gridDto: GridDto, owners: De
   const isSelected = selectedRowIndex !== undefined && selectedRowIndex < rows.length && selectedColumnName !== undefined && columnNames.includes(selectedColumnName);
 
   return {
-    title: 'Debug Table',
+    title: DEBUG_TABLE_CONFIG.title,
     tables: gridTables([], columnNames.length > 0 ? [headerRow, ...rows] : []),
     state: isSelected ? { selectedRowIndex, selectedColumnName } : {},
     setting: { isSelectPatch: true, isSelectColumnPatch: true },

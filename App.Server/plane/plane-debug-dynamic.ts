@@ -18,6 +18,7 @@ function debugDynamicSchemaIsPropertyFromText(text: string): boolean {
 }
 
 const DEBUG_DYNAMIC_COLUMNS: GridConfigDto = {
+  title: 'Debug Dynamic Schema',
   columns: [
     ...(['name', 'text', 'dynamicTableName', 'dynamicColumnName'] as const satisfies readonly (keyof DebugDynamicSchemaDto)[]).map(
       (columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text }),
@@ -39,7 +40,7 @@ export async function planeDebugDynamicLoad(request: Request, gridPlaneDto: Grid
 }
 
 async function gridDebugDynamicLoad(request: Request, gridDto: GridDto): Promise<GridDto> {
-  return gridDataLoad<DebugDynamicSchemaDto>(request, 'DebugDynamicSchemaDto', gridDto, { title: 'Debug Dynamic Schema', columns: DEBUG_DYNAMIC_COLUMNS.columns ?? [], isColumnChooser: true }, false);
+  return gridDataLoad<DebugDynamicSchemaDto>(request, 'DebugDynamicSchemaDto', gridDto, { title: DEBUG_DYNAMIC_COLUMNS.title, columns: DEBUG_DYNAMIC_COLUMNS.columns ?? [], isColumnChooser: true }, false);
 }
 
 /**

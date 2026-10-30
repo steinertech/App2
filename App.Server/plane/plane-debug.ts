@@ -6,6 +6,7 @@ import { gridColumnChooserLoad, gridFilterMultiLoad, gridPatchDeleteMulti } from
 import { gridDataLoad } from '../util/core/util-grid-data.js';
 
 const DEBUG_COLUMNS: GridConfigDto = {
+  title: 'Debug Data',
   columns: (['name', 'text'] as const satisfies readonly (keyof DebugDto)[]).map(
     (columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text }),
   ),
@@ -18,7 +19,7 @@ export async function planeDebugLoad(request: Request, gridPlaneDto: GridPlaneDt
 }
 
 async function gridDebugLoad(request: Request, gridDto: GridDto): Promise<GridDto> {
-  return gridDataLoad<DebugDto>(request, 'DebugDto', gridDto, { title: 'Debug Data', columns: DEBUG_COLUMNS.columns ?? [], isColumnChooser: true }, false);
+  return gridDataLoad<DebugDto>(request, 'DebugDto', gridDto, { title: DEBUG_COLUMNS.title, columns: DEBUG_COLUMNS.columns ?? [], isColumnChooser: true }, false);
 }
 
 /**

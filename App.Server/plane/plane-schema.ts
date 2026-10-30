@@ -6,6 +6,7 @@ import { gridBarRow, gridCellText, gridColumns, gridFilterMultiLoad, gridFilterM
 import { gridDataNew, gridDataSaveInsert, gridDataSaveUpdate } from '../util/core/util-grid-data.js';
 
 const SCHEMA_COLUMNS: GridConfigDto = {
+  title: 'Schema',
   columns: (['tableName', 'columnName'] as const satisfies readonly (keyof SchemaDto)[]).map(
     (columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text }),
   ),
@@ -47,7 +48,7 @@ export async function planeSchemaLoad(request: Request, gridPlaneDto: GridPlaneD
 
   const result: GridDto = {
     ...gridDto,
-    title: 'Schema',
+    title: SCHEMA_COLUMNS.title,
     tables: gridTables([], [headerRow, findRow, ...rows], [gridBarRow()]),
     state: { ...gridDto.state, ...fspState, rowKeys },
   };

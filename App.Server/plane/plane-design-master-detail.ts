@@ -21,6 +21,7 @@ function designMasterDetailIsActiveFromText(text: string): boolean {
 
 // name is not a column, so it's never sent to App.Web (designMasterDetailInsert/designMasterDetailUpdate set it by designMasterDetailName).
 const DESIGN_MASTER_DETAIL_COLUMNS: GridConfigDto = {
+  title: 'Design Master Detail',
   columns: [
     { columnName: 'contentName' satisfies keyof DesignMasterDetailDto, text: 'Content', typeEnum: GridConfigTypeEnum.Text },
     { columnName: 'bandNameMaster' satisfies keyof DesignMasterDetailDto, text: 'Master Band', typeEnum: GridConfigTypeEnum.Text },
@@ -43,7 +44,7 @@ const DESIGN_MASTER_DETAIL_COLUMNS: GridConfigDto = {
  */
 export async function gridDesignMasterDetailLoad(request: Request, gridDto: GridDto): Promise<GridDto> {
   return gridDataLoad<DesignMasterDetailDto>(request, 'DesignMasterDetailDto', gridDto, {
-    title: 'Design Master Detail',
+    title: DESIGN_MASTER_DETAIL_COLUMNS.title,
     columns: DESIGN_MASTER_DETAIL_COLUMNS.columns ?? [],
     save: async (updates, inserts) => {
       // Nothing is written if the saved master details would be circular (a content view can't tell which grid to filter first). The error keeps App.Web's

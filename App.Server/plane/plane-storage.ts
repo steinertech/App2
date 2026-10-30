@@ -6,6 +6,7 @@ import { gridBarRow, gridCellText, gridColumnChooserLoad, gridColumnChooserOk, g
 import { gridDataDelete, gridDataNew } from '../util/core/util-grid-data.js';
 
 const STORAGE_FILE_COLUMNS: GridConfigDto = {
+  title: 'Storage Data',
   columns: [
     { columnName: 'fileNameOnly' satisfies keyof StorageFileDto, text: 'File Name', typeEnum: GridConfigTypeEnum.Text, columnNameSort: 'fileNameOnlySort' satisfies keyof StorageFileDto },
     { columnName: 'size' satisfies keyof StorageFileDto, typeEnum: GridConfigTypeEnum.Number, valueToText: (value) => gridFormatSize(value as number), valueFromText: gridParseSize },
@@ -16,6 +17,8 @@ const STORAGE_FILE_COLUMNS: GridConfigDto = {
 };
 /** Storage columns whose values are rendered read-only (GridCellEnum.Label) instead of as text boxes. */
 const STORAGE_FILE_LABEL_COLUMNS = new Set<string | undefined>(['size', 'dateModified', 'isFolder'] satisfies (keyof StorageFileDto)[]);
+
+const IMAGE_PREVIEW_CONFIG: GridConfigDto = { title: 'Image Preview' };
 
 /** Loads the "storage" plane: the storage grid (GridPlaneDto.grids[0]) and, if a .jpg or .png file is selected, the Image Preview grid (grids[1]). */
 export async function planeStorageLoad(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
@@ -172,7 +175,7 @@ export async function planeStorageLoad(request: Request, gridPlaneDto: GridPlane
     ...gridDto,
     tables: gridTables([toolbarRow, toolbarRow2], [headerRow, findRow, ...fileRows], [gridBarRow()]),
     state: { ...gridDto.state, ...fspState, rowKeys, isSelectedMulti },
-    title: 'Storage Data',
+    title: STORAGE_FILE_COLUMNS.title,
     setting: { isSelectPatch: true, isSelectMultiPatch: true },
   };
 
@@ -335,7 +338,7 @@ async function gridStoragePreview(request: Request, storageGridDto: GridDto): Pr
 
   const [imageUrl] = await storageDownloadUrls(request, [rowKey]);
   return {
-    title: 'Image Preview',
+    title: IMAGE_PREVIEW_CONFIG.title,
     tables: gridTables([], [{ cells: [{ cellEnum: GridCellEnum.Custom, customs: [{ customEnum: GridCustomEnum.Image, imageUrl, text: rowKey.split('/').pop() }] }] }]),
   };
 }

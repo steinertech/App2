@@ -10,12 +10,14 @@ import { gridBarRow, gridCellText, gridColumns, gridFindCommand, gridFindRow, gr
 import { gridDataNew, gridDataSaveInsert, gridDataSaveUpdate } from '../util/core/util-grid-data.js';
 
 const PROJECT_COLUMNS: GridConfigDto = {
+  title: 'Project Data',
   columns: (['name', 'description'] as const satisfies readonly (keyof ProjectDto)[]).map(
     (columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text }),
   ),
 };
 
 const USER_COLUMNS: GridConfigDto = {
+  title: 'User Data',
   columns: (['email', 'sectorKey'] as const satisfies readonly (keyof UserDto)[]).map(
     (columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text }),
   ),
@@ -69,7 +71,7 @@ async function gridUserLoadGrid(request: Request, gridDto: GridDto): Promise<Gri
   }));
   const findRow = gridFindRow([...gridColumns(USER_COLUMNS.columns ?? []).map((column) => column.columnName)]);
 
-  return { ...gridDto, title: 'User Data', tables: gridTables([], [headerRow, findRow, ...rows]) };
+  return { ...gridDto, title: USER_COLUMNS.title, tables: gridTables([], [headerRow, findRow, ...rows]) };
 }
 
 async function gridProjectLoadGrid(request: Request, gridDto: GridDto): Promise<GridDto> {
@@ -165,7 +167,7 @@ async function gridProjectLoadGrid(request: Request, gridDto: GridDto): Promise<
 
   const result: GridDto = {
     ...gridDto,
-    title: 'Project Data',
+    title: PROJECT_COLUMNS.title,
     setting: { isSelectMultiPatch: true },
     tables: gridTables([deleteMultiRow], [headerRow, findRow, ...rows], [gridBarRow()]),
     state: { ...gridDto.state, ...fspState, rowKeys },

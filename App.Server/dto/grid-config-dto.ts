@@ -31,5 +31,7 @@ export interface GridConfigColumnDto {
 }
 
 export interface GridConfigDto {
+  /** Grid title (GridDto.title). */
+  title: string;
   columns?: GridConfigColumnDto[];
 }

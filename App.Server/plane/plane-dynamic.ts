@@ -6,10 +6,14 @@ import { gridBarRow, gridCellText, gridCellValue, gridColumnChooserLoad, gridCol
 import { gridDataNew, gridDataSaveInsert, gridDataSaveUpdate } from '../util/core/util-grid-data.js';
 
 const DYNAMIC_TABLE_NAME_COLUMNS: GridConfigDto = {
+  title: 'Table',
   columns: (['tableName'] as const satisfies readonly (keyof DynamicTableNameDto)[]).map(
     (columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text }),
   ),
 };
+
+/** The Data grid's columns depend on its table (gridDynamicDataColumns). */
+const DYNAMIC_DATA_CONFIG: GridConfigDto = { title: 'Data' };
 
 /** Static columns of the Data grid: DynamicDto fields. A SchemaDto.columnName with one of these names is skipped, since a grid's column names are unique. */
 const DYNAMIC_STATIC_COLUMN_NAMES: readonly string[] = ['tableName'] satisfies (keyof DynamicDto)[];
@@ -92,7 +96,7 @@ async function gridDynamicLoad(request: Request, gridDto: GridDto): Promise<Grid
 
   const result: GridDto = {
     ...gridDto,
-    title: 'Table',
+    title: DYNAMIC_TABLE_NAME_COLUMNS.title,
     tables: gridTables([], [headerRow, findRow, ...rows], [gridBarRow()]),
     state: { ...gridDto.state, ...fspState, rowKeys },
     setting: { isSelectPatch: true },
@@ -162,7 +166,7 @@ export async function gridDynamicDataLoad(
 
   const result: GridDto = {
     ...gridDto,
-    title: 'Data',
+    title: DYNAMIC_DATA_CONFIG.title,
     tables: gridTables(toolbarRows, [headerRow, findRow, ...rows], [gridBarRow()]),
     state: { ...gridDto.state, ...fspState, rowKeys },
   };
