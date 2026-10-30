@@ -1,4 +1,4 @@
-import { GridCellDto, GridCellEnum, GridCustomDto, GridCustomEnum, GridDto, GridRowDto, GridSettingDto, GridStateDto } from '../../dto/shared/grid-dto.js';
+import { GridCellDto, GridCellEnum, GridCustomDto, GridCustomEnum, GridDto, GridRowDto, GridStateDto } from '../../dto/shared/grid-dto.js';
 import { GridConfigColumnDto, GridConfigDto } from '../../dto/grid-config-dto.js';
 import { DbDto } from '../../dto/db/db-dto.js';
 import { gridBarRow, gridCellText, gridFindRow, gridHeaderCell, gridRowValue, gridTables } from './util-grid.js';
@@ -6,16 +6,11 @@ import { gridBarRow, gridCellText, gridFindRow, gridHeaderCell, gridRowValue, gr
 // Render of the generic data grid (gridDataLoad of util-grid-data.ts): turns the already loaded, filtered and paged documents into the GridDto tables.
 // Every rowKey is the document's _id (ObjectId hex), since name is editable or not sent to App.Web.
 
-/** Options of gridRender. */
-export interface GridRenderConfig extends GridConfigDto {
-  /** Merged over { isSelectMultiPatch: true }. */
-  setting?: GridSettingDto;
-}
-
 /**
  * Returns gridDto rendered with dtos (the rows of the current page) and the rendered columns: toolbar (Column Chooser if config.isColumnChooser, multi select
  * Delete, enabled if a row of selectedMultiRowKeys is on the page), header, find row, one row per document (every column editable, a Delete button) and the
- * bar (New, Save, Reload, pager). Its state is gridDto.state merged with state (e.g. the one of gridFsp), the rowKeys and the multi selection.
+ * bar (New, Save, Reload, pager). Its state is gridDto.state merged with state (e.g. the one of gridFsp), the rowKeys and the multi selection,
+ * its setting config.setting merged over { isSelectMultiPatch: true }.
  */
 export function gridRender<T extends DbDto>(
   gridDto: GridDto,
@@ -23,7 +18,7 @@ export function gridRender<T extends DbDto>(
   columns: GridConfigColumnDto[],
   state: GridStateDto,
   selectedMultiRowKeys: Set<string>,
-  config: GridRenderConfig,
+  config: GridConfigDto,
 ): GridDto {
   const headerRow: GridRowDto = {
     cells: [

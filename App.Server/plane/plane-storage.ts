@@ -14,6 +14,7 @@ const STORAGE_FILE_CONFIG: GridConfigDto = {
     { columnName: 'isFolder' satisfies keyof StorageFileDto, typeEnum: GridConfigTypeEnum.Text, valueToText: (value) => (value === true ? 'Yes' : 'No') },
     { columnName: 'fileNameOnlySort' satisfies keyof StorageFileDto, typeEnum: GridConfigTypeEnum.Text, isHide: true },
   ],
+  setting: { isSelectPatch: true, isSelectMultiPatch: true },
 };
 /** Storage columns whose values are rendered read-only (GridCellEnum.Label) instead of as text boxes. */
 const STORAGE_FILE_LABEL_COLUMNS = new Set<string | undefined>(['size', 'dateModified', 'isFolder'] satisfies (keyof StorageFileDto)[]);
@@ -176,7 +177,7 @@ export async function planeStorageLoad(request: Request, gridPlaneDto: GridPlane
     tables: gridTables([toolbarRow, toolbarRow2], [headerRow, findRow, ...fileRows], [gridBarRow()]),
     state: { ...gridDto.state, ...fspState, rowKeys, isSelectedMulti },
     title: STORAGE_FILE_CONFIG.title,
-    setting: { isSelectPatch: true, isSelectMultiPatch: true },
+    setting: STORAGE_FILE_CONFIG.setting,
   };
 
   if (gridDto.command?.commandEnum === GridCommandEnum.New) {

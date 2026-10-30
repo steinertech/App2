@@ -1,18 +1,18 @@
 import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomEnum, GridDto, GridRowDto } from '../../dto/shared/grid-dto.js';
-import { GridConfigColumnDto } from '../../dto/grid-config-dto.js';
+import { GridConfigColumnDto, GridConfigDto } from '../../dto/grid-config-dto.js';
 import { DbDto } from '../../dto/db/db-dto.js';
 import { dbDelete, dbInsert, dbLoad, dbLoadByIds, dbUpdate } from './util-db.js';
 import {
   gridCellValue, gridColumnChooserLoad, gridColumnChooserOk, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFsp, gridIsCommand, gridLookupSet, gridRowValueSet,
   gridSelectedMultiRowKeys, gridTables,
 } from './util-grid.js';
-import { GridRenderConfig, gridRender } from './util-grid-render.js';
+import { gridRender } from './util-grid-render.js';
 
 // Generic data grid of the DbDto documents of one type (like the db functions of util-db.ts: sector by sectorKeyProjectDb, or sectorKeyDb if not isProject).
 // Every rowKey is the document's _id (ObjectId hex), since name is editable or not sent to App.Web.
 
 /** Options of gridDataLoad. */
-export interface GridDataConfig<T extends DbDto> extends GridRenderConfig {
+export interface GridDataConfig<T extends DbDto> extends GridConfigDto {
   /** All columns (GridConfigDto.columns); the rendered ones are those of gridColumns. */
   columns: GridConfigColumnDto[];
   /** Writes Save's modified rows (gridDataSaveUpdate) and new rows (gridDataSaveInsert); default dbUpdate and dbInsert. */

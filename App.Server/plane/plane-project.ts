@@ -14,6 +14,7 @@ const PROJECT_CONFIG: GridConfigDto = {
   columns: (['name', 'description'] as const satisfies readonly (keyof ProjectDto)[]).map(
     (columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text }),
   ),
+  setting: { isSelectMultiPatch: true },
 };
 
 const USER_CONFIG: GridConfigDto = {
@@ -168,7 +169,7 @@ async function gridProjectLoadGrid(request: Request, gridDto: GridDto): Promise<
   const result: GridDto = {
     ...gridDto,
     title: PROJECT_CONFIG.title,
-    setting: { isSelectMultiPatch: true },
+    setting: PROJECT_CONFIG.setting,
     tables: gridTables([deleteMultiRow], [headerRow, findRow, ...rows], [gridBarRow()]),
     state: { ...gridDto.state, ...fspState, rowKeys },
   };

@@ -1,3 +1,5 @@
+import { GridSettingDto } from './shared/grid-dto.js';
+
 export enum GridConfigTypeEnum {
   None = 0,
   Text = 1,
@@ -36,4 +38,6 @@ export interface GridConfigDto {
   columns?: GridConfigColumnDto[];
   /** Toolbar Column Chooser button (its lookup opened by the plane's patcher with gridColumnChooserLoad). */
   isColumnChooser?: boolean;
+  /** Grid setting (GridDto.setting). */
+  setting?: GridSettingDto;
 }

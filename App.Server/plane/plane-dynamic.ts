@@ -10,6 +10,7 @@ const DYNAMIC_TABLE_NAME_CONFIG: GridConfigDto = {
   columns: (['tableName'] as const satisfies readonly (keyof DynamicTableNameDto)[]).map(
     (columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text }),
   ),
+  setting: { isSelectPatch: true },
 };
 
 /** The Data grid's columns depend on its table (gridDynamicDataColumns). */
@@ -99,7 +100,7 @@ async function gridDynamicLoad(request: Request, gridDto: GridDto): Promise<Grid
     title: DYNAMIC_TABLE_NAME_CONFIG.title,
     tables: gridTables([], [headerRow, findRow, ...rows], [gridBarRow()]),
     state: { ...gridDto.state, ...fspState, rowKeys },
-    setting: { isSelectPatch: true },
+    setting: DYNAMIC_TABLE_NAME_CONFIG.setting,
   };
 
   // Lookup (planes[0]): Filter Multi (opened by planeDynamicPatch, kept open while planes[0].planeName is filterMulti).

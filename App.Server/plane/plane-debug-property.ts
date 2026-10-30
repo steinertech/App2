@@ -12,6 +12,7 @@ const DEBUG_CONTENT_CONFIG: GridConfigDto = {
     (columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text }),
   ),
   isColumnChooser: true,
+  setting: { isSelectPatch: true, isSelectColumnPatch: true },
 };
 
 const DEBUG_PROPERTY_CONFIG: GridConfigDto = {
@@ -19,9 +20,10 @@ const DEBUG_PROPERTY_CONFIG: GridConfigDto = {
   columns: (['name', 'ownerName', 'ownerType', 'propertyName', 'propertyValue'] as const satisfies readonly (keyof DebugPropertyDto)[]).map(
     (columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text }),
   ),
+  setting: { isReloadPatch: true },
 };
 
-const DEBUG_TABLE_CONFIG: GridConfigDto = { title: 'Debug Table' };
+const DEBUG_TABLE_CONFIG: GridConfigDto = { title: 'Debug Table', setting: { isSelectPatch: true, isSelectColumnPatch: true } };
 
 /**
  * Loads the "debugProperty" plane: the debug content grid (GridPlaneDto.grids[0]), the debug property grid (grids[1])
@@ -72,13 +74,7 @@ function gridDebugPropertyOwners(owners: DebugPropertyOwner[], tableGridDto: Gri
 }
 
 async function gridDebugContentLoad(request: Request, gridDto: GridDto): Promise<GridDto> {
-  return gridDataLoad<DebugContentDto>(
-    request,
-    'DebugContentDto',
-    gridDto,
-    { ...DEBUG_CONTENT_CONFIG, columns: DEBUG_CONTENT_CONFIG.columns ?? [], setting: { isSelectPatch: true, isSelectColumnPatch: true } },
-    false,
-  );
+  return gridDataLoad<DebugContentDto>(request, 'DebugContentDto', gridDto, { ...DEBUG_CONTENT_CONFIG, columns: DEBUG_CONTENT_CONFIG.columns ?? [] }, false);
 }
 
 /** Debug property grid: the properties of owners (see gridDebugPropertyOwners); rows can be added (New), edited and saved; no Column Chooser and no Delete. */
@@ -120,7 +116,7 @@ async function gridDebugPropertyLoad(request: Request, gridDto: GridDto, owners:
     title: DEBUG_PROPERTY_CONFIG.title,
     tables: gridTables([], [headerRow, findRow, ...rows], [gridBarRow()]),
     state: { ...gridDto.state, ...fspState, rowKeys },
-    setting: { isReloadPatch: true },
+    setting: DEBUG_PROPERTY_CONFIG.setting,
   };
 
   if (gridDto.command?.commandEnum === GridCommandEnum.New) {
@@ -172,7 +168,7 @@ async function gridDebugTableLoad(request: Request, gridDto: GridDto, owners: De
     title: DEBUG_TABLE_CONFIG.title,
     tables: gridTables([], columnNames.length > 0 ? [headerRow, ...rows] : []),
     state: isSelected ? { selectedRowIndex, selectedColumnName } : {},
-    setting: { isSelectPatch: true, isSelectColumnPatch: true },
+    setting: DEBUG_TABLE_CONFIG.setting,
   };
 }
 
