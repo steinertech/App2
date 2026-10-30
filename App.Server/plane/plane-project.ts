@@ -9,14 +9,14 @@ import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/g
 import { gridBarRow, gridCellText, gridColumns, gridFindCommand, gridFindRow, gridFsp, gridHeaderCell, gridIsAnySelectedMulti, gridPatchDeleteMulti, gridRemoveCommand, gridSelectedMultiRowKeys, gridTables } from '../util/core/util-grid.js';
 import { gridDataNew, gridDataSaveInsert, gridDataSaveUpdate } from '../util/core/util-grid-data.js';
 
-const PROJECT_COLUMNS: GridConfigDto = {
+const PROJECT_CONFIG: GridConfigDto = {
   title: 'Project Data',
   columns: (['name', 'description'] as const satisfies readonly (keyof ProjectDto)[]).map(
     (columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text }),
   ),
 };
 
-const USER_COLUMNS: GridConfigDto = {
+const USER_CONFIG: GridConfigDto = {
   title: 'User Data',
   columns: (['email', 'sectorKey'] as const satisfies readonly (keyof UserDto)[]).map(
     (columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text }),
@@ -57,10 +57,10 @@ async function gridUserLoadGrid(request: Request, gridDto: GridDto): Promise<Gri
   const users = await usersLoad(request);
 
   const headerRow: GridRowDto = {
-    cells: gridColumns(USER_COLUMNS.columns ?? []).map((column) => gridHeaderCell(column.columnName, gridDto.state?.sort)),
+    cells: gridColumns(USER_CONFIG.columns ?? []).map((column) => gridHeaderCell(column.columnName, gridDto.state?.sort)),
   };
   const rows: GridRowDto[] = users.map((user, rowIndex) => ({
-    cells: gridColumns(USER_COLUMNS.columns ?? []).map(
+    cells: gridColumns(USER_CONFIG.columns ?? []).map(
       (column): GridCellDto => ({
         cellEnum: GridCellEnum.Edit,
         text: gridCellText(user[column.columnName as keyof UserDto], column),
@@ -69,15 +69,15 @@ async function gridUserLoadGrid(request: Request, gridDto: GridDto): Promise<Gri
       }),
     ),
   }));
-  const findRow = gridFindRow([...gridColumns(USER_COLUMNS.columns ?? []).map((column) => column.columnName)]);
+  const findRow = gridFindRow([...gridColumns(USER_CONFIG.columns ?? []).map((column) => column.columnName)]);
 
-  return { ...gridDto, title: USER_COLUMNS.title, tables: gridTables([], [headerRow, findRow, ...rows]) };
+  return { ...gridDto, title: USER_CONFIG.title, tables: gridTables([], [headerRow, findRow, ...rows]) };
 }
 
 async function gridProjectLoadGrid(request: Request, gridDto: GridDto): Promise<GridDto> {
   if (gridDto.command?.commandEnum === GridCommandEnum.Save) {
-    await projectsUpdate(request, await gridDataSaveUpdate<ProjectDto>(request, 'ProjectDto', gridDto, PROJECT_COLUMNS.columns ?? [], false));
-    await projectsInsert(request, gridDataSaveInsert<ProjectDto>(gridDto, PROJECT_COLUMNS.columns ?? []));
+    await projectsUpdate(request, await gridDataSaveUpdate<ProjectDto>(request, 'ProjectDto', gridDto, PROJECT_CONFIG.columns ?? [], false));
+    await projectsInsert(request, gridDataSaveInsert<ProjectDto>(gridDto, PROJECT_CONFIG.columns ?? []));
   }
 
   if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === 'Switch') {
@@ -114,17 +114,17 @@ async function gridProjectLoadGrid(request: Request, gridDto: GridDto): Promise<
   }
 
   // Filter-Sort-Page: projects holds only the rows of the current page.
-  const { rows: projects, state: fspState } = gridFsp(await projectsLoad(request), PROJECT_COLUMNS.columns ?? [], gridDto.state);
+  const { rows: projects, state: fspState } = gridFsp(await projectsLoad(request), PROJECT_CONFIG.columns ?? [], gridDto.state);
 
   const headerRow: GridRowDto = {
     cells: [
-      ...gridColumns(PROJECT_COLUMNS.columns ?? []).map((column) => gridHeaderCell(column.columnName, gridDto.state?.sort)),
+      ...gridColumns(PROJECT_CONFIG.columns ?? []).map((column) => gridHeaderCell(column.columnName, gridDto.state?.sort)),
       { cellEnum: GridCellEnum.Header, text: 'Command' },
     ],
   };
   const rows: GridRowDto[] = projects.map((project, rowIndex) => ({
     cells: [
-      ...gridColumns(PROJECT_COLUMNS.columns ?? []).map(
+      ...gridColumns(PROJECT_CONFIG.columns ?? []).map(
         (column, columnIndex): GridCellDto => ({
           cellEnum: GridCellEnum.Edit,
           text: gridCellText(project[column.columnName as keyof ProjectDto], column),
@@ -147,7 +147,7 @@ async function gridProjectLoadGrid(request: Request, gridDto: GridDto): Promise<
 
   // rowKey is the _id (ObjectId hex), since name is editable.
   const rowKeys: string[] = projects.map((project) => project._id?.toHexString() ?? '');
-  const findRow = gridFindRow([...gridColumns(PROJECT_COLUMNS.columns ?? []).map((column) => column.columnName), undefined]);
+  const findRow = gridFindRow([...gridColumns(PROJECT_CONFIG.columns ?? []).map((column) => column.columnName), undefined]);
 
   const deleteMultiRow: GridRowDto = {
     cells: [
@@ -167,7 +167,7 @@ async function gridProjectLoadGrid(request: Request, gridDto: GridDto): Promise<
 
   const result: GridDto = {
     ...gridDto,
-    title: PROJECT_COLUMNS.title,
+    title: PROJECT_CONFIG.title,
     setting: { isSelectMultiPatch: true },
     tables: gridTables([deleteMultiRow], [headerRow, findRow, ...rows], [gridBarRow()]),
     state: { ...gridDto.state, ...fspState, rowKeys },
@@ -175,8 +175,8 @@ async function gridProjectLoadGrid(request: Request, gridDto: GridDto): Promise<
 
   if (gridDto.command?.commandEnum === GridCommandEnum.New) {
     // Two new rows.
-    gridDataNew(result, gridColumns(PROJECT_COLUMNS.columns ?? []));
-    gridDataNew(result, gridColumns(PROJECT_COLUMNS.columns ?? []));
+    gridDataNew(result, gridColumns(PROJECT_CONFIG.columns ?? []));
+    gridDataNew(result, gridColumns(PROJECT_CONFIG.columns ?? []));
   }
 
   if (gridDto.command?.commandEnum === GridCommandEnum.CustomButtonClick && gridDto.command.customName === 'Confirm') {

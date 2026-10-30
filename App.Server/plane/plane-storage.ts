@@ -5,7 +5,7 @@ import { GridConfigTypeEnum, GridConfigDto } from '../dto/grid-config-dto.js';
 import { gridBarRow, gridCellText, gridColumnChooserLoad, gridColumnChooserOk, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridIsCommand, gridLookupSet, gridPatchDeleteMulti, gridSelectedMultiRowKeys, gridTables } from '../util/core/util-grid.js';
 import { gridDataDelete, gridDataNew } from '../util/core/util-grid-data.js';
 
-const STORAGE_FILE_COLUMNS: GridConfigDto = {
+const STORAGE_FILE_CONFIG: GridConfigDto = {
   title: 'Storage Data',
   columns: [
     { columnName: 'fileNameOnly' satisfies keyof StorageFileDto, text: 'File Name', typeEnum: GridConfigTypeEnum.Text, columnNameSort: 'fileNameOnlySort' satisfies keyof StorageFileDto },
@@ -24,7 +24,7 @@ const IMAGE_PREVIEW_CONFIG: GridConfigDto = { title: 'Image Preview' };
 export async function planeStorageLoad(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
   const gridDto = gridPlaneDto.grids?.[0] ?? {};
   // Column Chooser Ok: apply the chosen columns (GridStateDto.columnNames) before the rows are built.
-  gridColumnChooserOk(gridDto, STORAGE_FILE_COLUMNS.columns ?? []);
+  gridColumnChooserOk(gridDto, STORAGE_FILE_CONFIG.columns ?? []);
 
   // Selection is by rowIndex: remember it by rowKey so it can be mapped onto the reloaded rows (deleted files or another folder drop out).
   const selectedMultiRowKeys = new Set(gridSelectedMultiRowKeys(gridDto));
@@ -98,11 +98,11 @@ export async function planeStorageLoad(request: Request, gridPlaneDto: GridPlane
   const allFiles = await storageFiles(request, gridStatePath(gridDto.state));
 
   // Filter Multi Ok: apply the chosen texts (GridStateDto.filterMultis) before the rows are built.
-  gridFilterMultiOk(gridDto, STORAGE_FILE_COLUMNS.columns ?? [], allFiles);
+  gridFilterMultiOk(gridDto, STORAGE_FILE_CONFIG.columns ?? [], allFiles);
 
   // Filter-Sort-Page: files holds only the rows of the current page.
-  const { rows: files, state: fspState } = gridFsp(allFiles, STORAGE_FILE_COLUMNS.columns ?? [], gridDto.state);
-  const columns = gridColumns(STORAGE_FILE_COLUMNS.columns ?? [], gridDto.state);
+  const { rows: files, state: fspState } = gridFsp(allFiles, STORAGE_FILE_CONFIG.columns ?? [], gridDto.state);
+  const columns = gridColumns(STORAGE_FILE_CONFIG.columns ?? [], gridDto.state);
 
   const headerRow: GridRowDto = {
     cells: [
@@ -175,7 +175,7 @@ export async function planeStorageLoad(request: Request, gridPlaneDto: GridPlane
     ...gridDto,
     tables: gridTables([toolbarRow, toolbarRow2], [headerRow, findRow, ...fileRows], [gridBarRow()]),
     state: { ...gridDto.state, ...fspState, rowKeys, isSelectedMulti },
-    title: STORAGE_FILE_COLUMNS.title,
+    title: STORAGE_FILE_CONFIG.title,
     setting: { isSelectPatch: true, isSelectMultiPatch: true },
   };
 
@@ -185,7 +185,7 @@ export async function planeStorageLoad(request: Request, gridPlaneDto: GridPlane
 
   // Lookup (planes[0]): Column Chooser (opened by planeStoragePatch, kept open while planes[0].planeName is columnChooser)
   // or Filter Multi (opened by planeStoragePatch, kept open while planes[0].planeName is filterMulti).
-  gridLookupSet(result, gridColumnChooserLoad(gridDto, STORAGE_FILE_COLUMNS.columns ?? []) ?? gridFilterMultiLoad(gridDto, STORAGE_FILE_COLUMNS.columns ?? [], allFiles));
+  gridLookupSet(result, gridColumnChooserLoad(gridDto, STORAGE_FILE_CONFIG.columns ?? []) ?? gridFilterMultiLoad(gridDto, STORAGE_FILE_CONFIG.columns ?? [], allFiles));
 
   // Command is transient: clear it so it isn't re-processed on a later request.
   result.command = undefined;
@@ -208,11 +208,11 @@ export async function planeStoragePatch(request: Request, gridPlaneDto: GridPlan
     return { ...gridPlaneDto, grids: [{}, { patches: [{ patchEnum: GridPatchEnum.Grid, grid: previewGridDto } satisfies GridPatchDto] }] };
   }
   if (gridDto.command?.commandEnum === GridCommandEnum.ColumnChooser) {
-    const lookupPlane = gridColumnChooserLoad(gridDto, STORAGE_FILE_COLUMNS.columns ?? []);
+    const lookupPlane = gridColumnChooserLoad(gridDto, STORAGE_FILE_CONFIG.columns ?? []);
     return { ...gridPlaneDto, grids: [{ patches: [{ patchEnum: GridPatchEnum.Lookup, planeName: lookupPlane?.planeName, lookup: lookupPlane?.grids?.[0] } satisfies GridPatchDto] }] };
   }
   if (gridDto.command?.commandEnum === GridCommandEnum.FilterMulti) {
-    const lookupPlane = gridFilterMultiLoad(gridDto, STORAGE_FILE_COLUMNS.columns ?? [], await storageFiles(request, gridStatePath(gridDto.state)));
+    const lookupPlane = gridFilterMultiLoad(gridDto, STORAGE_FILE_CONFIG.columns ?? [], await storageFiles(request, gridStatePath(gridDto.state)));
     return { ...gridPlaneDto, grids: [{ patches: [{ patchEnum: GridPatchEnum.Lookup, planeName: lookupPlane?.planeName, lookup: lookupPlane?.grids?.[0] } satisfies GridPatchDto] }] };
   }
   return { ...gridPlaneDto, grids: [await gridPatchDeleteMulti(request, gridDto)] };
@@ -278,7 +278,7 @@ async function gridStorageSaveRename(request: Request, gridDto: GridDto): Promis
     return;
   }
 
-  const files = gridFsp(await storageFiles(request, path), STORAGE_FILE_COLUMNS.columns ?? [], gridDto.state).rows;
+  const files = gridFsp(await storageFiles(request, path), STORAGE_FILE_CONFIG.columns ?? [], gridDto.state).rows;
   for (const modify of renameModifies) {
     const file = files[modify.rowIndex as number];
     const fileNameOnlyModified = modify.textModified?.trim();

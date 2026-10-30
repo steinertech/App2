@@ -17,7 +17,7 @@ function debugDynamicSchemaIsPropertyFromText(text: string): boolean {
   throw new Error(`Is Property "${text}" is not true or false!`);
 }
 
-const DEBUG_DYNAMIC_COLUMNS: GridConfigDto = {
+const DEBUG_DYNAMIC_CONFIG: GridConfigDto = {
   title: 'Debug Dynamic Schema',
   columns: [
     ...(['name', 'text', 'dynamicTableName', 'dynamicColumnName'] as const satisfies readonly (keyof DebugDynamicSchemaDto)[]).map(
@@ -40,7 +40,7 @@ export async function planeDebugDynamicLoad(request: Request, gridPlaneDto: Grid
 }
 
 async function gridDebugDynamicLoad(request: Request, gridDto: GridDto): Promise<GridDto> {
-  return gridDataLoad<DebugDynamicSchemaDto>(request, 'DebugDynamicSchemaDto', gridDto, { title: DEBUG_DYNAMIC_COLUMNS.title, columns: DEBUG_DYNAMIC_COLUMNS.columns ?? [], isColumnChooser: true }, false);
+  return gridDataLoad<DebugDynamicSchemaDto>(request, 'DebugDynamicSchemaDto', gridDto, { title: DEBUG_DYNAMIC_CONFIG.title, columns: DEBUG_DYNAMIC_CONFIG.columns ?? [], isColumnChooser: true }, false);
 }
 
 /**
@@ -50,11 +50,11 @@ async function gridDebugDynamicLoad(request: Request, gridDto: GridDto): Promise
 export async function planeDebugDynamicPatch(request: Request, gridPlaneDto: GridPlaneDto): Promise<GridPlaneDto> {
   const gridDto = gridPlaneDto.grids?.[0] ?? {};
   if (gridDto.command?.commandEnum === GridCommandEnum.ColumnChooser) {
-    const lookupPlane = gridColumnChooserLoad(gridDto, DEBUG_DYNAMIC_COLUMNS.columns ?? []);
+    const lookupPlane = gridColumnChooserLoad(gridDto, DEBUG_DYNAMIC_CONFIG.columns ?? []);
     return { ...gridPlaneDto, grids: [{ patches: [{ patchEnum: GridPatchEnum.Lookup, planeName: lookupPlane?.planeName, lookup: lookupPlane?.grids?.[0] } satisfies GridPatchDto] }] };
   }
   if (gridDto.command?.commandEnum === GridCommandEnum.FilterMulti) {
-    const lookupPlane = gridFilterMultiLoad(gridDto, DEBUG_DYNAMIC_COLUMNS.columns ?? [], await debugDynamicSchemaLoad(request));
+    const lookupPlane = gridFilterMultiLoad(gridDto, DEBUG_DYNAMIC_CONFIG.columns ?? [], await debugDynamicSchemaLoad(request));
     return { ...gridPlaneDto, grids: [{ patches: [{ patchEnum: GridPatchEnum.Lookup, planeName: lookupPlane?.planeName, lookup: lookupPlane?.grids?.[0] } satisfies GridPatchDto] }] };
   }
   return { ...gridPlaneDto, grids: [await gridPatchDeleteMulti(request, gridDto)] };

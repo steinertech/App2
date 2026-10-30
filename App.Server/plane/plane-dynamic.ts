@@ -5,7 +5,7 @@ import { GridConfigColumnDto, GridConfigTypeEnum, GridConfigDto } from '../dto/g
 import { gridBarRow, gridCellText, gridCellValue, gridColumnChooserLoad, gridColumnChooserOk, gridColumns, gridFilterMultiLoad, gridFilterMultiOk, gridFindRow, gridFsp, gridHeaderCell, gridLookupSet, gridRowValue, gridTables } from '../util/core/util-grid.js';
 import { gridDataNew, gridDataSaveInsert, gridDataSaveUpdate } from '../util/core/util-grid-data.js';
 
-const DYNAMIC_TABLE_NAME_COLUMNS: GridConfigDto = {
+const DYNAMIC_TABLE_NAME_CONFIG: GridConfigDto = {
   title: 'Table',
   columns: (['tableName'] as const satisfies readonly (keyof DynamicTableNameDto)[]).map(
     (columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text }),
@@ -70,17 +70,17 @@ async function gridDynamicLoad(request: Request, gridDto: GridDto): Promise<Grid
   const allDynamics = await dynamicTableLoad(request);
 
   // Filter Multi Ok: apply the chosen texts (GridStateDto.filterMultis) before the rows are built.
-  gridFilterMultiOk(gridDto, DYNAMIC_TABLE_NAME_COLUMNS.columns ?? [], allDynamics);
+  gridFilterMultiOk(gridDto, DYNAMIC_TABLE_NAME_CONFIG.columns ?? [], allDynamics);
 
   // Filter-Sort-Page: dynamics holds only the rows of the current page.
-  const { rows: dynamics, state: fspState } = gridFsp(allDynamics, DYNAMIC_TABLE_NAME_COLUMNS.columns ?? [], gridDto.state);
+  const { rows: dynamics, state: fspState } = gridFsp(allDynamics, DYNAMIC_TABLE_NAME_CONFIG.columns ?? [], gridDto.state);
 
   const headerRow: GridRowDto = {
-    cells: gridColumns(DYNAMIC_TABLE_NAME_COLUMNS.columns ?? []).map((column) => gridHeaderCell(column.columnName, gridDto.state?.sort)),
+    cells: gridColumns(DYNAMIC_TABLE_NAME_CONFIG.columns ?? []).map((column) => gridHeaderCell(column.columnName, gridDto.state?.sort)),
   };
   // Load only: cells are read-only (GridCellEnum.Label).
   const rows: GridRowDto[] = dynamics.map((dynamic, rowIndex) => ({
-    cells: gridColumns(DYNAMIC_TABLE_NAME_COLUMNS.columns ?? []).map(
+    cells: gridColumns(DYNAMIC_TABLE_NAME_CONFIG.columns ?? []).map(
       (column): GridCellDto => ({
         cellEnum: GridCellEnum.Label,
         text: gridCellText(dynamic[column.columnName as keyof DynamicTableNameDto], column),
@@ -92,18 +92,18 @@ async function gridDynamicLoad(request: Request, gridDto: GridDto): Promise<Grid
 
   // rowKey is the tableName, which is distinct.
   const rowKeys: string[] = dynamics.map((dynamic) => dynamic.tableName);
-  const findRow = gridFindRow(gridColumns(DYNAMIC_TABLE_NAME_COLUMNS.columns ?? []).map((column) => column.columnName));
+  const findRow = gridFindRow(gridColumns(DYNAMIC_TABLE_NAME_CONFIG.columns ?? []).map((column) => column.columnName));
 
   const result: GridDto = {
     ...gridDto,
-    title: DYNAMIC_TABLE_NAME_COLUMNS.title,
+    title: DYNAMIC_TABLE_NAME_CONFIG.title,
     tables: gridTables([], [headerRow, findRow, ...rows], [gridBarRow()]),
     state: { ...gridDto.state, ...fspState, rowKeys },
     setting: { isSelectPatch: true },
   };
 
   // Lookup (planes[0]): Filter Multi (opened by planeDynamicPatch, kept open while planes[0].planeName is filterMulti).
-  gridLookupSet(result, gridFilterMultiLoad(gridDto, DYNAMIC_TABLE_NAME_COLUMNS.columns ?? [], allDynamics));
+  gridLookupSet(result, gridFilterMultiLoad(gridDto, DYNAMIC_TABLE_NAME_CONFIG.columns ?? [], allDynamics));
 
   // Command is transient: clear it so it isn't re-processed on a later request.
   result.command = undefined;
@@ -224,7 +224,7 @@ export async function planeDynamicPatch(request: Request, gridPlaneDto: GridPlan
     return { ...gridPlaneDto, grids: [{}, { patches: [{ patchEnum: GridPatchEnum.Grid, grid } satisfies GridPatchDto] }] };
   }
   if (gridDto.command?.commandEnum === GridCommandEnum.FilterMulti) {
-    const lookupPlane = gridFilterMultiLoad(gridDto, DYNAMIC_TABLE_NAME_COLUMNS.columns ?? [], await dynamicTableLoad(request));
+    const lookupPlane = gridFilterMultiLoad(gridDto, DYNAMIC_TABLE_NAME_CONFIG.columns ?? [], await dynamicTableLoad(request));
     return { ...gridPlaneDto, grids: [{ patches: [{ patchEnum: GridPatchEnum.Lookup, planeName: lookupPlane?.planeName, lookup: lookupPlane?.grids?.[0] } satisfies GridPatchDto] }, {}] };
   }
   if (dataGridDto.command?.commandEnum === GridCommandEnum.FilterMulti) {

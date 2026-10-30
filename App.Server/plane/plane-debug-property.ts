@@ -6,14 +6,14 @@ import { gridBarRow, gridCellText, gridColumnChooserLoad, gridColumns, gridFilte
 import { gridDataLoad, gridDataNew, gridDataSaveInsert, gridDataSaveUpdate } from '../util/core/util-grid-data.js';
 import { indexToColumnNameExcel } from '../util/core/util-main.js';
 
-const DEBUG_CONTENT_COLUMNS: GridConfigDto = {
+const DEBUG_CONTENT_CONFIG: GridConfigDto = {
   title: 'Debug Content',
   columns: (['name', 'text'] as const satisfies readonly (keyof DebugContentDto)[]).map(
     (columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text }),
   ),
 };
 
-const DEBUG_PROPERTY_COLUMNS: GridConfigDto = {
+const DEBUG_PROPERTY_CONFIG: GridConfigDto = {
   title: 'Debug Property',
   columns: (['name', 'ownerName', 'ownerType', 'propertyName', 'propertyValue'] as const satisfies readonly (keyof DebugPropertyDto)[]).map(
     (columnName): GridConfigColumnDto => ({ columnName, typeEnum: GridConfigTypeEnum.Text }),
@@ -75,7 +75,7 @@ async function gridDebugContentLoad(request: Request, gridDto: GridDto): Promise
     request,
     'DebugContentDto',
     gridDto,
-    { title: DEBUG_CONTENT_COLUMNS.title, columns: DEBUG_CONTENT_COLUMNS.columns ?? [], isColumnChooser: true, setting: { isSelectPatch: true, isSelectColumnPatch: true } },
+    { title: DEBUG_CONTENT_CONFIG.title, columns: DEBUG_CONTENT_CONFIG.columns ?? [], isColumnChooser: true, setting: { isSelectPatch: true, isSelectColumnPatch: true } },
     false,
   );
 }
@@ -90,11 +90,11 @@ async function gridDebugPropertyLoad(request: Request, gridDto: GridDto, owners:
   const allProperties = await debugPropertyLoadByOwners(request, owners);
 
   // Filter Multi Ok: apply the chosen texts (GridStateDto.filterMultis) before the rows are built.
-  gridFilterMultiOk(gridDto, DEBUG_PROPERTY_COLUMNS.columns ?? [], allProperties);
+  gridFilterMultiOk(gridDto, DEBUG_PROPERTY_CONFIG.columns ?? [], allProperties);
 
   // Filter-Sort-Page: properties holds only the rows of the current page.
-  const { rows: properties, state: fspState } = gridFsp(allProperties, DEBUG_PROPERTY_COLUMNS.columns ?? [], gridDto.state);
-  const columns = gridColumns(DEBUG_PROPERTY_COLUMNS.columns ?? []);
+  const { rows: properties, state: fspState } = gridFsp(allProperties, DEBUG_PROPERTY_CONFIG.columns ?? [], gridDto.state);
+  const columns = gridColumns(DEBUG_PROPERTY_CONFIG.columns ?? []);
 
   const headerRow: GridRowDto = {
     cells: columns.map((column) => gridHeaderCell(column.columnName, gridDto.state?.sort, column.text)),
@@ -116,7 +116,7 @@ async function gridDebugPropertyLoad(request: Request, gridDto: GridDto, owners:
 
   const result: GridDto = {
     ...gridDto,
-    title: DEBUG_PROPERTY_COLUMNS.title,
+    title: DEBUG_PROPERTY_CONFIG.title,
     tables: gridTables([], [headerRow, findRow, ...rows], [gridBarRow()]),
     state: { ...gridDto.state, ...fspState, rowKeys },
     setting: { isReloadPatch: true },
@@ -127,7 +127,7 @@ async function gridDebugPropertyLoad(request: Request, gridDto: GridDto, owners:
   }
 
   // Lookup (planes[0]): Filter Multi (opened by planeDebugPropertyPatch, kept open while planes[0].planeName is filterMulti).
-  gridLookupSet(result, gridFilterMultiLoad(gridDto, DEBUG_PROPERTY_COLUMNS.columns ?? [], allProperties));
+  gridLookupSet(result, gridFilterMultiLoad(gridDto, DEBUG_PROPERTY_CONFIG.columns ?? [], allProperties));
 
   // Command is transient: clear it so it isn't re-processed on a later request.
   result.command = undefined;
@@ -176,7 +176,7 @@ async function gridDebugTableLoad(request: Request, gridDto: GridDto, owners: De
 }
 
 async function gridDebugPropertySaveUpdate(request: Request, gridDto: GridDto): Promise<void> {
-  const properties = await gridDataSaveUpdate<DebugPropertyDto>(request, 'DebugPropertyDto', gridDto, DEBUG_PROPERTY_COLUMNS.columns ?? [], false);
+  const properties = await gridDataSaveUpdate<DebugPropertyDto>(request, 'DebugPropertyDto', gridDto, DEBUG_PROPERTY_CONFIG.columns ?? [], false);
 
   // A "CellTable" property's name is always derived (see gridDebugPropertyName), also if its owner or property changed.
   for (const property of properties) {
@@ -189,7 +189,7 @@ async function gridDebugPropertySaveUpdate(request: Request, gridDto: GridDto): 
 }
 
 async function gridDebugPropertySaveInsert(request: Request, gridDto: GridDto): Promise<void> {
-  const properties = gridDataSaveInsert<DebugPropertyDto>(gridDto, DEBUG_PROPERTY_COLUMNS.columns ?? []);
+  const properties = gridDataSaveInsert<DebugPropertyDto>(gridDto, DEBUG_PROPERTY_CONFIG.columns ?? []);
 
   for (const property of properties) {
     property.name = gridDebugPropertyName(property);
@@ -223,7 +223,7 @@ export async function planeDebugPropertyPatch(request: Request, gridPlaneDto: Gr
     };
   }
   if (propertyGridDto.command?.commandEnum === GridCommandEnum.FilterMulti) {
-    const lookupPlane = gridFilterMultiLoad(propertyGridDto, DEBUG_PROPERTY_COLUMNS.columns ?? [], await debugPropertyLoadByOwners(request, propertyOwners));
+    const lookupPlane = gridFilterMultiLoad(propertyGridDto, DEBUG_PROPERTY_CONFIG.columns ?? [], await debugPropertyLoadByOwners(request, propertyOwners));
     return { ...gridPlaneDto, grids: [{}, { patches: [{ patchEnum: GridPatchEnum.Lookup, planeName: lookupPlane?.planeName, lookup: lookupPlane?.grids?.[0] } satisfies GridPatchDto] }, {}] };
   }
   if (propertyGridDto.command !== undefined) {
@@ -252,11 +252,11 @@ export async function planeDebugPropertyPatch(request: Request, gridPlaneDto: Gr
     };
   }
   if (gridDto.command?.commandEnum === GridCommandEnum.ColumnChooser) {
-    const lookupPlane = gridColumnChooserLoad(gridDto, DEBUG_CONTENT_COLUMNS.columns ?? []);
+    const lookupPlane = gridColumnChooserLoad(gridDto, DEBUG_CONTENT_CONFIG.columns ?? []);
     return { ...gridPlaneDto, grids: [{ patches: [{ patchEnum: GridPatchEnum.Lookup, planeName: lookupPlane?.planeName, lookup: lookupPlane?.grids?.[0] } satisfies GridPatchDto] }, {}, {}] };
   }
   if (gridDto.command?.commandEnum === GridCommandEnum.FilterMulti) {
-    const lookupPlane = gridFilterMultiLoad(gridDto, DEBUG_CONTENT_COLUMNS.columns ?? [], await debugContentLoad(request));
+    const lookupPlane = gridFilterMultiLoad(gridDto, DEBUG_CONTENT_CONFIG.columns ?? [], await debugContentLoad(request));
     return { ...gridPlaneDto, grids: [{ patches: [{ patchEnum: GridPatchEnum.Lookup, planeName: lookupPlane?.planeName, lookup: lookupPlane?.grids?.[0] } satisfies GridPatchDto] }, {}, {}] };
   }
   return { ...gridPlaneDto, grids: [await gridPatchDeleteMulti(request, gridDto), {}, {}] };
