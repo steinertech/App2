@@ -2,6 +2,7 @@ import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEn
 import { GridConfigColumnDto, GridConfigDto } from '../../dto/grid-config-dto.js';
 import { DbDto } from '../../dto/db/db-dto.js';
 import { gridBarRow, gridCellText, gridFindRow, gridHeaderCell, gridRowValue, gridTables } from './util-grid.js';
+import { titleCase } from './util-main.js';
 
 // Render of the generic data grid (gridDataLoad of util-grid-data.ts): turns the already loaded, filtered and paged documents into the GridDto tables.
 // Every rowKey is the document's _id (ObjectId hex), since name is editable or not sent to App.Web.
@@ -71,7 +72,9 @@ export function gridRenderLayoutTable<T extends DbDto>(
 }
 
 /**
- * Stack layout of gridRender: for now only the toolbar (gridRenderToolbarRow) and the bar (New, Save, Reload, pager), no header or rows.
+ * Stack layout of gridRender: toolbar (gridRenderToolbarRow), then per document one row per column with a label cell (the column's text) and its editable
+ * value cell (the first label with the multi select checkbox), followed by a row with its Delete button, and the bar (New, Save, Reload, pager).
+ * No header or find row. Every cell carries the document's rowIndex (and its columnName), so a click selects the row and column like in the table layout.
  */
 export function gridRenderLayoutStack<T extends DbDto>(
   gridDto: GridDto,
@@ -81,7 +84,38 @@ export function gridRenderLayoutStack<T extends DbDto>(
   selectedMultiRowKeys: Set<string>,
   config: GridConfigDto,
 ): GridDto {
-  return gridRenderResult(gridDto, dtos, state, selectedMultiRowKeys, config, []);
+  const rows: GridRowDto[] = dtos.flatMap((dto, rowIndex) => [
+    ...columns.map(
+      (column, columnIndex): GridRowDto => ({
+        cells: [
+          {
+            cellEnum: GridCellEnum.Label,
+            text: column.text ?? titleCase(column.columnName),
+            rowIndex,
+            columnName: column.columnName,
+            isSelectMulti: columnIndex === 0 ? true : undefined,
+          },
+          {
+            cellEnum: GridCellEnum.Edit,
+            text: gridCellText(gridRowValue(dto, column), column),
+            rowIndex,
+            columnName: column.columnName,
+          },
+        ],
+      }),
+    ),
+    {
+      cells: [
+        { cellEnum: GridCellEnum.Label, text: 'Command', rowIndex },
+        {
+          cellEnum: GridCellEnum.Custom,
+          customs: [{ text: 'Delete', name: 'Delete', customEnum: GridCustomEnum.Button, rowIndex } satisfies GridCustomDto],
+          rowIndex,
+        },
+      ],
+    },
+  ]);
+  return gridRenderResult(gridDto, dtos, state, selectedMultiRowKeys, config, rows);
 }
 
 /**
