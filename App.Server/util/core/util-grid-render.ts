@@ -7,10 +7,9 @@ import { gridBarRow, gridCellText, gridFindRow, gridHeaderCell, gridRowValue, gr
 // Every rowKey is the document's _id (ObjectId hex), since name is editable or not sent to App.Web.
 
 /**
- * Returns gridDto rendered with dtos (the rows of the current page) and the rendered columns: toolbar (Column Chooser if config.isColumnChooser, multi select
- * Delete, enabled if a row of selectedMultiRowKeys is on the page, and last the Layout button toggling GridStateDto.isLayoutStack on
- * GridCommandEnum.ButtonLayoutClick, initially config.isLayoutStack), header, find row, one row per document (every column editable, a Delete button) and the
- * bar (New, Save, Reload, pager). Its state is gridDto.state merged with state (e.g. the one of gridFsp), the rowKeys and the multi selection,
+ * Returns gridDto rendered with dtos (the rows of the current page) and the rendered columns, by gridRenderLayoutStack if GridStateDto.isLayoutStack is true,
+ * otherwise by gridRenderLayoutTable. isLayoutStack is gridDto.state.isLayoutStack (initially config.isLayoutStack), toggled on GridCommandEnum.ButtonLayoutClick.
+ * Its state is gridDto.state merged with state (e.g. the one of gridFsp), the rowKeys, the multi selection and isLayoutStack,
  * its setting config.setting merged over { isSelectMultiPatch: true }.
  */
 export function gridRender<T extends DbDto>(
@@ -25,6 +24,24 @@ export function gridRender<T extends DbDto>(
   if (gridDto.command?.commandEnum === GridCommandEnum.ButtonLayoutClick) {
     isLayoutStack = !isLayoutStack;
   }
+  const gridDtoLayout: GridDto = { ...gridDto, state: { ...gridDto.state, isLayoutStack } };
+  return isLayoutStack
+    ? gridRenderLayoutStack(gridDtoLayout, dtos, columns, state, selectedMultiRowKeys, config)
+    : gridRenderLayoutTable(gridDtoLayout, dtos, columns, state, selectedMultiRowKeys, config);
+}
+
+/**
+ * Table layout of gridRender: toolbar (gridRenderToolbarRow), header, find row, one row per document (every column editable, a Delete button) and the
+ * bar (New, Save, Reload, pager).
+ */
+export function gridRenderLayoutTable<T extends DbDto>(
+  gridDto: GridDto,
+  dtos: T[],
+  columns: GridConfigColumnDto[],
+  state: GridStateDto,
+  selectedMultiRowKeys: Set<string>,
+  config: GridConfigDto,
+): GridDto {
   const headerRow: GridRowDto = {
     cells: [
       ...columns.map((column) => gridHeaderCell(column.columnName, gridDto.state?.sort, column.text)),
@@ -49,12 +66,30 @@ export function gridRender<T extends DbDto>(
       },
     ],
   }));
-
-  const rowKeys: string[] = dtos.map((dto) => dto._id?.toHexString() ?? '');
-  const isSelectedMulti = rowKeys.map((rowKey) => selectedMultiRowKeys.has(rowKey));
   const findRow = gridFindRow([...columns.map((column) => column.columnName), undefined]);
+  return gridRenderResult(gridDto, dtos, state, selectedMultiRowKeys, config, [headerRow, findRow, ...rows]);
+}
 
-  const toolbarRow: GridRowDto = {
+/**
+ * Stack layout of gridRender: for now only the toolbar (gridRenderToolbarRow) and the bar (New, Save, Reload, pager), no header or rows.
+ */
+export function gridRenderLayoutStack<T extends DbDto>(
+  gridDto: GridDto,
+  dtos: T[],
+  columns: GridConfigColumnDto[],
+  state: GridStateDto,
+  selectedMultiRowKeys: Set<string>,
+  config: GridConfigDto,
+): GridDto {
+  return gridRenderResult(gridDto, dtos, state, selectedMultiRowKeys, config, []);
+}
+
+/**
+ * Toolbar of gridRender: Column Chooser if config.isColumnChooser, multi select Delete (enabled if a row of the page is multi selected), and last the
+ * Layout button ("Layout Stack" or "Layout Table" by isLayoutStack) sending GridCommandEnum.ButtonLayoutClick.
+ */
+function gridRenderToolbarRow(config: GridConfigDto, isSelectedMulti: boolean[], isLayoutStack: boolean): GridRowDto {
+  return {
     cells: [
       {
         cellEnum: GridCellEnum.Custom,
@@ -71,11 +106,24 @@ export function gridRender<T extends DbDto>(
       },
     ],
   };
+}
 
+/** Returns gridDto with the toolbar, dataRows and bar as tables, and the state (rowKeys, multi selection) and setting shared by both layouts. */
+function gridRenderResult<T extends DbDto>(
+  gridDto: GridDto,
+  dtos: T[],
+  state: GridStateDto,
+  selectedMultiRowKeys: Set<string>,
+  config: GridConfigDto,
+  dataRows: GridRowDto[],
+): GridDto {
+  const isLayoutStack = gridDto.state?.isLayoutStack ?? false;
+  const rowKeys: string[] = dtos.map((dto) => dto._id?.toHexString() ?? '');
+  const isSelectedMulti = rowKeys.map((rowKey) => selectedMultiRowKeys.has(rowKey));
   return {
     ...gridDto,
     title: `${config.title} (Render ${new Date().toTimeString().slice(0, 8)})`,
-    tables: gridTables([toolbarRow], [headerRow, findRow, ...rows], [gridBarRow()]),
+    tables: gridTables([gridRenderToolbarRow(config, isSelectedMulti, isLayoutStack)], dataRows, [gridBarRow()]),
     state: { ...gridDto.state, ...state, rowKeys, isSelectedMulti, isLayoutStack },
     setting: { isSelectMultiPatch: true, ...config.setting },
   };
