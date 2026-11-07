@@ -1,4 +1,4 @@
-import { GridCellDto, GridCellEnum, GridCustomDto, GridCustomEnum, GridDto, GridRowDto, GridStateDto } from '../../dto/shared/grid-dto.js';
+import { GridCellDto, GridCellEnum, GridCommandEnum, GridCustomDto, GridCustomEnum, GridDto, GridRowDto, GridStateDto } from '../../dto/shared/grid-dto.js';
 import { GridConfigColumnDto, GridConfigDto } from '../../dto/grid-config-dto.js';
 import { DbDto } from '../../dto/db/db-dto.js';
 import { gridBarRow, gridCellText, gridFindRow, gridHeaderCell, gridRowValue, gridTables } from './util-grid.js';
@@ -8,7 +8,8 @@ import { gridBarRow, gridCellText, gridFindRow, gridHeaderCell, gridRowValue, gr
 
 /**
  * Returns gridDto rendered with dtos (the rows of the current page) and the rendered columns: toolbar (Column Chooser if config.isColumnChooser, multi select
- * Delete, enabled if a row of selectedMultiRowKeys is on the page), header, find row, one row per document (every column editable, a Delete button) and the
+ * Delete, enabled if a row of selectedMultiRowKeys is on the page, and last the Layout button toggling GridStateDto.isLayoutStack on
+ * GridCommandEnum.ButtonLayoutClick, initially config.isLayoutStack), header, find row, one row per document (every column editable, a Delete button) and the
  * bar (New, Save, Reload, pager). Its state is gridDto.state merged with state (e.g. the one of gridFsp), the rowKeys and the multi selection,
  * its setting config.setting merged over { isSelectMultiPatch: true }.
  */
@@ -20,6 +21,10 @@ export function gridRender<T extends DbDto>(
   selectedMultiRowKeys: Set<string>,
   config: GridConfigDto,
 ): GridDto {
+  let isLayoutStack = gridDto.state?.isLayoutStack ?? config.isLayoutStack ?? false;
+  if (gridDto.command?.commandEnum === GridCommandEnum.ButtonLayoutClick) {
+    isLayoutStack = !isLayoutStack;
+  }
   const headerRow: GridRowDto = {
     cells: [
       ...columns.map((column) => gridHeaderCell(column.columnName, gridDto.state?.sort, column.text)),
@@ -61,6 +66,7 @@ export function gridRender<T extends DbDto>(
             customEnum: GridCustomEnum.Button,
             isDisabled: !isSelectedMulti.some((isSelected) => isSelected),
           },
+          { text: isLayoutStack ? 'Layout Stack' : 'Layout Table', name: 'ButtonLayout', customEnum: GridCustomEnum.ButtonLayout } satisfies GridCustomDto,
         ],
       },
     ],
@@ -70,7 +76,7 @@ export function gridRender<T extends DbDto>(
     ...gridDto,
     title: `${config.title} (Render ${new Date().toTimeString().slice(0, 8)})`,
     tables: gridTables([toolbarRow], [headerRow, findRow, ...rows], [gridBarRow()]),
-    state: { ...gridDto.state, ...state, rowKeys, isSelectedMulti },
+    state: { ...gridDto.state, ...state, rowKeys, isSelectedMulti, isLayoutStack },
     setting: { isSelectMultiPatch: true, ...config.setting },
   };
 }

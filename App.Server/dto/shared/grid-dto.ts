@@ -32,6 +32,8 @@ export enum GridCustomEnum {
   Ok = 9,
   /** Data grid control bar: renders Reload, Save and New buttons (sending GridCommandEnum.Reload, Save and New), plus Previous and Next buttons (decreasing/increasing GridStateDto.pageIndex by one, then sending GridCommandEnum.Reload), the text "Page GridStateDto.pageIndex + 1 / GridStateDto.pageCount" and a page size picker (GRID_PAGE_ROW_COUNTS; sets GridStateDto.pageRowCount and pageIndex 0, then sends GridCommandEnum.Reload). Without it, a grid has none of these buttons. */
   Bar = 10,
+  /** Rendered like Button with GridCustomDto.text ("Layout Stack" or "Layout Table", by GridStateDto.isLayoutStack); clicking it sends GridCommandEnum.ButtonLayoutClick. */
+  ButtonLayout = 11,
 }
 
 export enum GridCommandEnum {
@@ -54,6 +56,8 @@ export enum GridCommandEnum {
    * (e.g. to load a detail grid for the selected row) or its column changed and GridSettingDto.isSelectColumnPatch.
    */
   Select = 10,
+  /** A GridCustomEnum.ButtonLayout was clicked; the backend toggles GridStateDto.isLayoutStack. */
+  ButtonLayoutClick = 11,
 }
 
 export interface GridCustomDto {
@@ -179,6 +183,8 @@ export interface GridStateDto {
   pageRowCount?: number;
   /** Custom JSON data (e.g. a pending action), sent back to the server unchanged with every request. Values must be JSON serializable. */
   custom?: Record<string, unknown>;
+  /** If true, the grid is in stack layout, otherwise in table layout; set by gridRender to GridConfigDto.isLayoutStack if not yet set, toggled by GridCommandEnum.ButtonLayoutClick. */
+  isLayoutStack?: boolean;
 }
 
 /** Default and max GridStateDto.pageRowCount, and the page sizes offered by the GridCustomEnum.Bar page size picker. */

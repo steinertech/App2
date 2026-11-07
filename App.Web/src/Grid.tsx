@@ -190,6 +190,7 @@ function gridCustomContent(
     gridCustom.customEnum === GridCustomEnum.Button ||
     gridCustom.customEnum === GridCustomEnum.ButtonUpload ||
     gridCustom.customEnum === GridCustomEnum.ColumnChooser ||
+    gridCustom.customEnum === GridCustomEnum.ButtonLayout ||
     gridCustom.customEnum === GridCustomEnum.Cancel ||
     gridCustom.customEnum === GridCustomEnum.Ok
   ) {
@@ -464,6 +465,10 @@ function GridContent({ path }: GridProps) {
     }
     if (gridCustom.customEnum === GridCustomEnum.ColumnChooser) {
       await handleColumnChooserClick();
+      return;
+    }
+    if (gridCustom.customEnum === GridCustomEnum.ButtonLayout) {
+      await sendGridCommand({ command: { commandEnum: GridCommandEnum.ButtonLayoutClick } });
       return;
     }
     if (gridCustom.customEnum === GridCustomEnum.Cancel) {

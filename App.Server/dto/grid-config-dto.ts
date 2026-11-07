@@ -38,6 +38,8 @@ export interface GridConfigDto {
   columns?: GridConfigColumnDto[];
   /** Toolbar Column Chooser button (its lookup opened by the plane's patcher with gridColumnChooserLoad). */
   isColumnChooser?: boolean;
+  /** Initial GridStateDto.isLayoutStack (set by gridRender if not yet set). */
+  isLayoutStack?: boolean;
   /** Grid setting (GridDto.setting). */
   setting?: GridSettingDto;
 }
