@@ -72,9 +72,10 @@ export function gridRenderLayoutTable<T extends DbDto>(
 }
 
 /**
- * Stack layout of gridRender: toolbar (gridRenderToolbarRow), then per document one row per column with a label cell (the column's text) and its editable
- * value cell (the first label with the multi select checkbox), followed by a row with its Delete button, and the bar (New, Save, Reload, pager).
- * No header or find row. Every cell carries the document's rowIndex (and its columnName), so a click selects the row and column like in the table layout.
+ * Stack layout of gridRender: toolbar (gridRenderToolbarRow), then per column one row with its header cell (gridHeaderCell, sort and Filter Multi like in
+ * the table layout) left and its Search cell right, then per document one row per column with a label cell (the column's text) and its editable value cell
+ * (the first label with the multi select checkbox), followed by a row with its Delete button, and the bar (New, Save, Reload, pager).
+ * Every document cell carries the document's rowIndex (and its columnName), so a click selects the row and column like in the table layout.
  */
 export function gridRenderLayoutStack<T extends DbDto>(
   gridDto: GridDto,
@@ -84,6 +85,12 @@ export function gridRenderLayoutStack<T extends DbDto>(
   selectedMultiRowKeys: Set<string>,
   config: GridConfigDto,
 ): GridDto {
+  const headerRows: GridRowDto[] = columns.map((column) => ({
+    cells: [
+      gridHeaderCell(column.columnName, gridDto.state?.sort, column.text),
+      { cellEnum: GridCellEnum.Search, columnName: column.columnName, placeHolder: 'Search' },
+    ],
+  }));
   const rows: GridRowDto[] = dtos.flatMap((dto, rowIndex) => [
     ...columns.map(
       (column, columnIndex): GridRowDto => ({
@@ -115,7 +122,7 @@ export function gridRenderLayoutStack<T extends DbDto>(
       ],
     },
   ]);
-  return gridRenderResult(gridDto, dtos, state, selectedMultiRowKeys, config, rows);
+  return gridRenderResult(gridDto, dtos, state, selectedMultiRowKeys, config, [...headerRows, ...rows]);
 }
 
 /**
