@@ -1,11 +1,13 @@
 import { useEffect, useRef, type DependencyList } from 'react';
-import { apiUrl } from '../page/App.tsx';
 import { type AlertDto, AlertEnum } from '../../../App.Server/dto/shared/alert-dto.ts';
 import type { ApiResponseDto } from '../../../App.Server/dto/shared/api-response-dto.ts';
 import type { ApiRequestDto } from '../../../App.Server/dto/shared/api-request-dto.ts';
 import { languageFromPathname } from './util-i18n.ts';
 
 export const VERSION_CLIENT = '1.20';
+
+/** Base path of every apiFetch call; App.Web/vercel.json rewrites /api/* to the deployed App.Server. */
+const apiUrl = '/api/';
 
 /**
  * Like useEffect, but runs `effect` only once per distinct `deps` values. StrictMode runs every effect twice in dev,

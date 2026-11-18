@@ -1,7 +1,5 @@
 import { container } from '../style.ts';
 
-export const apiUrl = '/api/';
-
 export default function App() {
   return (
     <div className={container}>
