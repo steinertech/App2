@@ -1,5 +1,5 @@
 import { put, head, issueSignedToken, presignUrl, list, createFolder, BlobNotFoundError, del, rename } from '@vercel/blob';
-import { sectorKeyProjectStorage } from './util-main.js';
+import { sectorKeyProjectStorage } from './util-sector-key.js';
 import { StorageFileDto } from '../../dto/storage-file-dto.js';
 
 /** Returns one presigned PUT url per fileNames entry, for uploading into folder path (e.g. "a/b/", or "" for the root) below the sector key. Urls are valid for 5 minutes and accept files up to 5 MB. */

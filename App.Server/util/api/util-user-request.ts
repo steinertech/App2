@@ -1,5 +1,5 @@
 import { signIn, signOut, signUp } from '../db/util-user.js';
-import { userSession } from '../core/util-session.js';
+import { userSession } from '../core/util-sector-key.js';
 import { alertAdd, domainName, jsonResponse, redirectSet } from '../core/util-main.js';
 import type { ApiResult } from '../core/util-main.js';
 import { UserRequestEnum } from '../../dto/shared/user-request-dto.js';

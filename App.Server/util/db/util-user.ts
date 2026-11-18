@@ -1,9 +1,10 @@
 import { randomUUID } from 'crypto';
-import client, { DB_NAME, dbInsert, dbLoad, dbLoadByFilter, dbUpdate } from '../core/util-db.js';
+import client, { DB_NAME } from '../core/util-db-client.js';
+import { dbInsert, dbLoad, dbLoadByFilter, dbUpdate } from '../core/util-db.js';
 import { UserDto } from '../../dto/db/user-dto.js';
 import { SessionDto } from '../../dto/db/session-dto.js';
-import { domainName, sectorKeyDb } from '../core/util-main.js';
-import { userSession } from '../core/util-session.js';
+import { domainName } from '../core/util-main.js';
+import { sectorKeyDb, userSession } from '../core/util-sector-key.js';
 
 /** Returns UserDto.name: "Domain/<domainName>/Email/<email>/". */
 function userName(request: Request, email: string): string {

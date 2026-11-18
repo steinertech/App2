@@ -1,6 +1,6 @@
 import { VERSION_SERVER, domainName, requestLanguage } from '../core/util-main.js';
 import { translateText } from '../core/util-i18n.js';
-import { userSession } from '../core/util-session.js';
+import { userSession } from '../core/util-sector-key.js';
 import type { VersionResponseDto } from '../../dto/shared/version-dto.js';
 
 /** Returns the VersionResponseDto of api/version.ts: server version, domain, translated text and the signed-in user's email and project. */

@@ -1,5 +1,4 @@
-import { userSession } from './util-session.js';
-import { dbConnect } from './util-db.js';
+import { dbConnect } from './util-db-client.js';
 import { type AlertDto, AlertEnum } from '../../dto/shared/alert-dto.js';
 import type { ApiResponseDto } from '../../dto/shared/api-response-dto.js';
 import type { ApiRequestDto, Language } from '../../dto/shared/api-request-dto.js';
@@ -13,40 +12,6 @@ export function domainName(request: Request): string {
   const refererHeader = request.headers.get('referer');
   if (refererHeader) return new URL(refererHeader).hostname;
   return 'unknown';
-}
-
-async function sectorKey(request: Request, isProject: boolean = true): Promise<string> {
-  if (isProject) {
-    const dto = await userSession(request);
-    if (!dto) {
-      redirectSet(request, '/sign-in');
-      throw new Error('User not signed in!');
-    }
-    // SessionDto.projectName mirrors UserDto.projectName (copied on sign-in, kept in sync by userProject).
-    if (!dto.projectName) throw new Error('User has no project selected!');
-    return 'Domain' + '/' + domainName(request) + '/' + 'Project' + '/' + dto.projectName + '/';
-  }
-  return 'Domain' + '/' + domainName(request) + '/' + 'Global' + '/';
-}
-
-/** sectorKey(request, false) plus "Type/<type>/", type being the name of a DbDto derived interface (e.g. 'UserDto'; interfaces don't exist at runtime, so it is passed by name). */
-export async function sectorKeyDb(request: Request, type: string): Promise<string> {
-  return (await sectorKey(request, false)) + 'Type' + '/' + type + '/';
-}
-
-/** sectorKey(request, true) plus "Type/<type>/", type being the name of a DbDto derived interface (e.g. 'PropertyDto'). Requires sign-in and a selected project like sectorKey. */
-export async function sectorKeyProjectDb(request: Request, type: string): Promise<string> {
-  return (await sectorKey(request, true)) + 'Type' + '/' + type + '/';
-}
-
-/** sectorKey(request, false) plus "Storage/", the path prefix of global blobs. */
-export async function sectorKeyStorage(request: Request): Promise<string> {
-  return (await sectorKey(request, false)) + 'Storage' + '/';
-}
-
-/** sectorKey(request, true) plus "Storage/", the path prefix of project blobs. Requires sign-in and a selected project like sectorKey. */
-export async function sectorKeyProjectStorage(request: Request): Promise<string> {
-  return (await sectorKey(request, true)) + 'Storage' + '/';
 }
 
 export function titleCase(text?: string): string | undefined {
