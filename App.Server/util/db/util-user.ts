@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import client, { DB_NAME } from '../core/util-db-client.js';
 import { dbInsert, dbLoad, dbLoadByFilter, dbUpdate } from '../core/util-db.js';
 import { UserDto } from '../../dto/db/user-dto.js';
